@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+/* ─── Design tokens (from the five design collages) ─────────────────────────── */
+@theme {
+  /* Deep teal — primary (new design: nav pill, buttons, admissions card, footer) */
+  --color-brand-950: #05282a;
+  --color-brand-900: #0b3a3c;
+  --color-brand-800: #114a4c;
+  --color-brand-700: #1a5d5f;
+  --color-brand-600: #297375;
+  --color-brand-100: #dde9e7;
+  --color-brand-50: #eef5f3;
+
+  /* Warm gold — accents, rules, icons */
+  --color-gold-700: #8a6530;
+  --color-gold-600: #ad8247;
+  --color-gold-500: #c49a5e;
+  --color-gold-400: #d6b47f;
+  --color-gold-300: #e2c799;
+  --color-gold-200: #ecdabb;
+  --color-gold-100: #f6ebd8;
+
+  /* Sand & cream — page backgrounds and surfaces */
+  --color-cream-50: #fffcf7;
+  --color-cream-100: #fbf5ec;
+  --color-cream-200: #f4e9d8;
+  --color-cream-300: #e8d8bf;
+
+  --color-ink: #1d2b2b;
+  --color-muted: #5f6866;
+  --color-line: #e8dccb;
+  --color-success: #1f7a4d;
+  --color-danger: #b42318;
+  --color-warning: #9a6700;
+
+  --font-display: var(--font-cormorant), var(--font-amiri), Georgia, serif;
+  --font-sans: var(--font-inter), var(--font-plex-arabic), system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(60 40 10 / 0.04), 0 12px 32px -16px rgb(60 40 10 / 0.18);
+  --shadow-card-hover: 0 2px 6px rgb(60 40 10 / 0.06), 0 22px 48px -20px rgb(60 40 10 / 0.30);
+
+  --radius-card: 1.25rem;
+  --container-site: 80rem;
+
+  --animate-fade-up: fade-up 0.5s ease-out both;
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+:root {
+  color-scheme: light;
+  --header-h: 5.75rem;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgb(255 255 255 / 0.7), transparent 60%),
+    linear-gradient(180deg, var(--color-cream-200) 0%, var(--color-cream-100) 420px, var(--color-cream-100) 100%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+/* Arabic: prefer Arabic faces first and relax letter-spacing */
+html[lang="ar"] {
+  --font-display: var(--font-amiri), Georgia, serif;
+  --font-sans: var(--font-plex-arabic), var(--font-inter), system-ui, sans-serif;
+}
+html[lang="ar"] .tracking-wide,
+html[lang="ar"] .tracking-wider,
+html[lang="ar"] .tracking-widest { letter-spacing: 0; }
+
+/* Mirror directional icons in RTL */
+[dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+
+/* Focus visibility */
+:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 2px;
+}
+
+/* Deep-teal surface with a faint geometric lattice (footer, CTA, admissions card) */
+.pattern-girih {
+  background-color: var(--color-brand-900);
+  background-image:
+    radial-gradient(600px 300px at 100% 0%, rgb(196 154 94 / 0.16), transparent 70%),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 26px),
+    linear-gradient(150deg, var(--color-brand-950), var(--color-brand-800));
+}
+
+/* Warm sand surface with soft light (section backgrounds, placeholders) */
+.pattern-cream {
+  background-color: var(--color-cream-200);
+  background-image:
+    radial-gradient(500px 260px at 15% 0%, rgb(255 255 255 / 0.65), transparent 70%),
+    repeating-linear-gradient(45deg, rgb(173 130 71 / 0.05) 0 1px, transparent 1px 20px),
+    repeating-linear-gradient(-45deg, rgb(173 130 71 / 0.05) 0 1px, transparent 1px 20px);
+}
+
+/* Glassy cream card used for the floating feature bar and quick-access panel */
+.glass {
+  background: rgb(255 252 247 / 0.86);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow: 0 24px 60px -28px rgb(60 40 10 / 0.35);
+}
+
+/* Arch silhouette (top fully rounded) — signature motif of the design */
+.arch { border-radius: 999px 999px var(--radius-card) var(--radius-card); }
+
+@utility container-site {
+  width: 100%;
+  max-width: var(--container-site);
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (min-width: 640px) { padding-inline: 1.5rem; }
+  @media (min-width: 1024px) { padding-inline: 2rem; }
+}
+
+@utility gold-rule {
+  display: block;
+  width: 3rem;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-gold-600), var(--color-gold-400));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Prose for CMS-authored article bodies */
+.prose-article p { margin-block: 0 1em; line-height: 1.8; }
+.prose-article h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; color: var(--color-brand-900); margin-block: 1.5em 0.5em; }
+.prose-article h3 { font-weight: 600; font-size: 1.125rem; color: var(--color-brand-900); margin-block: 1.25em 0.5em; }
+.prose-article ul { list-style: disc; padding-inline-start: 1.25rem; margin-block-end: 1em; }
+.prose-article a { color: var(--color-brand-600); text-decoration: underline; }
+
+/* Cormorant uses old-style figures by default ("0" reads as "o"); force lining numerals for data. */
+.font-display, [class*="font-cormorant"] { font-variant-numeric: lining-nums proportional-nums; }

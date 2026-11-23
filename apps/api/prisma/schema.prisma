@@ -1,0 +1,987 @@
+// Al Ahmadiya platform — Phase 1 schema
+// Domains: Identity & Access, Audit, Site Settings, CMS (bilingual), Heritage, Admissions.
+// ERP domains (SIS, Academic, Finance, HR, Live Classes) arrive in later migrations.
+//
+// Conventions:
+// - Bilingual text is stored as paired columns: <field>En / <field>Ar.
+// - Public content carries publishStatus (editorial workflow) and
+//   confirmation (whether the client has confirmed the fact).
+// - isDemo marks layout-sample records created only by the demo seed script.
+//   The public API never returns them unless SHOW_DEMO_CONTENT=true (non-production).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Confirmation {
+  CONFIRMED                     // client-confirmed or verified with a cited source
+  CLIENT_CONFIRMATION_REQUIRED  // must be confirmed before it can be presented as fact
+}
+
+// ───────────────────────── Identity & Access ─────────────────────────
+
+model User {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique
+  passwordHash   String
+  fullName       String
+  phone          String?
+  locale         String    @default("en")
+  isActive       Boolean   @default(true)
+  emailVerified  Boolean   @default(false)
+  mfaEnabled     Boolean   @default(false)
+  mfaSecret      String?   // encrypted TOTP secret (MFA enrolment: later phase)
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  roles          UserRole[]
+  sessions       Session[]
+  applications   Application[]
+  auditLogs      AuditLog[]
+  passwordResets PasswordReset[]
+  enrollments    Enrollment[]
+  payments       Payment[]
+  notifications  Notification[]
+  quizAttempts   QuizAttempt[]
+  staffLogins    StaffLogin[]
+  hostedSessions LiveSession[]
+  liveAttendance LiveAttendance[]
+  liveChat       LiveChatMessage[]
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique // e.g. SUPER_ADMIN, ADMISSIONS_OFFICER, APPLICANT
+  nameEn      String
+  nameAr      String
+  description String?
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique // e.g. cms.write, admissions.review
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, roleId])
+}
+
+/// Refresh-token session. Tokens rotate on every refresh. Reusing a rotated
+/// token revokes the whole family (theft detection).
+model Session {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  familyId    String    @db.Uuid
+  tokenHash   String    @unique
+  userAgent   String?
+  ip          String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String   // e.g. auth.login, cms.news.update
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+// ───────────────────────── Site settings ─────────────────────────
+
+/// Configurable institutional facts (name, university status, contact details…).
+/// Values default to CLIENT_CONFIRMATION_REQUIRED until the client supplies them.
+model SiteSetting {
+  key          String       @id // e.g. institution.nameEn, university.status, contact.email
+  valueEn      String?
+  valueAr      String?
+  confirmation Confirmation @default(CLIENT_CONFIRMATION_REQUIRED)
+  sourceUrl    String?
+  note         String?
+  updatedAt    DateTime     @updatedAt
+}
+
+// ───────────────────────── Media ─────────────────────────
+
+model MediaAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  path        String   @unique // public path, e.g. /images/history/al-ahmadiya-front-2018.webp
+  altEn       String
+  altAr       String
+  captionEn   String?
+  captionAr   String?
+  author      String?
+  license     String?  // e.g. CC BY-SA 4.0
+  licenseUrl  String?
+  sourceUrl   String?
+  width       Int?
+  height      Int?
+  approved    Boolean  @default(false) // client approval of use
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ───────────────────────── Heritage ─────────────────────────
+
+model HeritageMilestone {
+  id           String        @id @default(uuid()) @db.Uuid
+  sortOrder    Int
+  yearLabel    String        // "1912", "1962–63", "Proposed"
+  titleEn      String
+  titleAr      String
+  bodyEn       String
+  bodyAr       String
+  sourceUrls   String[]
+  caveatEn     String?       // e.g. disputed date note
+  caveatAr     String?
+  confirmation Confirmation  @default(CONFIRMED)
+  publishStatus PublishStatus @default(PUBLISHED)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([publishStatus, sortOrder])
+}
+
+// ───────────────────────── Academic catalogue (CMS) ─────────────────────────
+
+model College {
+  id            String        @id @default(uuid()) @db.Uuid
+  slug          String        @unique
+  nameEn        String
+  nameAr        String
+  summaryEn     String?
+  summaryAr     String?
+  overviewEn    String?
+  overviewAr    String?
+  visionEn      String?
+  visionAr      String?
+  missionEn     String?
+  missionAr     String?
+  imagePath     String?
+  sortOrder     Int           @default(0)
+  publishStatus PublishStatus @default(DRAFT)
+  confirmation  Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  departments   Department[]
+  deanId        String?       @db.Uuid
+  dean          FacultyMember? @relation("CollegeDean", fields: [deanId], references: [id], onDelete: SetNull)
+
+  @@index([publishStatus, sortOrder])
+}
+
+model Department {
+  id            String        @id @default(uuid()) @db.Uuid
+  slug          String        @unique
+  collegeId     String        @db.Uuid
+  nameEn        String
+  nameAr        String
+  overviewEn    String?
+  overviewAr    String?
+  objectivesEn  String[]
+  objectivesAr  String[]
+  researchAreasEn String[]
+  researchAreasAr String[]
+  imagePath     String?
+  contactEmail  String?
+  sortOrder     Int           @default(0)
+  publishStatus PublishStatus @default(DRAFT)
+  confirmation  Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  college       College        @relation(fields: [collegeId], references: [id], onDelete: Restrict)
+  headId        String?        @db.Uuid
+  head          FacultyMember? @relation("DepartmentHead", fields: [headId], references: [id], onDelete: SetNull)
+  programs      Program[]
+  courses       Course[]
+  faculty       FacultyMember[] @relation("DepartmentFaculty")
+
+  @@index([collegeId])
+  @@index([publishStatus, sortOrder])
+}
+
+enum DegreeLevel {
+  FOUNDATION
+  DIPLOMA
+  BACHELOR
+  MASTER
+  DOCTORATE
+  PROFESSIONAL
+}
+
+model Program {
+  id               String        @id @default(uuid()) @db.Uuid
+  slug             String        @unique
+  departmentId     String        @db.Uuid
+  degreeLevel      DegreeLevel
+  nameEn           String
+  nameAr           String
+  summaryEn        String?
+  summaryAr        String?
+  overviewEn       String?
+  overviewAr       String?
+  durationYears    Decimal?      @db.Decimal(3, 1)
+  totalCredits     Int?
+  outcomesEn       String[]
+  outcomesAr       String[]
+  requirementsEn   String[]
+  requirementsAr   String[]
+  careersEn        String[]
+  careersAr        String[]
+  category         String?
+  imagePath        String?
+  isFeatured       Boolean       @default(false)
+  publishStatus    PublishStatus @default(DRAFT)
+  confirmation     Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo           Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  department       Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  curriculum       ProgramCourse[]
+  eligibilityRules EligibilityRule[]
+  applications     Application[]
+
+  @@index([departmentId])
+  @@index([degreeLevel])
+  @@index([publishStatus])
+}
+
+model Course {
+  id             String        @id @default(uuid()) @db.Uuid
+  slug           String        @unique
+  code           String        @unique
+  departmentId   String        @db.Uuid
+  titleEn        String
+  titleAr        String
+  descriptionEn  String?
+  descriptionAr  String?
+  creditHours    Int
+  courseType     String?       // Core / Elective
+  outcomesEn     String[]
+  outcomesAr     String[]
+  /// [{ "module": "Module 1", "topicsEn": [...], "topicsAr": [...] }]
+  syllabus       Json?
+  /// [{ "labelEn": "Coursework", "labelAr": "...", "weight": 60 }]
+  assessment     Json?
+  imagePath      String?
+  isFeatured     Boolean       @default(false)
+  /// Online learning: when true the course can be purchased and studied on the site.
+  onlineEnabled  Boolean       @default(false)
+  deliveryMode   DeliveryMode  @default(RECORDED)
+  priceFils      Int?          // price in minor units (fils); null/0 = free
+  currency       String        @default("AED")
+  publishStatus  PublishStatus @default(DRAFT)
+  confirmation   Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  department     Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  lessons        Lesson[]
+  notes          CourseNote[]
+  quizzes        Quiz[]
+  enrollments    Enrollment[]
+  liveSessions   LiveSession[]
+  programs       ProgramCourse[]
+  instructorId   String?       @db.Uuid
+  instructor     FacultyMember? @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  prerequisites  CoursePrerequisite[] @relation("CourseHasPrereq")
+  requiredBy     CoursePrerequisite[] @relation("PrereqOf")
+
+  @@index([departmentId])
+  @@index([publishStatus])
+}
+
+model CoursePrerequisite {
+  courseId       String @db.Uuid
+  prerequisiteId String @db.Uuid
+  course         Course @relation("CourseHasPrereq", fields: [courseId], references: [id], onDelete: Cascade)
+  prerequisite   Course @relation("PrereqOf", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, prerequisiteId])
+}
+
+model ProgramCourse {
+  programId String  @db.Uuid
+  courseId  String  @db.Uuid
+  year      Int     // curriculum year 1..n
+  term      Int?    // semester within the year
+  program   Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([programId, courseId])
+  @@index([programId, year])
+}
+
+model FacultyMember {
+  id               String        @id @default(uuid()) @db.Uuid
+  slug             String        @unique
+  fullNameEn       String
+  fullNameAr       String
+  titleEn          String        // academic rank
+  titleAr          String
+  email            String?
+  phone            String?
+  photoPath        String?
+  bioEn            String?
+  bioAr            String?
+  specializationEn String?
+  specializationAr String?
+  /// [{ "degreeEn": "...", "degreeAr": "...", "institution": "...", "year": 2010 }]
+  education        Json?
+  researchInterestsEn String[]
+  researchInterestsAr String[]
+  /// [{ "titleEn": "...", "titleAr": "...", "year": 2024 }]
+  awards           Json?
+  linkedinUrl      String?
+  orcid            String?
+  consentToPublish Boolean       @default(false) // faculty consent (PDPL)
+  publishStatus    PublishStatus @default(DRAFT)
+  confirmation     Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo           Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  departments      Department[]  @relation("DepartmentFaculty")
+  deanOf           College[]     @relation("CollegeDean")
+  headOf           Department[]  @relation("DepartmentHead")
+  courses          Course[]
+  publications     PublicationAuthor[]
+  speakerAt        EventSpeaker[]
+
+  @@index([publishStatus])
+}
+
+// ───────────────────────── News, events, research ─────────────────────────
+
+model NewsArticle {
+  id            String        @id @default(uuid()) @db.Uuid
+  slug          String        @unique
+  category      String        // university | academic | research | student-life | announcement
+  titleEn       String
+  titleAr       String
+  excerptEn     String
+  excerptAr     String
+  bodyEn        String        // Markdown
+  bodyAr        String
+  quoteEn       String?
+  quoteAr       String?
+  quoteByEn     String?
+  quoteByAr     String?
+  imagePath     String?
+  isFeatured    Boolean       @default(false)
+  isAnnouncement Boolean      @default(false)
+  sourceUrl     String?
+  publishedAt   DateTime?
+  publishStatus PublishStatus @default(DRAFT)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  @@index([publishStatus, publishedAt])
+  @@index([category])
+}
+
+model Event {
+  id             String        @id @default(uuid()) @db.Uuid
+  slug           String        @unique
+  category       String        // academic | research | cultural | sports | workshop | heritage
+  titleEn        String
+  titleAr        String
+  summaryEn      String
+  summaryAr      String
+  overviewEn     String?
+  overviewAr     String?
+  startsAt       DateTime
+  endsAt         DateTime
+  venueEn        String?
+  venueAr        String?
+  mapUrl         String?
+  imagePath      String?
+  registrationUrl String?
+  isFeatured     Boolean       @default(false)
+  publishStatus  PublishStatus @default(DRAFT)
+  isDemo         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  agenda         EventAgendaItem[]
+  speakers       EventSpeaker[]
+  faqs           Faq[]
+
+  @@index([publishStatus, startsAt])
+  @@index([category])
+}
+
+model EventAgendaItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  eventId   String   @db.Uuid
+  startsAt  DateTime
+  endsAt    DateTime
+  titleEn   String
+  titleAr   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, startsAt])
+}
+
+model EventSpeaker {
+  id          String         @id @default(uuid()) @db.Uuid
+  eventId     String         @db.Uuid
+  facultyId   String?        @db.Uuid
+  nameEn      String
+  nameAr      String
+  roleEn      String?
+  roleAr      String?
+  photoPath   String?
+  event       Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  faculty     FacultyMember? @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+}
+
+model Publication {
+  id            String        @id @default(uuid()) @db.Uuid
+  slug          String        @unique
+  type          String        // journal-article | conference | book | report
+  titleEn       String
+  titleAr       String
+  abstractEn    String
+  abstractAr    String
+  findingsEn    String[]
+  findingsAr    String[]
+  keywords      String[]
+  journal       String?
+  doi           String?       @unique
+  fullTextUrl   String?
+  coverPath     String?
+  publishedOn   DateTime?
+  isFeatured    Boolean       @default(false)
+  publishStatus PublishStatus @default(DRAFT)
+  confirmation  Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  departmentId  String?       @db.Uuid
+  authors       PublicationAuthor[]
+
+  @@index([publishStatus, publishedOn])
+}
+
+model PublicationAuthor {
+  id            String         @id @default(uuid()) @db.Uuid
+  publicationId String         @db.Uuid
+  facultyId     String?        @db.Uuid
+  name          String
+  affiliation   String?
+  position      Int
+  publication   Publication    @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  faculty       FacultyMember? @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  @@index([publicationId, position])
+}
+
+model Faq {
+  id            String        @id @default(uuid()) @db.Uuid
+  scope         String        // programs | admissions | event
+  eventId       String?       @db.Uuid
+  questionEn    String
+  questionAr    String
+  answerEn      String
+  answerAr      String
+  sortOrder     Int           @default(0)
+  publishStatus PublishStatus @default(DRAFT)
+  confirmation  Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  event         Event?        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([scope, publishStatus, sortOrder])
+}
+
+model CampusTourStop {
+  id            String        @id @default(uuid()) @db.Uuid
+  slug          String        @unique
+  kind          String        // academic | library | research | sports | student-life | heritage
+  titleEn       String
+  titleAr       String
+  descriptionEn String
+  descriptionAr String
+  imagePath     String?
+  panoramaUrl   String?       // 360° tour embed URL (provider TBC)
+  isHeritage    Boolean       @default(false) // true = historic 1912 building, not a campus facility
+  sortOrder     Int           @default(0)
+  publishStatus PublishStatus @default(DRAFT)
+  confirmation  Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  isDemo        Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ───────────────────────── Engagement ─────────────────────────
+
+model ContactMessage {
+  id        String    @id @default(uuid()) @db.Uuid
+  fullName  String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  locale    String
+  ip        String?
+  handledAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique
+  locale         String
+  confirmedAt    DateTime?
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+// ───────────────────────── Admissions ─────────────────────────
+
+/// Configurable eligibility rule evaluated by the backend.
+/// qualification: e.g. "UAE_SECONDARY_ADVANCED", "IGCSE_A_LEVEL", "IB", "BACHELOR".
+model EligibilityRule {
+  id                String        @id @default(uuid()) @db.Uuid
+  programId         String        @db.Uuid
+  qualification     String
+  minOverallPercent Decimal?      @db.Decimal(5, 2)
+  /// [{ "subject": "Mathematics", "minPercent": 85 }]
+  subjectMinimums   Json?
+  englishRequirementEn String?
+  englishRequirementAr String?
+  notesEn           String?
+  notesAr           String?
+  isActive          Boolean       @default(true)
+  confirmation      Confirmation  @default(CLIENT_CONFIRMATION_REQUIRED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  program           Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, qualification])
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  RETURNED_FOR_CORRECTION
+  DOCUMENTS_PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+model Application {
+  id             String            @id @default(uuid()) @db.Uuid
+  /// Human-readable reference, e.g. AAU-2027-7Q4KX9. Random, not sequential.
+  reference      String            @unique
+  applicantId    String            @db.Uuid
+  programId      String?           @db.Uuid
+  status         ApplicationStatus @default(DRAFT)
+  currentStep    Int               @default(1)
+  /// Step payloads (personal, contact, academic) validated server-side.
+  personal       Json?
+  contact        Json?
+  academic       Json?
+  submittedAt    DateTime?
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+
+  applicant      User              @relation(fields: [applicantId], references: [id], onDelete: Restrict)
+  program        Program?          @relation(fields: [programId], references: [id], onDelete: SetNull)
+  documents      ApplicationDocument[]
+  statusHistory  ApplicationStatusEvent[]
+  payments       Payment[]
+
+  @@index([applicantId])
+  @@index([status])
+}
+
+model ApplicationStatusEvent {
+  id            String            @id @default(uuid()) @db.Uuid
+  applicationId String            @db.Uuid
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  actorId       String?           @db.Uuid
+  note          String?
+  createdAt     DateTime          @default(now())
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+}
+
+enum DocumentStatus {
+  UPLOADED
+  VERIFIED
+  REJECTED
+}
+
+model ApplicationDocument {
+  id            String         @id @default(uuid()) @db.Uuid
+  applicationId String         @db.Uuid
+  docType       String         // passport | emirates-id | transcript | certificate | photo | other
+  originalName  String
+  storageKey    String         @unique // private object-storage key (never a public path)
+  mimeType      String
+  sizeBytes     Int
+  sha256        String
+  status        DocumentStatus @default(UPLOADED)
+  reviewNote    String?
+  createdAt     DateTime       @default(now())
+  application   Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+/// Payment state changes ONLY through server-verified gateway signatures/webhooks.
+/// Covers application fees and course purchases.
+model Payment {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @db.Uuid
+  purpose          String        // application-fee | course
+  applicationId    String?       @db.Uuid
+  enrollmentId     String?       @db.Uuid
+  description      String
+  amountFils       Int           // minor units
+  vatFils          Int           @default(0)
+  currency         String        @default("AED")
+  provider         String        // razorpay | test
+  providerOrderId  String?       @unique
+  providerRef      String?       @unique // gateway payment id
+  idempotencyKey   String        @unique
+  status           PaymentStatus @default(INITIATED)
+  rawCallback      Json?
+  receiptNumber    String?       @unique
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  application      Application?  @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  enrollment       Enrollment?   @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([applicationId])
+  @@index([enrollmentId])
+}
+
+// ───────────────────────── Online learning (LMS) ─────────────────────────
+
+enum DeliveryMode {
+  RECORDED // self-paced video course
+  LIVE     // current course with scheduled live classes (recordings added afterwards)
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// A video lecture inside a course.
+model Lesson {
+  id            String        @id @default(uuid()) @db.Uuid
+  courseId      String        @db.Uuid
+  titleEn       String
+  titleAr       String
+  descriptionEn String?
+  descriptionAr String?
+  sortOrder     Int           @default(0)
+  videoKey      String?       // private storage key
+  videoMime     String?
+  videoBytes    BigInt?
+  durationSec   Int?
+  isPreview     Boolean       @default(false) // free preview for non-enrolled visitors
+  status        ContentStatus @default(DRAFT)
+  liveSessionId String?       @unique @db.Uuid // set when created from a live-class recording
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  liveSession   LiveSession?  @relation(fields: [liveSessionId], references: [id], onDelete: SetNull)
+  notes         CourseNote[]
+  quizzes       Quiz[]
+
+  @@index([courseId, sortOrder])
+}
+
+/// Study notes: an uploaded PDF and/or text body. Readable online and downloadable by enrolled students.
+model CourseNote {
+  id          String        @id @default(uuid()) @db.Uuid
+  courseId    String        @db.Uuid
+  lessonId    String?       @db.Uuid
+  titleEn     String
+  titleAr     String
+  bodyEn      String?
+  bodyAr      String?
+  fileKey     String?
+  fileName    String?
+  fileMime    String?
+  sortOrder   Int           @default(0)
+  status      ContentStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson      Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([courseId, sortOrder])
+}
+
+/// Multiple-choice quiz. questions: [{ "id": "q1", "textEn": "...", "textAr": "...", "options": [{"en":"..","ar":".."}], "correct": 1 }]
+model Quiz {
+  id          String        @id @default(uuid()) @db.Uuid
+  courseId    String        @db.Uuid
+  lessonId    String?       @db.Uuid
+  titleEn     String
+  titleAr     String
+  questions   Json
+  passPercent Int           @default(60)
+  sortOrder   Int           @default(0)
+  status      ContentStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson      Lesson?       @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  attempts    QuizAttempt[]
+
+  @@index([courseId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  quizId    String   @db.Uuid
+  userId    String   @db.Uuid
+  answers   Json
+  score     Int      // correct answers
+  total     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, quizId])
+}
+
+enum EnrollmentStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  CANCELLED
+}
+
+/// A student's access to a course. Becomes ACTIVE only after a verified payment (or for free courses).
+model Enrollment {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  courseId    String           @db.Uuid
+  status      EnrollmentStatus @default(PENDING_PAYMENT)
+  activatedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  payments    Payment[]
+
+  @@unique([userId, courseId])
+  @@index([courseId, status])
+}
+
+enum LiveStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum RecordingStatus {
+  NONE
+  DRAFT      // uploaded, not visible to students
+  PUBLISHED  // converted to a published lesson
+}
+
+model LiveSession {
+  id              String          @id @default(uuid()) @db.Uuid
+  courseId        String          @db.Uuid
+  hostId          String?         @db.Uuid
+  titleEn         String
+  titleAr         String
+  scheduledAt     DateTime
+  durationMin     Int             @default(60)
+  roomName        String          @unique // unguessable provider room id
+  status          LiveStatus      @default(SCHEDULED)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  recordingKey    String?
+  recordingMime   String?
+  recordingStatus RecordingStatus @default(NONE)
+  /// Attendance rules: present if attended >= this % of the class; late if first joined after N minutes.
+  presentPercent  Int             @default(75)
+  lateAfterMin    Int             @default(10)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  host            User?           @relation(fields: [hostId], references: [id], onDelete: SetNull)
+  lesson          Lesson?
+  attendance      LiveAttendance[]
+  chat            LiveChatMessage[]
+
+  @@index([courseId, scheduledAt])
+  @@index([status])
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  type      String    // live-class | payment | enrollment | application
+  titleEn   String
+  titleAr   String
+  bodyEn    String?
+  bodyAr    String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+/// Staff sign-in history (staff accounts only). Rows older than 12 months are purged automatically.
+model StaffLogin {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  email     String
+  success   Boolean
+  reason    String?  // INVALID_CREDENTIALS | ACCOUNT_LOCKED | NOT_STAFF ...
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+/// Automatic attendance: written by the live-class server as each student joins and leaves.
+model LiveAttendance {
+  id            String      @id @default(uuid()) @db.Uuid
+  sessionId     String      @db.Uuid
+  userId        String      @db.Uuid
+  firstJoinedAt DateTime
+  lastJoinedAt  DateTime
+  lastLeftAt    DateTime?
+  totalSeconds  Int         @default(0) // accumulated time connected
+  joinCount     Int         @default(1)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  session       LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([userId])
+}
+
+/// Live class comments.
+model LiveChatMessage {
+  id        String      @id @default(uuid()) @db.Uuid
+  sessionId String      @db.Uuid
+  userId    String      @db.Uuid
+  body      String
+  deletedAt DateTime?
+  createdAt DateTime    @default(now())
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
