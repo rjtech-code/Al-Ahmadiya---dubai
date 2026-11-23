@@ -8,18 +8,34 @@ export class ApiUnavailableError extends Error {}
 /**
  * Server-side GET against the public API.
  * - Returns null on 404 (so pages can call notFound()).
- * - Throws ApiUnavailableError when the API is down, caught by the route error boundary.
+ * - During the production build, treats an unavailable CMS/API as missing optional
+ *   content so static pages can still be generated with their existing safe defaults.
+ * - At runtime, throws ApiUnavailableError so the route error boundary can report
+ *   genuine API outages instead of silently hiding them.
  */
 async function get<R>(path: string, revalidate = 60): Promise<R | null> {
+  const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
   let res: Response;
+
   try {
     res = await fetch(`${API}${path}`, { next: { revalidate, tags: ['cms'] } });
   } catch {
+    if (isProductionBuild) return null;
     throw new ApiUnavailableError(`API unreachable: ${path}`);
   }
+
   if (res.status === 404) return null;
-  if (!res.ok) throw new ApiUnavailableError(`API ${res.status}: ${path}`);
-  return (await res.json()) as R;
+  if (!res.ok) {
+    if (isProductionBuild) return null;
+    throw new ApiUnavailableError(`API ${res.status}: ${path}`);
+  }
+
+  try {
+    return (await res.json()) as R;
+  } catch {
+    if (isProductionBuild) return null;
+    throw new ApiUnavailableError(`Invalid API response: ${path}`);
+  }
 }
 
 const data = <R>(p: Promise<{ data: R } | null>) => p.then((r) => r?.data ?? null);
