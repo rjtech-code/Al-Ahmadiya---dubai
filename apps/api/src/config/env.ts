@@ -78,7 +78,8 @@ export function productionProblems(e: Env): string[] {
   const origins = e.CORS_ORIGINS.split(',').map((s) => s.trim());
   if (origins.some((o) => !o.startsWith('https://'))) p.push('CORS_ORIGINS must list https:// origins only');
   if (!/localhost|127\.0\.0\.1|host=\/|@\//.test(e.DATABASE_URL) && !/sslmode=/.test(e.DATABASE_URL)) p.push('DATABASE_URL for a remote database must include sslmode=require (or verify-full)');
-  if (['127.0.0.1', 'localhost', '0.0.0.0'].includes(e.LIVE_ANNOUNCED_IP)) p.push("LIVE_ANNOUNCED_IP must be the server's public IP or hostname");
+  // The Render Core API profile does not host the UDP SFU. Require a public media address only when a separate live server is configured.
+  if (e.LIVE_SERVER_URL && ['127.0.0.1', 'localhost', '0.0.0.0'].includes(e.LIVE_ANNOUNCED_IP)) p.push("LIVE_ANNOUNCED_IP must be the server's public IP or hostname");
   if (e.PAYMENT_PROVIDER === 'razorpay') {
     if (!e.RAZORPAY_WEBHOOK_SECRET || PLACEHOLDER.test(e.RAZORPAY_WEBHOOK_SECRET)) p.push('RAZORPAY_WEBHOOK_SECRET is required with PAYMENT_PROVIDER=razorpay');
     if ([e.RAZORPAY_KEY_ID, e.RAZORPAY_KEY_SECRET].some((v) => !v || PLACEHOLDER.test(v))) p.push('RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET still hold placeholder values');
