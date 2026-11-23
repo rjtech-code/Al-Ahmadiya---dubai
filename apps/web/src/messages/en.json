@@ -786,7 +786,14 @@
     "teacher": "Teacher",
     "you": "You",
     "attendanceNote": "Your attendance is recorded automatically while you are in the class.",
-    "myAttendance": "Attended {minutes} min"
+    "myAttendance": "Attended {minutes} min",
+    "progress": "{done} of {total} lectures watched",
+    "otherLectures": "More lectures",
+    "watched": "Watched",
+    "poll": "Poll",
+    "pollVotes": "{count, plural, one {# vote} other {# votes}}",
+    "pollClosed": "Closed",
+    "pollVoted": "You voted"
   },
   "enroll": {
     "price": "Price",

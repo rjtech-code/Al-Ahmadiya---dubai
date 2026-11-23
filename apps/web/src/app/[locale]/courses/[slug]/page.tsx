@@ -66,7 +66,7 @@ export default async function CoursePage({ params }: SlugParams) {
               <h3 className="mb-3 mt-8 font-display text-xl font-semibold text-brand-900">{t('outcomes')}</h3>
               {outcomes.length ? <ul className="grid gap-2 sm:grid-cols-2">{outcomes.map((o) => <li key={o} className="flex gap-2 text-sm text-muted"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-gold-600" aria-hidden />{o}</li>)}</ul> : <TbaBadge />}
             </div>
-            {c.onlineEnabled && c.lessons.length > 0 && <div className="mt-10"><LessonOutline lessons={c.lessons} /></div>}
+            {c.onlineEnabled && c.lessons.length > 0 && <div className="mt-10"><LessonOutline lessons={c.lessons} topics={c.topics} /></div>}
           </div>
           <div className="lg:sticky lg:top-28">
             {c.onlineEnabled ? <EnrollPanel course={c} /> : (

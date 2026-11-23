@@ -19,6 +19,7 @@ export const PERMISSIONS_CATALOGUE = {
   'academics.manage': 'Manage programmes, curricula and eligibility rules',
   'lms.manage': 'Manage online courses: pricing, video lessons, notes and quizzes',
   'live.host': 'Schedule, start and record live classes',
+  'teach.own': 'Teacher dashboard: own courses, student progress and live classes',
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS_CATALOGUE;
@@ -28,20 +29,23 @@ export const ROLE_DEFINITIONS: { key: string; nameEn: string; nameAr: string; pe
   { key: 'SUPER_ADMIN', nameEn: 'Super Admin', nameAr: 'مدير النظام الأعلى', permissions: ALL },
   {
     key: 'UNIVERSITY_ADMIN', nameEn: 'University Administrator', nameAr: 'إداري الجامعة',
-    permissions: ['dashboard.read', 'users.read', 'roles.read', 'cms.read', 'cms.write', 'cms.publish', 'settings.write', 'admissions.read', 'payments.read', 'engagement.read', 'audit.read', 'security.read', 'academics.manage', 'lms.manage', 'live.host'],
+    permissions: ['dashboard.read', 'users.read', 'roles.read', 'cms.read', 'cms.write', 'cms.publish', 'settings.write', 'admissions.read', 'payments.read', 'engagement.read', 'audit.read', 'security.read', 'academics.manage', 'lms.manage', 'live.host', 'teach.own'],
   },
-  { key: 'ADMISSIONS_OFFICER', nameEn: 'Admissions Officer', nameAr: 'مسؤول القبول', permissions: ['dashboard.read', 'admissions.read', 'admissions.review', 'admissions.decide', 'payments.read', 'academics.manage'] },
-  { key: 'ADMISSIONS_REVIEWER', nameEn: 'Admissions Reviewer', nameAr: 'مراجع القبول', permissions: ['dashboard.read', 'admissions.read', 'admissions.review'] },
-  { key: 'REGISTRAR', nameEn: 'Registrar', nameAr: 'المسجل', permissions: ['dashboard.read', 'admissions.read'] },
-  { key: 'ACADEMIC_ADMIN', nameEn: 'Academic Administrator', nameAr: 'الإداري الأكاديمي', permissions: ['dashboard.read', 'cms.read', 'cms.write', 'academics.manage', 'lms.manage', 'live.host'] },
-  { key: 'FINANCE_MANAGER', nameEn: 'Finance Manager', nameAr: 'مدير المالية', permissions: ['dashboard.read', 'payments.read'] },
+  { key: 'ADMISSIONS_OFFICER', nameEn: 'Admissions Officer', nameAr: 'مسؤول القبول', permissions: ['admissions.read', 'admissions.review', 'admissions.decide', 'payments.read', 'academics.manage'] },
+  { key: 'ADMISSIONS_REVIEWER', nameEn: 'Admissions Reviewer', nameAr: 'مراجع القبول', permissions: ['admissions.read', 'admissions.review'] },
+  { key: 'REGISTRAR', nameEn: 'Registrar', nameAr: 'المسجل', permissions: ['admissions.read'] },
+  { key: 'ACADEMIC_ADMIN', nameEn: 'Academic Administrator', nameAr: 'الإداري الأكاديمي', permissions: ['cms.read', 'cms.write', 'academics.manage', 'lms.manage', 'live.host', 'teach.own'] },
+  { key: 'FINANCE_MANAGER', nameEn: 'Finance Manager', nameAr: 'مدير المالية', permissions: ['payments.read'] },
   { key: 'FINANCE_OFFICER', nameEn: 'Finance Officer', nameAr: 'موظف المالية', permissions: ['payments.read'] },
-  { key: 'HR_MANAGER', nameEn: 'HR Manager', nameAr: 'مدير الموارد البشرية', permissions: ['dashboard.read'] },
-  { key: 'CONTENT_EDITOR', nameEn: 'Content Editor', nameAr: 'محرر المحتوى', permissions: ['dashboard.read', 'cms.read', 'cms.write', 'engagement.read'] },
-  { key: 'FACULTY', nameEn: 'Faculty Member', nameAr: 'عضو هيئة التدريس', permissions: ['dashboard.read', 'lms.manage', 'live.host'] },
+  { key: 'HR_MANAGER', nameEn: 'HR Manager', nameAr: 'مدير الموارد البشرية', permissions: ['users.read'] },
+  { key: 'CONTENT_EDITOR', nameEn: 'Content Editor', nameAr: 'محرر المحتوى', permissions: ['cms.read', 'cms.write', 'engagement.read'] },
+  { key: 'FACULTY', nameEn: 'Teacher', nameAr: 'المعلم', permissions: ['teach.own', 'live.host'] },
   { key: 'STUDENT', nameEn: 'Student', nameAr: 'طالب', permissions: [] },
   { key: 'APPLICANT', nameEn: 'Applicant', nameAr: 'متقدم', permissions: [] },
 ];
 
-/** Roles that may sign in to the admin panel. */
-export const STAFF_ROLES = ROLE_DEFINITIONS.filter((r) => r.permissions.includes('dashboard.read')).map((r) => r.key);
+/** Roles that may sign in to the admin panel (any staff permission). */
+export const STAFF_ROLES = ROLE_DEFINITIONS.filter((r) => r.permissions.length > 0).map((r) => r.key);
+
+/** Admins see every course; teachers only the courses assigned to them. */
+export const seesAllCourses = (perms: string[]) => perms.includes('lms.manage');

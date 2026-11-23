@@ -4,7 +4,8 @@ import { Eye, Loader2, Radio, Volume2 } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
-import { LiveClient, LiveError, type ChatMsg, type JoinInfo } from '@/lib/live-client';
+import { LiveClient, LiveError, type ChatMsg, type JoinInfo, type PollState } from '@/lib/live-client';
+import { LivePollCard } from './LivePoll';
 import { LiveChat } from './LiveChat';
 import { useAuthed } from './useAuthed';
 
@@ -21,6 +22,7 @@ export function LiveJoin({ id }: { id: string }) {
   const [muted, setMuted] = useState(true);
   const [phase, setPhase] = useState<'live' | 'ended' | 'lost'>('live');
   const [attempt, setAttempt] = useState(0);
+  const [poll, setPoll] = useState<PollState | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   // Created in the browser only (MediaStream does not exist during server rendering).
   const stream = useRef<MediaStream | null>(null);
@@ -41,11 +43,13 @@ export function LiveJoin({ id }: { id: string }) {
       onChat: (m) => setChat((x) => [...x, m]),
       onChatDeleted: (cid) => setChat((x) => x.filter((m) => m.id !== cid)),
       onPresence: setViewers,
+      // Broadcast results carry no personal vote; keep ours from the previous state.
+      onPoll: (p) => setPoll((prev) => (p ? { ...p, myVote: prev?.id === p.id ? prev.myVote : null } : null)),
       onEnded: () => setPhase('ended'),
       onDisconnect: () => setPhase((p) => (p === 'ended' ? p : 'lost')),
     });
     client.current = c;
-    c.connect().then((i) => { setInfo(i); setChat(i.chat); setViewers(i.viewers); setPhase('live'); })
+    c.connect().then((i) => { setInfo(i); setChat(i.chat); setPoll(i.poll); setViewers(i.viewers); setPhase('live'); })
       .catch((e: unknown) => setError(e instanceof LiveError ? { code: e.code, message: e.message } : { code: 'ERROR', message: String(e) }));
     return () => c.close();
   }, [state.status, id, attempt]);
@@ -98,8 +102,12 @@ export function LiveJoin({ id }: { id: string }) {
             </div>
           )}
         </div>
+        <div className="space-y-4">
+        {poll && <LivePollCard poll={poll} canVote onVote={async (o) => { await client.current!.vote(poll.id, o); setPoll((p) => (p ? { ...p, myVote: o } : p)); }}
+          labels={{ title: t('poll'), votes: (n) => t('pollVotes', { count: n }), closed: t('pollClosed'), voted: t('pollVoted') }} />}
         <LiveChat messages={chat} myId={state.status === 'authed' ? state.user.id : undefined} onSend={async (b) => { await client.current!.chat(b); }}
           labels={{ title: t('comments'), placeholder: t('writeComment'), send: t('send'), teacher: t('teacher'), you: t('you') }} />
+        </div>
       </div>
     </div>
   );

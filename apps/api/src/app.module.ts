@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AcademicsModule } from './academics/academics.module';
 import { LiveModule } from './live/live.module';
+import { TeachingModule } from './teaching/teaching.module';
 import { LmsModule } from './lms/lms.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { MediaModule } from './media/media.module';
@@ -33,7 +34,8 @@ import { UsersModule } from './users/users.module';
     }),
     ScheduleModule.forRoot(),
     PrismaModule, StorageModule, AuditModule, NotificationsModule, AuthModule, UsersModule, SettingsModule, CmsModule, EngagementModule, AdmissionsModule,
-    PaymentsModule, LmsModule, LiveModule, AcademicsModule, MediaModule, MaintenanceModule,
+    PaymentsModule, LmsModule, LiveModule,
+    TeachingModule, AcademicsModule, MediaModule, MaintenanceModule,
   ],
   controllers: [HealthController, DashboardController],
   providers: [

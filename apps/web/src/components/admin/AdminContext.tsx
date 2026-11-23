@@ -26,7 +26,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       try {
         if (!(await restoreSession())) throw new Error('anon');
         const { data } = await apiFetch<{ data: AdminUser }>('/auth/me');
-        if (!['dashboard.read', 'cms.read', 'lms.manage', 'live.host'].some((p) => data.permissions.includes(p))) throw new Error('not staff');
+        if (!data.permissions.length) throw new Error('not staff');
         if (!cancelled) setUser(data);
       } catch {
         if (!cancelled) router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);

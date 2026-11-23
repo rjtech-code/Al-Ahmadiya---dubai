@@ -20,7 +20,7 @@ export class LmsAdminService {
     const rows = await this.prisma.course.findMany({
       where: { deletedAt: null }, orderBy: { code: 'asc' },
       select: {
-        id: true, slug: true, code: true, titleEn: true, titleAr: true, publishStatus: true, confirmation: true, isDemo: true, onlineEnabled: true, deliveryMode: true, priceFils: true, currency: true,
+        id: true, slug: true, code: true, titleEn: true, titleAr: true, imagePath: true, publishStatus: true, teacher: { select: { fullName: true } }, confirmation: true, isDemo: true, onlineEnabled: true, deliveryMode: true, priceFils: true, currency: true,
         department: { select: { nameEn: true } },
         _count: { select: { lessons: true, notes: true, quizzes: true, liveSessions: true } },
         enrollments: { where: { status: 'ACTIVE' }, select: { id: true } },
@@ -34,6 +34,9 @@ export class LmsAdminService {
       where: { id, deletedAt: null },
       include: {
         department: { select: { id: true, nameEn: true } },
+        teacher: { select: { id: true, fullName: true } },
+        topics: { orderBy: { sortOrder: 'asc' } },
+        liveSlots: { orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }] },
         lessons: { orderBy: { sortOrder: 'asc' } },
         notes: { orderBy: { sortOrder: 'asc' } },
         quizzes: { orderBy: { sortOrder: 'asc' } },
@@ -107,7 +110,7 @@ export class LmsAdminService {
   }
 
   private announceLesson(courseId: string, titleEn: string, titleAr: string) {
-    return this.prisma.course.findUniqueOrThrow({ where: { id: courseId } }).then((c) => this.notifications.notifyCourse(courseId, {
+    return this.prisma.course.findUniqueOrThrow({ where: { id: courseId } }).then((c) => c.publishStatus !== 'PUBLISHED' ? undefined : this.notifications.notifyCourse(courseId, {
       type: 'lesson', titleEn: `New lecture: ${titleEn}`, titleAr: `محاضرة جديدة: ${titleAr}`, bodyEn: c.titleEn, bodyAr: c.titleAr, link: `/account/courses/${c.slug}`,
     }));
   }

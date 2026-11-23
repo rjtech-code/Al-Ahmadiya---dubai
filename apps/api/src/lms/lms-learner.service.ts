@@ -37,7 +37,8 @@ export class LmsLearnerService {
     const c = await this.prisma.course.findFirst({
       where: { slug, deletedAt: null },
       include: {
-        lessons: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true, descriptionEn: true, descriptionAr: true, durationSec: true, videoKey: true } },
+        topics: { orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true } },
+        lessons: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true, descriptionEn: true, descriptionAr: true, durationSec: true, videoKey: true, topicId: true } },
         notes: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true, bodyEn: true, bodyAr: true, fileName: true, fileKey: true, lessonId: true } },
         quizzes: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' } },
         liveSessions: { where: { status: { in: ['SCHEDULED', 'LIVE'] } }, orderBy: { scheduledAt: 'asc' }, select: { id: true, titleEn: true, titleAr: true, scheduledAt: true, durationMin: true, status: true } },
@@ -45,11 +46,13 @@ export class LmsLearnerService {
     });
     if (!c) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Course not found' });
     await this.access(user, c.id);
+    const progress = await this.prisma.lessonProgress.findMany({ where: { userId: user.id, lessonId: { in: c.lessons.map((l) => l.id) } } });
     const attempts = await this.prisma.quizAttempt.findMany({ where: { userId: user.id, quizId: { in: c.quizzes.map((q) => q.id) } }, orderBy: { createdAt: 'desc' } });
     return {
       data: ser({
         id: c.id, slug: c.slug, code: c.code, titleEn: c.titleEn, titleAr: c.titleAr, deliveryMode: c.deliveryMode, imagePath: c.imagePath,
-        lessons: c.lessons.map(({ videoKey, ...l }) => ({ ...l, hasVideo: !!videoKey })),
+        topics: c.topics,
+        lessons: c.lessons.map(({ videoKey, ...l }) => { const p = progress.find((x) => x.lessonId === l.id); return { ...l, hasVideo: !!videoKey, completed: !!p?.completedAt, positionSec: p?.positionSec ?? 0 }; }),
         notes: c.notes.map(({ fileKey, ...n }) => ({ ...n, hasFile: !!fileKey })),
         // Correct answers are never sent to the browser.
         quizzes: c.quizzes.map((q) => ({
@@ -74,6 +77,21 @@ export class LmsLearnerService {
     if (!n || n.status !== 'PUBLISHED' || !n.fileKey) throw new NotFoundException({ code: 'NOT_FOUND', message: 'File not found' });
     await this.access(user, n.courseId);
     return { data: { url: `/api/v1/media/${this.storage.sign({ key: n.fileKey, mime: n.fileMime ?? 'application/pdf', name: n.fileName ?? 'notes.pdf', disposition: download ? 'attachment' : 'inline', ttlSec: 3600 })}` } };
+  }
+
+  /** Records how far a student watched; `completed` marks the lecture as done (never un-marked). */
+  async progress(user: AuthUser, lessonId: string, positionSec: number, completed: boolean) {
+    const l = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
+    if (!l || l.status !== 'PUBLISHED') throw new NotFoundException({ code: 'NOT_FOUND', message: 'Lecture not found' });
+    await this.access(user, l.courseId);
+    const before = await this.prisma.lessonProgress.findUnique({ where: { userId_lessonId: { userId: user.id, lessonId } } });
+    const completedAt = before?.completedAt ?? (completed ? new Date() : null);
+    const p = await this.prisma.lessonProgress.upsert({
+      where: { userId_lessonId: { userId: user.id, lessonId } },
+      create: { userId: user.id, lessonId, positionSec, completedAt },
+      update: { positionSec, completedAt },
+    });
+    return { data: { completed: !!p.completedAt, positionSec: p.positionSec } };
   }
 
   async attempt(user: AuthUser, quizId: string, answers: number[]) {

@@ -565,5 +565,82 @@ describe('API (e2e)', () => {
       await http.put(`/api/v1/admin/academics/programs/${prog.id}/eligibility`).set(H(admin)).send({ rules: [{ qualification: 'IB_DIPLOMA', minOverallPercent: 1 }, { qualification: 'IB_DIPLOMA', minOverallPercent: 2 }] }).expect(400);
       await http.put(`/api/v1/admin/academics/programs/${prog.id}/curriculum`).set(H(admin)).send({ items: [{ courseId, year: 1, term: 1 }] }).expect(200);
     });
+
+    it('course builder → weekly timetable → auto classes, teacher dashboard, progress and finance', async () => {
+      const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 3)]);
+      const facultyRole = await prisma.role.findUniqueOrThrow({ where: { key: 'FACULTY' } });
+      const { hashPassword } = await import('../src/auth/password');
+      const teacherUser = await prisma.user.create({ data: { email: 'teacher@example.test', fullName: 'Teacher One', passwordHash: await hashPassword('TeacherPass123'), emailVerified: true, roles: { create: { roleId: facultyRole.id } } } });
+      const teacher = (await login('teacher@example.test', 'TeacherPass123', 'admin').then((r) => r.body)).data.accessToken as string;
+
+      const opts = (await http.get('/api/v1/admin/lms/options').set(H(admin)).expect(200)).body.data;
+      expect(opts.teachers.map((t: { email: string }) => t.email)).toContain('teacher@example.test');
+      const dept = await prisma.department.findUniqueOrThrow({ where: { slug: 'lms-d' } });
+      const details = { titleEn: 'Builder Course', titleAr: 'مقرر', code: 'bld-200', departmentId: dept.id, outcomesEn: ['One'], priceAed: 0, teacherId: teacherUser.id };
+      const c = (await http.post('/api/v1/admin/lms/courses').set(H(admin)).send(details).expect(201)).body.data;
+      expect(c.code).toBe('BLD-200');
+      await http.post('/api/v1/admin/lms/courses').set(H(admin)).send(details).expect(409);
+      const img = (await http.post(`/api/v1/admin/lms/courses/${c.id}/image`).set(H(admin)).attach('image', PNG, { filename: 'c.png', contentType: 'image/png' }).expect(201)).body.data;
+      expect((await http.get(img.imagePath).expect(200)).headers['content-type']).toBe('image/png');
+
+      const topic = (await http.post(`/api/v1/admin/lms/courses/${c.id}/topics`).set(H(admin)).send({ titleEn: 'Week 1', titleAr: 'الأسبوع 1' }).expect(201)).body.data;
+      const lesson = (await http.post(`/api/v1/admin/lms/courses/${c.id}/lessons`).set(H(admin)).field('titleEn', 'L1').field('titleAr', 'د1').field('topicId', topic.id).attach('video', MP4, { filename: 'l.mp4', contentType: 'video/mp4' }).expect(201)).body.data;
+      expect(lesson.topicId).toBe(topic.id);
+      await http.delete(`/api/v1/admin/lms/topics/${topic.id}`).set(H(admin)).expect(409);
+
+      // Timetable: class every day of the week, 10:00–11:00 Dubai time, for two weeks.
+      const { dubaiDate, addDays } = await import('../src/common/dubai-time');
+      const today = dubaiDate(new Date());
+      const slots = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, startTime: '10:00', endTime: '11:00' }));
+      await http.put(`/api/v1/admin/lms/courses/${c.id}/live-plan`).set(H(admin)).send({ enabled: true, startsOn: today, endsOn: addDays(today, 14), slots: [{ weekday: 1, startTime: '11:00', endTime: '10:00' }] }).expect(400);
+      await http.put(`/api/v1/admin/lms/courses/${c.id}/live-plan`).set(H(admin)).send({ enabled: true, startsOn: today, endsOn: addDays(today, 14), slots }).expect(200);
+      expect(await prisma.liveSession.count({ where: { courseId: c.id } })).toBe(0); // drafts get no classes
+      await http.post(`/api/v1/admin/lms/courses/${c.id}/publish`).set(H(admin)).send({ publish: true }).expect(200);
+      const generated = await prisma.liveSession.count({ where: { courseId: c.id, slotId: { not: null } } });
+      expect(generated).toBeGreaterThanOrEqual(7);
+      const { LiveSchedulerService } = await import('../src/live/scheduler.service');
+      const scheduler = app.get(LiveSchedulerService);
+      expect(await scheduler.generate(c.id)).toBe(0); // idempotent
+
+      // Student joins the free course and watches the lecture.
+      await http.post(`/api/v1/payments/course/${c.slug}`).set(H(other)).expect(201);
+      await http.post(`/api/v1/me/lessons/${lesson.id}/progress`).set(H(other)).send({ positionSec: 30, completed: true }).expect(200);
+      const learn = (await http.get(`/api/v1/me/courses/${c.slug}`).set(H(other)).expect(200)).body.data;
+      expect(learn.topics[0].titleEn).toBe('Week 1');
+      expect(learn.lessons[0].completed).toBe(true);
+
+      // At class time the class opens and everyone is notified.
+      const next = await prisma.liveSession.findFirstOrThrow({ where: { courseId: c.id, status: 'SCHEDULED' }, orderBy: { scheduledAt: 'asc' } });
+      await prisma.liveSession.update({ where: { id: next.id }, data: { scheduledAt: new Date(Date.now() - 60_000) } });
+      await scheduler.openDue();
+      expect((await prisma.liveSession.findUniqueOrThrow({ where: { id: next.id } })).status).toBe('LIVE');
+      const otherUser = await prisma.user.findUniqueOrThrow({ where: { email: 'student2@example.test' } });
+      expect(await prisma.notification.count({ where: { userId: otherUser.id, link: `/account/live/${next.id}` } })).toBe(1);
+      expect(await prisma.notification.count({ where: { userId: teacherUser.id, link: `/admin/live/${next.id}` } })).toBe(1);
+
+      // Teacher sees only their own course and its students' progress.
+      const ov = (await http.get('/api/v1/teach/overview').set(H(teacher)).expect(200)).body.data;
+      expect(ov.courses.map((x: { code: string }) => x.code)).toEqual(['BLD-200']);
+      const rows = (await http.get(`/api/v1/teach/courses/${c.id}/students`).set(H(teacher)).expect(200)).body.data;
+      expect(rows[0]).toMatchObject({ name: 'Student Two', lecturesDone: 1, lecturesTotal: 1 });
+      await http.get(`/api/v1/teach/courses/${courseId}/students`).set(H(teacher)).expect(403);
+      await http.get(`/api/v1/admin/live/sessions/${next.id}`).set(H(teacher)).expect(200);
+      const foreign = await prisma.liveSession.create({ data: { courseId, titleEn: 'x', titleAr: 'x', scheduledAt: new Date(), roomName: 'foreign-room' } });
+      await http.post(`/api/v1/admin/live/sessions/${foreign.id}/start`).set(H(teacher)).expect(403);
+      await http.post(`/api/v1/admin/live/courses/${courseId}/now`).set(H(teacher)).expect(403);
+      await http.get('/api/v1/admin/lms/courses').set(H(teacher)).expect(403);
+      await http.get('/api/v1/admin/finance/summary').set(H(teacher)).expect(403);
+      await scheduler.closeStale(new Date(Date.now() + 3 * 3600_000));
+      expect((await prisma.liveSession.findUniqueOrThrow({ where: { id: next.id } })).status).toBe('ENDED');
+
+      // Finance sees who bought what, paid and due.
+      const sum = (await http.get('/api/v1/admin/finance/summary').set(H(admin)).expect(200)).body.data;
+      expect(sum).toMatchObject({ collectedFils: expect.any(Number), dueFils: expect.any(Number) });
+      const fin = (await http.get('/api/v1/admin/finance/students?q=student').set(H(admin)).expect(200)).body.data;
+      const two = fin.find((r: { email: string }) => r.email === 'student2@example.test');
+      expect(two.courses.map((x: { code: string }) => x.code)).toContain('BLD-200');
+      const det = (await http.get(`/api/v1/admin/finance/students/${two.id}`).set(H(admin)).expect(200)).body.data;
+      expect(det.enrollments.length).toBeGreaterThan(0);
+    });
   });
 });

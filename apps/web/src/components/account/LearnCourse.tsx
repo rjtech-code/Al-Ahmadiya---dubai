@@ -2,17 +2,17 @@
 
 import { CheckCircle2, Download, Eye, FileText, Loader2, PlayCircle, Radio, XCircle } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { apiFetch, ApiError } from '@/lib/client-api';
 import { Markdown } from '@/lib/markdown';
 import { cn } from '../ui/cn';
 import { useAuthed } from './useAuthed';
 
-interface Lesson { id: string; titleEn: string; titleAr: string; descriptionEn: string | null; descriptionAr: string | null; durationSec: number | null; hasVideo: boolean }
+interface Lesson { id: string; titleEn: string; titleAr: string; descriptionEn: string | null; descriptionAr: string | null; durationSec: number | null; hasVideo: boolean; topicId: string | null; completed: boolean; positionSec: number }
 interface Note { id: string; titleEn: string; titleAr: string; bodyEn: string | null; bodyAr: string | null; fileName: string | null; hasFile: boolean }
 interface Quiz { id: string; titleEn: string; titleAr: string; passPercent: number; questions: { textEn: string; textAr: string; options: { en: string; ar: string }[] }[]; lastAttempt: { score: number; total: number; passed: boolean } | null }
-interface Course { slug: string; code: string; titleEn: string; titleAr: string; deliveryMode: string; lessons: Lesson[]; notes: Note[]; quizzes: Quiz[]; liveSessions: { id: string; titleEn: string; titleAr: string; scheduledAt: string; status: string }[] }
+interface Course { topics: { id: string; titleEn: string; titleAr: string }[]; slug: string; code: string; titleEn: string; titleAr: string; deliveryMode: string; lessons: Lesson[]; notes: Note[]; quizzes: Quiz[]; liveSessions: { id: string; titleEn: string; titleAr: string; scheduledAt: string; status: string }[] }
 
 export function LearnCourse({ slug }: { slug: string }) {
   const t = useTranslations('account');
@@ -37,6 +37,18 @@ export function LearnCourse({ slug }: { slug: string }) {
     setCurrent(l); setVideoUrl(null);
     try { setVideoUrl((await apiFetch<{ data: { url: string } }>(`/me/lessons/${l.id}/url`)).data.url); } catch (e) { setError(e instanceof ApiError ? e.message : 'Error'); }
   };
+  // Save watch progress every 15 s, and mark the lecture done near the end.
+  const lastSent = useRef(0);
+  const report = (lessonId: string, positionSec: number, completed: boolean) => {
+    if (completed) setCourse((c) => c && ({ ...c, lessons: c.lessons.map((x) => (x.id === lessonId ? { ...x, completed: true } : x)) }));
+    void apiFetch(`/me/lessons/${lessonId}/progress`, { method: 'POST', json: { positionSec: Math.floor(positionSec), completed } }).catch(() => undefined);
+  };
+  const onTime = (v: HTMLVideoElement) => {
+    if (!current) return;
+    const nearEnd = v.duration > 0 && v.currentTime / v.duration >= 0.9;
+    if (nearEnd && !course?.lessons.find((x) => x.id === current.id)?.completed) { report(current.id, v.currentTime, true); return; }
+    if (Date.now() - lastSent.current > 15_000) { lastSent.current = Date.now(); report(current.id, v.currentTime, false); }
+  };
   const noteUrl = async (n: Note, download: boolean) => (await apiFetch<{ data: { url: string } }>(`/me/notes/${n.id}/url${download ? '?download=1' : ''}`)).data.url;
 
   if (error) return <div className="rounded-3xl bg-red-50 p-6 text-danger">{error} <Link href="/account?tab=courses" className="ms-2 underline">{t('backToAccount')}</Link></div>;
@@ -53,7 +65,9 @@ export function LearnCourse({ slug }: { slug: string }) {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div className="overflow-hidden rounded-[2rem] bg-brand-950 shadow-[var(--shadow-card)]">
           {current && videoUrl ? (
-            <video key={videoUrl} src={videoUrl} controls controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} className="aspect-video w-full bg-black" autoPlay />
+            <video key={videoUrl} src={videoUrl} controls controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} className="aspect-video w-full bg-black" autoPlay
+              onLoadedMetadata={(e) => { if (current.positionSec > 5 && !current.completed) e.currentTarget.currentTime = current.positionSec; }}
+              onTimeUpdate={(e) => onTime(e.currentTarget)} onEnded={(e) => report(current.id, e.currentTarget.currentTime, true)} />
           ) : (
             <div className="grid aspect-video place-items-center text-white/70">{current ? <Loader2 className="size-6 animate-spin" /> : <p className="flex items-center gap-2"><PlayCircle className="size-6" />{t('selectLecture')}</p>}</div>
           )}
@@ -73,16 +87,27 @@ export function LearnCourse({ slug }: { slug: string }) {
             ))}
           </div>
           {tab === 'lectures' && (course.lessons.length ? (
-            <ol className="space-y-1">
-              {course.lessons.map((l, i) => (
-                <li key={l.id}>
-                  <button onClick={() => void play(l)} className={cn('flex w-full items-start gap-3 rounded-2xl p-3 text-start hover:bg-cream-200', current?.id === l.id && 'bg-gold-100')}>
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-900 text-xs font-semibold text-white">{i + 1}</span>
-                    <span className="min-w-0"><span className="block text-sm font-semibold text-brand-900">{L(l)}</span>{l.durationSec ? <span className="text-xs text-muted">{Math.round(l.durationSec / 60)} min</span> : null}</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
+            <div>
+              <p className="mb-2 px-1 text-xs font-semibold text-brand-900">{t('progress', { done: course.lessons.filter((l) => l.completed).length, total: course.lessons.length })}</p>
+              <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-cream-200"><div className="h-full rounded-full bg-success" style={{ width: `${Math.round((course.lessons.filter((l) => l.completed).length / course.lessons.length) * 100)}%` }} /></div>
+              {[...course.topics.map((tp) => ({ key: tp.id, title: L(tp), lessons: course.lessons.filter((l) => l.topicId === tp.id) })),
+                { key: 'other', title: course.topics.length ? t('otherLectures') : '', lessons: course.lessons.filter((l) => !l.topicId || !course.topics.some((tp) => tp.id === l.topicId)) }]
+                .filter((g) => g.lessons.length).map((g) => (
+                  <div key={g.key} className="mb-3">
+                    {g.title && <p className="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wider text-gold-700">{g.title}</p>}
+                    <ol className="space-y-1">
+                      {g.lessons.map((l) => (
+                        <li key={l.id}>
+                          <button onClick={() => void play(l)} className={cn('flex w-full items-start gap-3 rounded-2xl p-3 text-start hover:bg-cream-200', current?.id === l.id && 'bg-gold-100')}>
+                            {l.completed ? <CheckCircle2 className="size-6 shrink-0 text-success" aria-label={t('watched')} /> : <PlayCircle className="size-6 shrink-0 text-brand-900" />}
+                            <span className="min-w-0"><span className="block text-sm font-semibold text-brand-900">{L(l)}</span>{l.durationSec ? <span className="text-xs text-muted">{Math.round(l.durationSec / 60)} min</span> : null}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+            </div>
           ) : <p className="p-4 text-sm text-muted">{t('noLectures')}</p>)}
 
           {tab === 'notes' && (course.notes.length ? (

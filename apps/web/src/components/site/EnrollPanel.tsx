@@ -81,23 +81,36 @@ export function EnrollPanel({ course }: { course: Pick<Course, 'slug' | 'priceFi
   );
 }
 
-export function LessonOutline({ lessons }: { lessons: Course['lessons'] }) {
+export function LessonOutline({ lessons, topics = [] }: { lessons: Course['lessons']; topics?: NonNullable<Course['topics']> }) {
   const t = useTranslations('enroll');
   const locale = useLocale();
   if (!lessons.length) return null;
+  const L = (o: { titleEn: string; titleAr: string }) => (locale === 'ar' ? o.titleAr : o.titleEn);
+  const groups = [
+    ...topics.map((tp) => ({ key: tp.id, title: L(tp), items: lessons.filter((l) => l.topicId === tp.id) })),
+    { key: 'other', title: '', items: lessons.filter((l) => !l.topicId || !topics.some((tp) => tp.id === l.topicId)) },
+  ].filter((g) => g.items.length);
+  let n = 0;
   return (
     <div>
       <h3 className="mb-3 font-display text-2xl font-semibold text-brand-900">{t('contentTitle')}</h3>
-      <ol className="divide-y divide-line overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
-        {lessons.map((l, i) => (
-          <li key={l.id} className="flex items-center gap-3 px-4 py-3 text-sm">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-cream-200 text-xs font-semibold text-brand-900">{i + 1}</span>
-            <span className="flex-1 text-brand-900">{locale === 'ar' ? l.titleAr : l.titleEn}</span>
-            {l.durationSec ? <span className="text-xs text-muted">{Math.round(l.durationSec / 60)} min</span> : null}
-            <Lock className="size-3.5 text-muted" aria-label={t('locked')} />
-          </li>
+      <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
+        {groups.map((g) => (
+          <div key={g.key}>
+            {g.title && <p className="border-b border-line bg-cream-200/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gold-700">{g.title}</p>}
+            <ol className="divide-y divide-line">
+              {g.items.map((l) => (
+                <li key={l.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-cream-200 text-xs font-semibold text-brand-900">{++n}</span>
+                  <span className="flex-1 text-brand-900">{L(l)}</span>
+                  {l.durationSec ? <span className="text-xs text-muted">{Math.round(l.durationSec / 60)} min</span> : null}
+                  <Lock className="size-3.5 text-muted" aria-label={t('locked')} />
+                </li>
+              ))}
+            </ol>
+          </div>
         ))}
-      </ol>
+      </div>
       <p className="mt-2 text-xs text-muted">{t('locked')}</p>
     </div>
   );

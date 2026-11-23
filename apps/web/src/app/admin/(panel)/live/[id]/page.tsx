@@ -4,11 +4,12 @@ import { Camera, CameraOff, Circle, Download, Eye, FileUp, Mic, MicOff, MonitorU
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LiveChat } from '@/components/account/LiveChat';
+import { LivePollCard } from '@/components/account/LivePoll';
 import { QuizBuilder, type QuizQ } from '@/components/admin/QuizBuilder';
 import { adminBtn, adminBtnDanger, adminBtnOutline, adminInput, ErrorNote, PageHeader, Panel, StatusPill } from '@/components/admin/ui';
 import { cn } from '@/components/ui/cn';
 import { apiFetch, ApiError, uploadWithProgress } from '@/lib/client-api';
-import { LiveClient, type ChatMsg, type Participant } from '@/lib/live-client';
+import { LiveClient, type ChatMsg, type Participant, type PollState } from '@/lib/live-client';
 
 interface S { id: string; titleEn: string; titleAr: string; scheduledAt: string; startedAt: string | null; status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'; recordingStatus: 'NONE' | 'DRAFT' | 'PUBLISHED'; recordingKey: string | null; course: { titleEn: string; slug: string }; lesson: { id: string } | null }
 interface Att { userId: string; name: string; email: string; firstJoinedAt: string | null; lastLeftAt: string | null; joinCount: number; minutes: number; percent: number; status: 'PRESENT' | 'LATE' | 'PARTIAL' | 'ABSENT'; onlineNow: boolean }
@@ -33,6 +34,7 @@ export default function LiveConsole() {
   const [sharing, setSharing] = useState(false);
   const [viewers, setViewers] = useState(0);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [poll, setPoll] = useState<PollState | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [att, setAtt] = useState<{ rows: Att[]; meta: AttMeta } | null>(null);
   const [tab, setTab] = useState<'joined' | 'attendance'>('joined');
@@ -87,11 +89,12 @@ export default function LiveConsole() {
         onChatDeleted: (cid) => setChat((x) => x.filter((m) => m.id !== cid)),
         onPresence: setViewers,
         onParticipants: setParticipants,
+        onPoll: setPoll,
         onDisconnect: () => setConnected(false),
       });
       const info = await c.connect();
       client.current = c;
-      setChat(info.chat); setViewers(info.viewers); setParticipants(info.participants ?? []);
+      setChat(info.chat); setViewers(info.viewers); setParticipants(info.participants ?? []); setPoll(info.poll);
       cam.current = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: { echoCancellation: true, noiseSuppression: true } });
       showLocal(cam.current);
       for (const t of cam.current.getTracks()) await c.publish(t);
@@ -230,6 +233,7 @@ export default function LiveConsole() {
                 </ul>
               ) : <AttendanceMini att={att} />}
             </section>
+            <PollPanel poll={poll} client={client} />
             <div className="h-[26rem]"><LiveChat messages={chat} onSend={async (b) => { await client.current?.chat(b); }} onDelete={(cid) => void client.current?.deleteChat(cid)} labels={{ title: 'Comments', placeholder: 'Reply to students…', send: 'Send', teacher: 'Teacher', you: 'You' }} /></div>
           </div>
         </div>
@@ -308,5 +312,33 @@ function AttendanceTable({ att }: { att: { rows: Att[]; meta: AttMeta } }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Teacher: ask a quick question; results update live as students vote. */
+function PollPanel({ poll, client }: { poll: PollState | null; client: React.RefObject<LiveClient | null> }) {
+  const [asking, setAsking] = useState(false);
+  const [q, setQ] = useState('');
+  const [opts, setOpts] = useState(['', '']);
+  const [error, setError] = useState('');
+  const ask = async () => {
+    setError('');
+    try { await client.current?.createPoll(q, opts.map((o) => o.trim()).filter(Boolean)); setAsking(false); setQ(''); setOpts(['', '']); }
+    catch (e) { setError((e as Error).message); }
+  };
+  return (
+    <section className="space-y-3">
+      {poll && <LivePollCard poll={poll} canVote={false} labels={{ title: 'Poll', votes: (n) => `${n} vote${n === 1 ? '' : 's'}`, closed: 'Closed', voted: '' }} />}
+      {poll && !poll.closed && <button onClick={() => void client.current?.closePoll()} className={`${adminBtnOutline} w-full`}>Close poll</button>}
+      {asking ? (
+        <div className="space-y-2 rounded-[1.5rem] border border-line bg-cream-50 p-4">
+          <input className={adminInput} placeholder="Question for the class" value={q} onChange={(e) => setQ(e.target.value)} />
+          {opts.map((o, i) => <input key={i} className={adminInput} placeholder={`Option ${i + 1}`} value={o} onChange={(e) => setOpts(opts.map((x, j) => (j === i ? e.target.value : x)))} />)}
+          {opts.length < 6 && <button type="button" onClick={() => setOpts([...opts, ''])} className="text-xs font-semibold text-brand-700">+ Add option</button>}
+          {error && <p className="text-xs text-danger">{error}</p>}
+          <div className="flex gap-2"><button onClick={() => void ask()} disabled={!q.trim() || opts.filter((o) => o.trim()).length < 2} className={adminBtn}>Ask the class</button><button onClick={() => setAsking(false)} className={adminBtnOutline}>Cancel</button></div>
+        </div>
+      ) : <button onClick={() => setAsking(true)} disabled={!client.current} className={`${adminBtnOutline} w-full`}>+ New poll</button>}
+    </section>
   );
 }

@@ -4,6 +4,7 @@ import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect,
 import type { types as ms } from 'mediasoup';
 import type { Server, Socket } from 'socket.io';
 import { env } from '../config/env';
+import { seesAllCourses } from '../common/permissions';
 import { PrismaService } from '../prisma/prisma.service';
 import { LiveRoomsService } from './rooms.service';
 
@@ -60,9 +61,10 @@ export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const d = this.data(client);
     if (!d.user) return fail('AUTH_REQUIRED', 'Please sign in again.');
     if (!body?.sessionId || !/^[0-9a-f-]{36}$/i.test(body.sessionId)) return fail('BAD_REQUEST', 'Invalid class');
-    const session = await this.prisma.liveSession.findUnique({ where: { id: body.sessionId }, include: { course: { select: { titleEn: true, titleAr: true, slug: true } } } });
+    const session = await this.prisma.liveSession.findUnique({ where: { id: body.sessionId }, include: { course: { select: { titleEn: true, titleAr: true, slug: true, teacherId: true } } } });
     if (!session) return fail('NOT_FOUND', 'Class not found');
-    const isHost = d.user.permissions.includes('live.host');
+    // Host = admin, the course's teacher, or whoever started this class.
+    const isHost = d.user.permissions.includes('live.host') && (seesAllCourses(d.user.permissions) || session.course.teacherId === d.user.id || session.hostId === d.user.id);
     if (!isHost) {
       const e = await this.prisma.enrollment.findUnique({ where: { userId_courseId: { userId: d.user.id, courseId: session.courseId } } });
       if (e?.status !== 'ACTIVE') return fail('NOT_ENROLLED', 'Only enrolled students can join this class.');
@@ -88,7 +90,8 @@ export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isHost, rtpCapabilities: room.router.rtpCapabilities, producers: this.rooms.hostProducers(room), viewers: this.rooms.viewerCount(room),
         participants: isHost ? this.rooms.participants(room) : undefined,
         chat: chat.reverse().map((m) => ({ id: m.id, userId: m.userId, name: m.user.fullName, body: m.body, createdAt: m.createdAt, isHost: m.userId === session.hostId })),
-        session: { id: session.id, titleEn: session.titleEn, titleAr: session.titleAr, startedAt: session.startedAt, course: session.course },
+        session: { id: session.id, titleEn: session.titleEn, titleAr: session.titleAr, startedAt: session.startedAt, course: { titleEn: session.course.titleEn, titleAr: session.course.titleAr, slug: session.course.slug } },
+        poll: await this.pollState(session.id, d.user.id),
       },
     };
   }
@@ -176,6 +179,60 @@ export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!peer?.isHost || !d.sessionId) return fail('FORBIDDEN', 'Only the teacher can remove comments');
     await this.prisma.liveChatMessage.updateMany({ where: { id: b?.id, sessionId: d.sessionId }, data: { deletedAt: new Date() } });
     this.server.to(`live:${d.sessionId}`).emit('chatDeleted', { id: b.id });
+    return { ok: true, data: null };
+  }
+
+  // ── Polls ──
+  /** Latest poll of the class with live counts and the caller's own vote. */
+  private async pollState(sessionId: string, userId?: string) {
+    const poll = await this.prisma.livePoll.findFirst({ where: { sessionId }, orderBy: { createdAt: 'desc' }, include: { votes: { select: { userId: true, option: true } } } });
+    if (!poll) return null;
+    const options = poll.options as string[];
+    return {
+      id: poll.id, question: poll.question, options, closed: !!poll.closedAt,
+      counts: options.map((_, i) => poll.votes.filter((v) => v.option === i).length), total: poll.votes.length,
+      myVote: userId ? (poll.votes.find((v) => v.userId === userId)?.option ?? null) : null,
+    };
+  }
+
+  private async broadcastPoll(sessionId: string) {
+    const state = await this.pollState(sessionId);
+    this.server.to(`live:${sessionId}`).emit('poll', state);
+  }
+
+  @SubscribeMessage('pollCreate')
+  async pollCreate(@ConnectedSocket() client: Socket, @MessageBody() b: { question?: string; options?: string[] }): Promise<Ack<null>> {
+    const { peer, d } = this.peerFor(client);
+    if (!peer?.isHost || !d.sessionId) return fail('FORBIDDEN', 'Only the teacher can ask a poll');
+    const question = (b?.question ?? '').trim().slice(0, 300);
+    const options = (Array.isArray(b?.options) ? b.options : []).map((o) => String(o).trim().slice(0, 120)).filter(Boolean).slice(0, 6);
+    if (!question || options.length < 2) return fail('INVALID', 'Write a question and at least two options');
+    await this.prisma.livePoll.updateMany({ where: { sessionId: d.sessionId, closedAt: null }, data: { closedAt: new Date() } });
+    await this.prisma.livePoll.create({ data: { sessionId: d.sessionId, question, options } });
+    await this.broadcastPoll(d.sessionId);
+    return { ok: true, data: null };
+  }
+
+  @SubscribeMessage('pollVote')
+  async pollVote(@ConnectedSocket() client: Socket, @MessageBody() b: { pollId?: string; option?: number }): Promise<Ack<null>> {
+    const { peer, d } = this.peerFor(client);
+    if (!peer || !d.sessionId || !d.user) return fail('NOT_JOINED', 'Join the class first');
+    const poll = await this.prisma.livePoll.findFirst({ where: { id: b?.pollId, sessionId: d.sessionId } });
+    if (!poll || poll.closedAt) return fail('POLL_CLOSED', 'This poll is closed');
+    const option = Number(b?.option);
+    if (!Number.isInteger(option) || option < 0 || option >= (poll.options as string[]).length) return fail('INVALID', 'Choose an option');
+    try { await this.prisma.livePollVote.create({ data: { pollId: poll.id, userId: d.user.id, option } }); }
+    catch { return fail('ALREADY_VOTED', 'You have already voted'); }
+    await this.broadcastPoll(d.sessionId);
+    return { ok: true, data: null };
+  }
+
+  @SubscribeMessage('pollClose')
+  async pollClose(@ConnectedSocket() client: Socket): Promise<Ack<null>> {
+    const { peer, d } = this.peerFor(client);
+    if (!peer?.isHost || !d.sessionId) return fail('FORBIDDEN', 'Only the teacher can close a poll');
+    await this.prisma.livePoll.updateMany({ where: { sessionId: d.sessionId, closedAt: null }, data: { closedAt: new Date() } });
+    await this.broadcastPoll(d.sessionId);
     return { ok: true, data: null };
   }
 

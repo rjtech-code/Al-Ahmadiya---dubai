@@ -64,6 +64,9 @@ model User {
   hostedSessions LiveSession[]
   liveAttendance LiveAttendance[]
   liveChat       LiveChatMessage[]
+  teachingCourses Course[]       @relation("CourseTeacher")
+  lessonProgress LessonProgress[]
+  pollVotes      LivePollVote[]
 }
 
 model Role {
@@ -357,6 +360,14 @@ model Course {
   programs       ProgramCourse[]
   instructorId   String?       @db.Uuid
   instructor     FacultyMember? @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  /// Staff account that teaches the course online (teacher dashboard, live classes).
+  teacherId      String?       @db.Uuid
+  teacher        User?         @relation("CourseTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  /// Weekly live timetable runs between these dates (Dubai local dates).
+  liveStartsOn   DateTime?     @db.Date
+  liveEndsOn     DateTime?     @db.Date
+  liveSlots      LiveSlot[]
+  topics         CourseTopic[]
   prerequisites  CoursePrerequisite[] @relation("CourseHasPrereq")
   requiredBy     CoursePrerequisite[] @relation("PrereqOf")
 
@@ -788,6 +799,9 @@ model Lesson {
   isPreview     Boolean       @default(false) // free preview for non-enrolled visitors
   status        ContentStatus @default(DRAFT)
   liveSessionId String?       @unique @db.Uuid // set when created from a live-class recording
+  topicId       String?       @db.Uuid
+  topic         CourseTopic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  progress      LessonProgress[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -909,6 +923,11 @@ model LiveSession {
   /// Attendance rules: present if attended >= this % of the class; late if first joined after N minutes.
   presentPercent  Int             @default(75)
   lateAfterMin    Int             @default(10)
+  /// Set when created automatically from the weekly timetable.
+  slotId          String?         @db.Uuid
+  slot            LiveSlot?       @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  notifiedAt      DateTime?
+  polls           LivePoll[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   course          Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -917,6 +936,7 @@ model LiveSession {
   attendance      LiveAttendance[]
   chat            LiveChatMessage[]
 
+  @@unique([slotId, scheduledAt])
   @@index([courseId, scheduledAt])
   @@index([status])
 }
@@ -984,4 +1004,75 @@ model LiveChatMessage {
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
+}
+
+/// A section of an online course; lectures are grouped under topics.
+model CourseTopic {
+  id        String   @id @default(uuid()) @db.Uuid
+  courseId  String   @db.Uuid
+  titleEn   String
+  titleAr   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@index([courseId, sortOrder])
+}
+
+/// One weekly live-class slot (Dubai local time). weekday: 1 = Monday … 7 = Sunday.
+model LiveSlot {
+  id        String        @id @default(uuid()) @db.Uuid
+  courseId  String        @db.Uuid
+  weekday   Int
+  startTime String        // "HH:MM"
+  endTime   String        // "HH:MM"
+  createdAt DateTime      @default(now())
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sessions  LiveSession[]
+
+  @@index([courseId])
+}
+
+/// Which lectures a student has watched.
+model LessonProgress {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  lessonId    String    @db.Uuid
+  positionSec Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+/// Quick poll asked by the teacher during a live class.
+model LivePoll {
+  id        String         @id @default(uuid()) @db.Uuid
+  sessionId String         @db.Uuid
+  question  String
+  options   Json           // string[]
+  closedAt  DateTime?
+  createdAt DateTime       @default(now())
+  session   LiveSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  votes     LivePollVote[]
+
+  @@index([sessionId])
+}
+
+model LivePollVote {
+  id        String   @id @default(uuid()) @db.Uuid
+  pollId    String   @db.Uuid
+  userId    String   @db.Uuid
+  option    Int
+  createdAt DateTime @default(now())
+  poll      LivePoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
 }

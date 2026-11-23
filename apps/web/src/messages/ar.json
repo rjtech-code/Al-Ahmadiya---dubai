@@ -786,7 +786,14 @@
     "teacher": "المعلم",
     "you": "أنت",
     "attendanceNote": "يُسجَّل حضورك تلقائياً أثناء وجودك في الحصة.",
-    "myAttendance": "الحضور: {minutes} دقيقة"
+    "myAttendance": "الحضور: {minutes} دقيقة",
+    "progress": "شاهدت {done} من {total} محاضرة",
+    "otherLectures": "محاضرات أخرى",
+    "watched": "تمت المشاهدة",
+    "poll": "استطلاع",
+    "pollVotes": "{count, plural, one {صوت واحد} other {# صوت}}",
+    "pollClosed": "مغلق",
+    "pollVoted": "لقد صوّتّ"
   },
   "enroll": {
     "price": "السعر",

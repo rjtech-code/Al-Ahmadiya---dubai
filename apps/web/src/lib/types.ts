@@ -55,7 +55,8 @@ export interface Course extends CourseSummary {
   assessment: { labelEn: string; labelAr: string; weight: number }[] | null;
   instructor: FacultySummary | null; department: { slug: string; nameEn: string; nameAr: string }; related: CourseSummary[];
   onlineEnabled: boolean; deliveryMode: 'RECORDED' | 'LIVE'; priceFils: number | null; currency: string;
-  lessons: { id: string; titleEn: string; titleAr: string; durationSec: number | null }[];
+  topics?: { id: string; titleEn: string; titleAr: string }[];
+  lessons: { id: string; titleEn: string; titleAr: string; durationSec: number | null; topicId?: string | null }[];
   _count: { notes: number; quizzes: number; liveSessions: number };
 }
 

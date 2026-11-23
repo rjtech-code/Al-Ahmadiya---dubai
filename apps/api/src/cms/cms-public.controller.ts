@@ -202,7 +202,8 @@ export class CmsPublicController {
       include: {
         instructor: true, department: { select: { slug: true, nameEn: true, nameAr: true } },
         // Online course outline: titles only (video access requires an active enrollment).
-        lessons: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true, durationSec: true } },
+        topics: { orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true } },
+        lessons: { where: { status: 'PUBLISHED' }, orderBy: { sortOrder: 'asc' }, select: { id: true, titleEn: true, titleAr: true, durationSec: true, topicId: true } },
         _count: { select: { notes: { where: { status: 'PUBLISHED' } }, quizzes: { where: { status: 'PUBLISHED' } }, liveSessions: { where: { status: { in: ['SCHEDULED', 'LIVE'] } } } } },
       },
     });

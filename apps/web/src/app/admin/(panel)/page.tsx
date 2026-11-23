@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { NAV } from '@/components/admin/AdminShell';
 import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin/AdminContext';
 import { ErrorNote, PageHeader, Panel, StatCard } from '@/components/admin/ui';
@@ -19,6 +21,10 @@ interface Summary {
 
 export default function Dashboard() {
   const { can } = useAdmin();
+  const router = useRouter();
+  // Each role starts on its own work page (teacher → My teaching, finance → Finance, …).
+  const home = NAV.find((n) => n.href !== '/admin' && n.show(can))?.href;
+  useEffect(() => { if (!can('dashboard.read') && home) router.replace(home); }, [can, home, router]);
   const [d, setD] = useState<Summary | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -28,7 +34,7 @@ export default function Dashboard() {
     return () => { c = true; };
   }, [can]);
 
-  if (!can('dashboard.read')) return <PageHeader title="Welcome" description="Use the navigation to manage content." />;
+  if (!can('dashboard.read')) return <p className="text-sm text-muted">Opening your workspace…</p>;
   return (
     <>
       <PageHeader title="Dashboard" description="All figures are live counts from the database." />

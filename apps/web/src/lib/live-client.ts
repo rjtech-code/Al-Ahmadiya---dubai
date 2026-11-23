@@ -10,11 +10,13 @@ import { restoreSession, tokenStore } from './client-api';
  * socket.io signalling + mediasoup WebRTC. Teacher sends camera/screen + mic; students receive.
  */
 export interface ChatMsg { id: string; userId: string; name: string; body: string; createdAt: string; isHost: boolean }
+export interface PollState { id: string; question: string; options: string[]; closed: boolean; counts: number[]; total: number; myVote: number | null }
 export interface Participant { userId: string; name: string; joinedAt: string; connectedSince: string }
 export interface JoinInfo {
   isHost: boolean; viewers: number; participants?: Participant[]; chat: ChatMsg[];
   session: { id: string; titleEn: string; titleAr: string; startedAt: string | null; course: { titleEn: string; titleAr: string; slug: string } };
   producers: { id: string; kind: 'audio' | 'video' }[]; rtpCapabilities: msc.RtpCapabilities;
+  poll: PollState | null;
 }
 type Ack<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
@@ -32,6 +34,7 @@ export interface LiveHandlers {
   onEnded?: () => void;
   onHostLeft?: () => void;
   onDisconnect?: () => void;
+  onPoll?: (p: PollState | null) => void;
 }
 
 export class LiveClient {
@@ -69,6 +72,7 @@ export class LiveClient {
     this.socket.on('presence', (p: { viewers: number }) => this.h.onPresence?.(p.viewers));
     this.socket.on('participants', (p: Participant[]) => this.h.onParticipants?.(p));
     this.socket.on('ended', () => this.h.onEnded?.());
+    this.socket.on('poll', (p: PollState | null) => this.h.onPoll?.(p));
     this.socket.on('hostLeft', () => this.h.onHostLeft?.());
     this.socket.on('disconnect', () => this.h.onDisconnect?.());
     this.socket.on('newProducer', (p: { id: string; kind: 'audio' | 'video' }) => void this.consume(p.id, p.kind));
@@ -124,6 +128,9 @@ export class LiveClient {
 
   chat(body: string) { return this.call('chat', { body }); }
   deleteChat(id: string) { return this.call('deleteChat', { id }); }
+  createPoll(question: string, options: string[]) { return this.call('pollCreate', { question, options }); }
+  vote(pollId: string, option: number) { return this.call('pollVote', { pollId, option }); }
+  closePoll() { return this.call('pollClose'); }
 
   close() {
     this.producers.forEach((p) => p.close());

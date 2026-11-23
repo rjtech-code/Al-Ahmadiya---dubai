@@ -9,6 +9,7 @@ import { assertFileType } from '../lms/uploads';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { seesAllCourses } from '../common/permissions';
 import { LiveGateway } from './live.gateway';
 import type { LiveRoomsService } from './rooms.service';
 
@@ -46,17 +47,29 @@ export class LiveService {
     return { data: { provider: 'native', socketPath: '/live' } };
   }
 
-  async list(courseId?: string) {
+  /** Admins host any class; a teacher hosts classes of the courses assigned to them. */
+  canHost(user: { id: string; permissions: string[] }, s: { hostId: string | null; course: { teacherId: string | null } }) {
+    return seesAllCourses(user.permissions) || s.course.teacherId === user.id || s.hostId === user.id;
+  }
+
+  /** Session lookup for staff endpoints, enforcing ownership. */
+  async owned(id: string, user: AuthUser) {
+    const s = await this.get(id);
+    if (!this.canHost(user, s)) throw new ForbiddenException({ code: 'NOT_YOUR_CLASS', message: 'This class belongs to another teacher.' });
+    return s;
+  }
+
+  async list(user: AuthUser, courseId?: string) {
     return {
       data: await this.prisma.liveSession.findMany({
-        where: courseId ? { courseId } : {}, orderBy: { scheduledAt: 'desc' }, take: 200,
+        where: { ...(courseId ? { courseId } : {}), ...(seesAllCourses(user.permissions) ? {} : { OR: [{ course: { teacherId: user.id } }, { hostId: user.id }] }) }, orderBy: { scheduledAt: 'desc' }, take: 200,
         include: { course: { select: { code: true, titleEn: true, slug: true } }, host: { select: { fullName: true } }, lesson: { select: { id: true, status: true } } },
       }),
     };
   }
 
   async get(id: string) {
-    const s = await this.prisma.liveSession.findUnique({ where: { id }, include: { course: { select: { id: true, code: true, titleEn: true, titleAr: true, slug: true } }, lesson: { select: { id: true, status: true } } } });
+    const s = await this.prisma.liveSession.findUnique({ where: { id }, include: { course: { select: { id: true, code: true, titleEn: true, titleAr: true, slug: true, teacherId: true } }, lesson: { select: { id: true, status: true } } } });
     if (!s) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Live class not found' });
     return s;
   }
@@ -65,6 +78,7 @@ export class LiveService {
     const course = await this.prisma.course.findFirst({ where: { id: body.courseId, deletedAt: null } });
     if (!course) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Course not found' });
     if (!course.onlineEnabled) throw new BadRequestException({ code: 'COURSE_NOT_ONLINE', message: 'Enable online learning for this course first.' });
+    if (!seesAllCourses(actor.permissions) && course.teacherId !== actor.id) throw new ForbiddenException({ code: 'NOT_YOUR_COURSE', message: 'You can only schedule classes for your own courses.' });
     const s = await this.prisma.liveSession.create({ data: { ...body, hostId: actor.id, roomName: `alahmadiya-${randomBytes(12).toString('hex')}` } });
     await this.notifications.notifyCourse(course.id, {
       type: 'live-class', titleEn: `Class scheduled: ${s.titleEn}`, titleAr: `حصة مجدولة: ${s.titleAr}`,
@@ -74,8 +88,24 @@ export class LiveService {
     return { data: s };
   }
 
+  /** Teacher's "Go live now": an unscheduled class that opens immediately. */
+  async goLiveNow(courseId: string, actor: AuthUser) {
+    const course = await this.prisma.course.findFirst({ where: { id: courseId, deletedAt: null } });
+    if (!course) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Course not found' });
+    if (!seesAllCourses(actor.permissions) && course.teacherId !== actor.id) throw new ForbiddenException({ code: 'NOT_YOUR_COURSE', message: 'You can only start classes for your own courses.' });
+    const now = new Date();
+    const s = await this.prisma.liveSession.create({
+      data: { courseId, hostId: actor.id, titleEn: `${course.titleEn} — live class`, titleAr: `${course.titleAr} — حصة مباشرة`, scheduledAt: now, startedAt: now, notifiedAt: now, status: 'LIVE', durationMin: 60, roomName: `alahmadiya-${randomBytes(12).toString('hex')}` },
+    });
+    await this.notifications.notifyCourse(courseId, {
+      type: 'live-class', titleEn: `Live now: ${course.titleEn}`, titleAr: `مباشر الآن: ${course.titleAr}`, bodyEn: 'Your teacher started a live class — join now.', bodyAr: 'بدأ المعلم حصة مباشرة — انضم الآن.', link: `/account/live/${s.id}`,
+    });
+    await this.audit.log({ actorId: actor.id, action: 'live.golive', entityType: 'LiveSession', entityId: s.id });
+    return { data: s };
+  }
+
   async start(id: string, actor: AuthUser) {
-    const s = await this.get(id);
+    const s = await this.owned(id, actor);
     if (s.status === 'ENDED' || s.status === 'CANCELLED') throw new ConflictException({ code: 'SESSION_CLOSED', message: 'This class has already ended.' });
     const updated = await this.prisma.liveSession.update({ where: { id }, data: { status: 'LIVE', startedAt: s.startedAt ?? new Date(), hostId: actor.id } });
     if (s.status !== 'LIVE') {
@@ -87,8 +117,8 @@ export class LiveService {
     return { data: updated };
   }
 
-  async end(id: string) {
-    await this.get(id);
+  async end(id: string, actor?: AuthUser) {
+    if (actor) await this.owned(id, actor); else await this.get(id);
     const updated = await this.prisma.liveSession.update({ where: { id }, data: { status: 'ENDED', endedAt: new Date() } });
     await this.gateway.endRoom(id); // disconnects viewers and finalises attendance
     return { data: updated };
@@ -98,7 +128,8 @@ export class LiveService {
    * Attendance for every enrolled student (absent ones included):
    * PRESENT ≥ presentPercent of the class; LATE = present but first joined after lateAfterMin; PARTIAL; ABSENT.
    */
-  async attendance(id: string) {
+  async attendance(id: string, actor?: AuthUser) {
+    if (actor) await this.owned(id, actor);
     const s = await this.prisma.liveSession.findUnique({ where: { id }, include: { attendance: { include: { user: { select: { fullName: true, email: true } } } } } });
     if (!s) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Live class not found' });
     const enrolled = await this.prisma.enrollment.findMany({ where: { courseId: s.courseId, status: 'ACTIVE' }, include: { user: { select: { id: true, fullName: true, email: true } } } });
@@ -124,15 +155,15 @@ export class LiveService {
     return this.gateway['rooms'] as LiveRoomsService;
   }
 
-  async cancel(id: string) {
-    const s = await this.get(id);
+  async cancel(id: string, actor: AuthUser) {
+    const s = await this.owned(id, actor);
     if (s.status === 'LIVE') throw new ConflictException({ code: 'SESSION_LIVE', message: 'End the class instead of cancelling it.' });
     return { data: await this.prisma.liveSession.update({ where: { id }, data: { status: 'CANCELLED' } }) };
   }
 
   /** Teacher's post-class choice: save the recording as a draft, or publish it as a lesson (+ notes + quiz). */
   async uploadRecording(id: string, body: unknown, file: Express.Multer.File | undefined, actor: AuthUser) {
-    const s = await this.get(id);
+    const s = await this.owned(id, actor).catch(async (e: unknown) => { if (file) await rm(file.path, { force: true }); throw e; });
     const m = RecordingMeta.safeParse(body);
     if (!m.success) { if (file) await rm(file.path, { force: true }); throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'Validation failed', details: m.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) }); }
     if (file) {
@@ -174,12 +205,13 @@ export class LiveService {
   }
 
   async publishDraft(id: string, body: unknown, actor: AuthUser) {
+    await this.owned(id, actor);
     const m = RecordingMeta.parse({ ...(body as object), action: 'publish' });
     return this.publish(id, m, actor);
   }
 
-  async recordingUrl(id: string) {
-    const s = await this.get(id);
+  async recordingUrl(id: string, actor: AuthUser) {
+    const s = await this.owned(id, actor);
     if (!s.recordingKey) throw new NotFoundException({ code: 'NOT_FOUND', message: 'No recording uploaded' });
     return { data: { url: `/api/v1/media/${this.storage.sign({ key: s.recordingKey, mime: s.recordingMime ?? 'video/webm', name: `${s.titleEn}.webm`, disposition: 'attachment' })}` } };
   }
@@ -201,7 +233,7 @@ export class LiveService {
   async join(user: AuthUser, id: string) {
     const s = await this.get(id);
     const e = await this.prisma.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId: s.courseId } } });
-    if (e?.status !== 'ACTIVE' && !user.permissions.includes('live.host')) throw new ForbiddenException({ code: 'NOT_ENROLLED', message: 'Only enrolled students can join this class.' });
+    if (e?.status !== 'ACTIVE' && !this.canHost(user, s)) throw new ForbiddenException({ code: 'NOT_ENROLLED', message: 'Only enrolled students can join this class.' });
     if (s.status !== 'LIVE') throw new ConflictException({ code: 'NOT_LIVE', message: s.status === 'SCHEDULED' ? 'The class has not started yet.' : 'This class has ended.' });
     return { data: { sessionId: s.id, titleEn: s.titleEn, titleAr: s.titleAr, course: s.course } };
   }
