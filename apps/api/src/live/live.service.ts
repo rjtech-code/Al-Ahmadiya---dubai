@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { seesAllCourses } from '../common/permissions';
+import { env } from '../config/env';
 
 export const ScheduleInput = z.object({
   courseId: z.uuid(),
@@ -42,7 +43,7 @@ export class LiveService {
 
   config() {
     // Our own media server; no third-party provider.
-    return { data: { provider: 'native', socketPath: '/live' } };
+    return { data: { provider: 'native', socketPath: '/live', socketOrigin: env().LIVE_SERVER_URL ?? null } };
   }
 
   /** Admins host any class; a teacher hosts classes of the courses assigned to them. */
