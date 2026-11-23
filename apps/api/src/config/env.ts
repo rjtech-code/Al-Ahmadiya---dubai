@@ -30,6 +30,7 @@ const EnvSchema = z.object({
   LIVE_ANNOUNCED_IP: z.string().default('127.0.0.1'),
   LIVE_RTC_MIN_PORT: z.coerce.number().int().default(40000),
   LIVE_RTC_MAX_PORT: z.coerce.number().int().default(40200),
+  LIVE_SERVER_URL: z.string().url().optional(),
   MAX_VIDEO_MB: z.coerce.number().int().positive().default(2048),
   /** Shared with the website: refreshes cached public pages after admin changes. */
   REVALIDATE_SECRET: z.string().min(16).optional(),
