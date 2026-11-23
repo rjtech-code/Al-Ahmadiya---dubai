@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { z } from 'zod';
@@ -10,8 +10,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { seesAllCourses } from '../common/permissions';
-import { LiveGateway } from './live.gateway';
-import type { LiveRoomsService } from './rooms.service';
 
 export const ScheduleInput = z.object({
   courseId: z.uuid(),
@@ -39,7 +37,7 @@ const VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 export class LiveService {
   constructor(
     private readonly prisma: PrismaService, private readonly storage: StorageService, private readonly notifications: NotificationsService,
-    private readonly audit: AuditService, @Inject(forwardRef(() => LiveGateway)) private readonly gateway: LiveGateway,
+    private readonly audit: AuditService,
   ) {}
 
   config() {
@@ -120,7 +118,6 @@ export class LiveService {
   async end(id: string, actor?: AuthUser) {
     if (actor) await this.owned(id, actor); else await this.get(id);
     const updated = await this.prisma.liveSession.update({ where: { id }, data: { status: 'ENDED', endedAt: new Date() } });
-    await this.gateway.endRoom(id); // disconnects viewers and finalises attendance
     return { data: updated };
   }
 
@@ -136,23 +133,16 @@ export class LiveService {
     const start = s.startedAt ?? s.scheduledAt;
     const end = s.endedAt ?? new Date();
     const classSeconds = Math.max(1, Math.round((end.getTime() - start.getTime()) / 1000));
-    const live = this.gateway ? this.rooms() : null;
-    const room = live?.get(id) ?? null;
     const rows = enrolled.map((e) => {
       const a = s.attendance.find((x) => x.userId === e.user.id);
-      const onlineNow = room?.attendees.get(e.user.id);
-      const seconds = (a?.totalSeconds ?? 0) + (onlineNow ? Math.round((Date.now() - onlineNow.since.getTime()) / 1000) : 0);
+      const seconds = a?.totalSeconds ?? 0;
       const pct = Math.min(100, Math.round((seconds / classSeconds) * 100));
       const late = !!a && a.firstJoinedAt.getTime() > start.getTime() + s.lateAfterMin * 60_000;
       const status = !a ? 'ABSENT' : pct >= s.presentPercent ? (late ? 'LATE' : 'PRESENT') : 'PARTIAL';
-      return { userId: e.user.id, name: e.user.fullName, email: e.user.email, firstJoinedAt: a?.firstJoinedAt ?? null, lastLeftAt: a?.lastLeftAt ?? null, joinCount: a?.joinCount ?? 0, minutes: Math.round(seconds / 60), percent: pct, status, onlineNow: !!onlineNow };
+      return { userId: e.user.id, name: e.user.fullName, email: e.user.email, firstJoinedAt: a?.firstJoinedAt ?? null, lastLeftAt: a?.lastLeftAt ?? null, joinCount: a?.joinCount ?? 0, minutes: Math.round(seconds / 60), percent: pct, status, onlineNow: false };
     });
     const count = (st: string) => rows.filter((r) => r.status === st).length;
     return { data: rows.sort((x, y) => x.name.localeCompare(y.name)), meta: { classMinutes: Math.round(classSeconds / 60), presentPercent: s.presentPercent, lateAfterMin: s.lateAfterMin, enrolled: rows.length, present: count('PRESENT'), late: count('LATE'), partial: count('PARTIAL'), absent: count('ABSENT') } };
-  }
-
-  private rooms() {
-    return this.gateway['rooms'] as LiveRoomsService;
   }
 
   async cancel(id: string, actor: AuthUser) {
