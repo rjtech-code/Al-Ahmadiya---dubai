@@ -1,22 +1,19 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from '../prisma/prisma.module';
 import { LiveController } from './live.controller';
 import { LiveService } from './live.service';
 import { LiveSchedulerService } from './scheduler.service';
-import { LiveGateway } from './live.gateway';
-import { LiveRoomsService } from './rooms.service';
 
 /**
- * Single-service deployment: REST live-class management, Socket.IO signalling,
- * presence/chat/polls and the mediasoup room manager all run in the Core API
- * process. When a UDP-capable VPS is introduced, these providers can be moved
- * back into LiveServerModule without changing the frontend contract.
+ * Render single-service profile:
+ * keeps live-class scheduling, management, recordings and database workflows in
+ * the Core API. The mediasoup SFU / UDP gateway remains in live-server.module
+ * for the later VPS deployment, where UDP ports can be exposed safely.
  */
 @Module({
-  imports: [JwtModule.register({}), PrismaModule],
+  imports: [PrismaModule],
   controllers: [LiveController],
-  providers: [LiveService, LiveSchedulerService, LiveGateway, LiveRoomsService],
+  providers: [LiveService, LiveSchedulerService],
   exports: [LiveService, LiveSchedulerService],
 })
 export class LiveModule {}
