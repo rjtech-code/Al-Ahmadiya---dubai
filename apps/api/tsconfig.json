@@ -3,7 +3,9 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023"
+    ],
     "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -19,7 +21,22 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node", "jest"]
+    "types": [
+      "node",
+      "jest"
+    ]
   },
-  "include": ["src", "test", "prisma"]
+  "include": [
+    "src",
+    "test",
+    "prisma"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/live/live.gateway.ts",
+    "src/live/rooms.service.ts",
+    "src/live/live-server.module.ts",
+    "src/main.live.ts"
+  ]
 }
