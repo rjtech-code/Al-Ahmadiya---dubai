@@ -1,1 +1,16 @@
-{ "extends": "./tsconfig.json", "include": ["src"], "exclude": ["node_modules", "test", "dist", "**/*.spec.ts"] }
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*.spec.ts",
+    "src/live/live.gateway.ts",
+    "src/live/rooms.service.ts",
+    "src/live/live-server.module.ts",
+    "src/main.live.ts"
+  ]
+}
