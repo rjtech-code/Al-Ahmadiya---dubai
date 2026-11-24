@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { AuthUser } from '../common/decorators';
-import { STAFF_ROLES } from '../common/permissions';
+import { ROLE_DEFINITIONS, STAFF_ROLES } from '../common/permissions';
 import { env } from '../config/env';
 import { PrismaService } from '../prisma/prisma.service';
 import { dummyVerify, hashPassword, verifyPassword } from './password';
@@ -32,7 +32,20 @@ export class AuthService {
     }
     const passwordHash = await hashPassword(input.password);
     const user = await this.prisma.$transaction(async (tx) => {
-      const role = await tx.role.findUniqueOrThrow({ where: { key: 'APPLICANT' } });
+      // Keep public registration self-healing when the initial role seed has not
+      // been run (for example, on a fresh production database).
+      const applicantRole = ROLE_DEFINITIONS.find((role) => role.key === 'APPLICANT');
+      if (!applicantRole) throw new Error('APPLICANT role definition is missing from the permission catalogue');
+      const role = await tx.role.upsert({
+        where: { key: 'APPLICANT' },
+        update: {},
+        create: {
+          key: applicantRole.key,
+          nameEn: applicantRole.nameEn,
+          nameAr: applicantRole.nameAr,
+          isSystem: true,
+        },
+      });
       const u = await tx.user.create({
         data: { email: input.email, fullName: input.fullName, locale: input.locale, passwordHash, roles: { create: { roleId: role.id } } },
       });
