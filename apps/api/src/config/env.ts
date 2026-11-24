@@ -10,9 +10,9 @@ const EnvSchema = z.object({
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(14),
   COOKIE_SECRET: z.string().min(32),
-  CORS_ORIGINS: z.string().default('http://localhost:3000'),
-  WEB_BASE_URL: z.string().url().default('http://localhost:3000'),
-  /** Where the API reaches the website server-side (cache revalidation). Defaults to WEB_BASE_URL. */
+  CORS_ORIGINS: z.string().min(1),
+  WEB_BASE_URL: z.string().url(),
+  /** Where the API reaches the website server-side (cache revalidation). Defaults to WEB_BASE_URL when omitted. */
   WEB_INTERNAL_URL: z.string().url().optional(),
   STORAGE_DIR: z.string().default('./storage'),
   SHOW_DEMO_CONTENT: z
