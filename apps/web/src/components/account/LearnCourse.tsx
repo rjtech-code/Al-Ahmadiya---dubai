@@ -14,14 +14,14 @@ interface Note { id: string; titleEn: string; titleAr: string; bodyEn: string | 
 interface Quiz { id: string; titleEn: string; titleAr: string; passPercent: number; questions: { textEn: string; textAr: string; options: { en: string; ar: string }[] }[]; lastAttempt: { score: number; total: number; passed: boolean } | null }
 interface Course { topics: { id: string; titleEn: string; titleAr: string }[]; slug: string; code: string; titleEn: string; titleAr: string; deliveryMode: string; lessons: Lesson[]; notes: Note[]; quizzes: Quiz[]; liveSessions: { id: string; titleEn: string; titleAr: string; scheduledAt: string; status: string }[] }
 
-export function LearnCourse({ slug }: { slug: string }) {
+export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string; initialLesson?: string; initialTab?: 'lectures' | 'notes' | 'quizzes' }) {
   const t = useTranslations('account');
   const locale = useLocale();
   const L = <T extends { titleEn: string; titleAr: string }>(o: T) => (locale === 'ar' ? o.titleAr : o.titleEn);
   const { state } = useAuthed();
   const [course, setCourse] = useState<Course | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<'lectures' | 'notes' | 'quizzes'>('lectures');
+  const [tab, setTab] = useState<'lectures' | 'notes' | 'quizzes'>(initialTab ?? 'lectures');
   const [current, setCurrent] = useState<Lesson | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [reader, setReader] = useState<{ note: Note; url?: string } | null>(null);
@@ -29,9 +29,17 @@ export function LearnCourse({ slug }: { slug: string }) {
   useEffect(() => {
     if (state.status !== 'authed') return;
     let c = false;
-    apiFetch<{ data: Course }>(`/me/courses/${encodeURIComponent(slug)}`).then((r) => { if (!c) setCourse(r.data); }).catch((e: unknown) => { if (!c) setError(e instanceof ApiError ? e.message : 'Error'); });
+    apiFetch<{ data: Course }>(`/me/courses/${encodeURIComponent(slug)}`).then((r) => {
+      if (c) return;
+      setCourse(r.data);
+      const first = r.data.lessons.find((l) => l.id === initialLesson);
+      if (first) {
+        setCurrent(first);
+        apiFetch<{ data: { url: string } }>(`/me/lessons/${first.id}/url`).then((u) => { if (!c) setVideoUrl(u.data.url); }).catch(() => undefined);
+      }
+    }).catch((e: unknown) => { if (!c) setError(e instanceof ApiError ? e.message : 'Error'); });
     return () => { c = true; };
-  }, [state.status, slug]);
+  }, [state.status, slug, initialLesson]);
 
   const play = async (l: Lesson) => {
     setCurrent(l); setVideoUrl(null);
@@ -51,7 +59,7 @@ export function LearnCourse({ slug }: { slug: string }) {
   };
   const noteUrl = async (n: Note, download: boolean) => (await apiFetch<{ data: { url: string } }>(`/me/notes/${n.id}/url${download ? '?download=1' : ''}`)).data.url;
 
-  if (error) return <div className="rounded-3xl bg-red-50 p-6 text-danger">{error} <Link href="/account?tab=courses" className="ms-2 underline">{t('backToAccount')}</Link></div>;
+  if (error) return <div className="rounded-3xl bg-red-50 p-6 text-danger">{error} <Link href="/portal/courses" className="ms-2 underline">{t('backToAccount')}</Link></div>;
   if (!course) return <p className="flex items-center gap-2 text-muted"><Loader2 className="size-4 animate-spin" />{t('loadingVideo')}</p>;
 
   return (
@@ -59,7 +67,7 @@ export function LearnCourse({ slug }: { slug: string }) {
       <p className="text-sm font-semibold text-gold-700" dir="ltr">{course.code}</p>
       <h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1>
       {course.liveSessions.some((s) => s.status === 'LIVE') && (
-        <Link href={`/account/live/${course.liveSessions.find((s) => s.status === 'LIVE')!.id}`} className="mt-4 inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>
+        <Link href={`/portal/live/${course.liveSessions.find((s) => s.status === 'LIVE')!.id}`} className="mt-4 inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>
       )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]">

@@ -454,7 +454,7 @@ describe('API (e2e)', () => {
       await http.get(`/api/v1/me/live/${s.id}/join`).set(H(student)).expect(409); // not started
       await http.post(`/api/v1/admin/live/sessions/${s.id}/start`).set(H(admin)).expect(200);
       const n = (await http.get('/api/v1/me/notifications').set(H(student)).expect(200)).body.data;
-      expect(n.some((x: { titleEn: string; link: string }) => x.titleEn === 'Live now: Live 1' && x.link === `/account/live/${s.id}`)).toBe(true);
+      expect(n.some((x: { titleEn: string; link: string }) => x.titleEn === 'Live now: Live 1' && x.link === `/portal/live/${s.id}`)).toBe(true);
       const join = (await http.get(`/api/v1/me/live/${s.id}/join`).set(H(student)).expect(200)).body.data;
       expect(join.sessionId).toBe(s.id);
       await http.get(`/api/v1/me/live/${s.id}/join`).set(H(other)).expect(403);
@@ -615,7 +615,7 @@ describe('API (e2e)', () => {
       await scheduler.openDue();
       expect((await prisma.liveSession.findUniqueOrThrow({ where: { id: next.id } })).status).toBe('LIVE');
       const otherUser = await prisma.user.findUniqueOrThrow({ where: { email: 'student2@example.test' } });
-      expect(await prisma.notification.count({ where: { userId: otherUser.id, link: `/account/live/${next.id}` } })).toBe(1);
+      expect(await prisma.notification.count({ where: { userId: otherUser.id, link: `/portal/live/${next.id}` } })).toBe(1);
       expect(await prisma.notification.count({ where: { userId: teacherUser.id, link: `/admin/live/${next.id}` } })).toBe(1);
 
       // Teacher sees only their own course and its students' progress.

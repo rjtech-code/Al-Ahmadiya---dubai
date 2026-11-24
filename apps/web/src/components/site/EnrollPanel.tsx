@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, Loader2, Lock, PlayCircle, Radio } from 'lucide-react';
+import { CheckCircle2, Heart, Loader2, Lock, PlayCircle, Radio } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -37,9 +37,9 @@ export function EnrollPanel({ course }: { course: Pick<Course, 'slug' | 'priceFi
       const { data } = await apiFetch<{ data: { completed: true } | { completed: false; checkout: Checkout } }>(`/payments/course/${course.slug}`, { method: 'POST' });
       if (!data.completed) await pay(data.checkout);
       setStatus('ACTIVE');
-      router.push(`/account/courses/${course.slug}`);
+      router.push(`/portal/courses/${course.slug}`);
     } catch (e) {
-      if (e instanceof ApiError && e.body.code === 'ALREADY_ENROLLED') { setStatus('ACTIVE'); router.push(`/account/courses/${course.slug}`); }
+      if (e instanceof ApiError && e.body.code === 'ALREADY_ENROLLED') { setStatus('ACTIVE'); router.push(`/portal/courses/${course.slug}`); }
       else if (e instanceof ApiError) setError(e.body.code === 'PAYMENTS_NOT_CONFIGURED' ? tk('notConfigured') : e.message);
       else if ((e as Error).message !== 'cancelled') setError(tk('failed'));
     } finally { setBusy(false); }
@@ -63,7 +63,7 @@ export function EnrollPanel({ course }: { course: Pick<Course, 'slug' | 'priceFi
         {status === 'ACTIVE' ? (
           <>
             <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-success"><CheckCircle2 className="size-4" />{t('enrolled')}</p>
-            <Link href={`/account/courses/${course.slug}`} className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand-900 font-semibold text-white">{t('goToCourse')}</Link>
+            <Link href={`/portal/courses/${course.slug}`} className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand-900 font-semibold text-white">{t('goToCourse')}</Link>
           </>
         ) : state.status === 'anon' ? (
           <div className="border-t border-line/70 pt-4">
@@ -76,6 +76,7 @@ export function EnrollPanel({ course }: { course: Pick<Course, 'slug' | 'priceFi
           </button>
         )}
       </div>
+      {state.status === 'authed' && status !== 'ACTIVE' && <WishButton slug={course.slug} />}
       {dialog}
     </aside>
   );
@@ -113,5 +114,24 @@ export function LessonOutline({ lessons, topics = [] }: { lessons: Course['lesso
       </div>
       <p className="mt-2 text-xs text-muted">{t('locked')}</p>
     </div>
+  );
+}
+
+/** Save the course to the student's wishlist (shown in the portal). */
+function WishButton({ slug }: { slug: string }) {
+  const t = useTranslations('enroll');
+  const [saved, setSaved] = useState<boolean | null>(null);
+  useEffect(() => {
+    apiFetch<{ data: { slug: string }[] }>('/me/portal/wishlist').then((r) => setSaved(r.data.some((c) => c.slug === slug))).catch(() => setSaved(false));
+  }, [slug]);
+  if (saved === null) return null;
+  const toggle = async () => {
+    await apiFetch(`/me/portal/wishlist/${slug}`, { method: saved ? 'DELETE' : 'POST' }).catch(() => undefined);
+    setSaved(!saved);
+  };
+  return (
+    <button type="button" onClick={() => void toggle()} aria-pressed={saved} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-line bg-white py-2.5 text-sm font-semibold text-brand-900 hover:bg-cream-200">
+      <Heart className={saved ? 'size-4 fill-current text-danger' : 'size-4'} />{saved ? t('wishSaved') : t('wishAdd')}
+    </button>
   );
 }

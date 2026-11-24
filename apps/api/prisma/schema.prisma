@@ -67,6 +67,9 @@ model User {
   teachingCourses Course[]       @relation("CourseTeacher")
   lessonProgress LessonProgress[]
   pollVotes      LivePollVote[]
+  wishlist       CourseWishlist[]
+  submissions    AssignmentSubmission[]
+  results        CourseResult[]
 }
 
 model Role {
@@ -368,6 +371,9 @@ model Course {
   liveEndsOn     DateTime?     @db.Date
   liveSlots      LiveSlot[]
   topics         CourseTopic[]
+  wishlistedBy   CourseWishlist[]
+  assignments    Assignment[]
+  results        CourseResult[]
   prerequisites  CoursePrerequisite[] @relation("CourseHasPrereq")
   requiredBy     CoursePrerequisite[] @relation("PrereqOf")
 
@@ -1085,4 +1091,75 @@ model StoredFile {
   sha256    String
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+/// Courses a student has saved for later.
+model CourseWishlist {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  courseId  String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+/// Graded assignment set by the teacher; students upload a PDF and/or write an answer.
+model Assignment {
+  id             String                 @id @default(uuid()) @db.Uuid
+  courseId       String                 @db.Uuid
+  titleEn        String
+  titleAr        String
+  instructionsEn String?
+  instructionsAr String?
+  dueAt          DateTime
+  maxMarks       Int                    @default(10)
+  allowResubmit  Boolean                @default(true)
+  status         ContentStatus          @default(PUBLISHED)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  course         Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions    AssignmentSubmission[]
+
+  @@index([courseId, dueAt])
+}
+
+model AssignmentSubmission {
+  id           String     @id @default(uuid()) @db.Uuid
+  assignmentId String     @db.Uuid
+  userId       String     @db.Uuid
+  text         String?
+  fileKey      String?
+  fileName     String?
+  submittedAt  DateTime   @default(now())
+  attempts     Int        @default(1)
+  marks        Int?
+  feedback     String?
+  gradedAt     DateTime?
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+}
+
+/// Final grade of a student in a course for a term. Visible to the student once published.
+model CourseResult {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  courseId     String    @db.Uuid
+  term         String    // e.g. "2026 Term 1"
+  marks        Int?      // out of 100
+  grade        String    // letter grade from the grading scale
+  gradePoints  Float
+  creditHours  Int
+  publishedAt  DateTime?
+  enteredById  String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, term])
+  @@index([userId])
 }

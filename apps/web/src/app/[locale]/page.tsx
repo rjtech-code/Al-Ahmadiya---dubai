@@ -1,3 +1,4 @@
+import { StudentCard } from '@/components/portal/StudentCard';
 import { ArrowRight, BookOpenText, CalendarDays, ChevronRight, ClipboardList, CreditCard, GraduationCap, Landmark, Phone, Search, Star, Users } from 'lucide-react';
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
@@ -30,7 +31,7 @@ export default async function HomePage({ params }: LocaleParams) {
   const quick = [
     { icon: ClipboardList, label: t('qaApply'), href: '/admissions/apply' },
     { icon: Search, label: t('qaTrack'), href: '/admissions/status' },
-    { icon: CreditCard, label: t('qaFee'), href: '/account' },
+    { icon: CreditCard, label: t('qaFee'), href: '/portal/payments' },
     { icon: GraduationCap, label: t('qaPrograms'), href: '/programs' },
     { icon: CalendarDays, label: t('qaEvents'), href: '/events' },
     { icon: Phone, label: t('qaContact'), href: '/contact' },
@@ -112,6 +113,8 @@ export default async function HomePage({ params }: LocaleParams) {
       </section>
 
       {/* ── Educational journey + admissions card ── */}
+      <StudentCard />
+
       <section aria-labelledby="journey-h" className="container-site grid gap-10 py-14 lg:grid-cols-[0.9fr_1.6fr_0.9fr] lg:items-center">
         <Reveal>
           <span className="block h-0.5 w-24 bg-gold-500" aria-hidden />

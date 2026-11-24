@@ -79,7 +79,7 @@ export class LiveSchedulerService {
       if (!claimed.count) continue;
       await this.notifications.notifyCourse(s.courseId, {
         type: 'live-class', titleEn: `Live class starting now: ${s.course.titleEn}`, titleAr: `الحصة المباشرة تبدأ الآن: ${s.course.titleAr}`,
-        bodyEn: 'Tap to join the class.', bodyAr: 'اضغط للانضمام إلى الحصة.', link: `/account/live/${s.id}`,
+        bodyEn: 'Tap to join the class.', bodyAr: 'اضغط للانضمام إلى الحصة.', link: `/portal/live/${s.id}`,
       });
       const teacher = s.hostId ?? s.course.teacherId;
       if (teacher) await this.notifications.notify([teacher], { type: 'live-class', titleEn: `Your class is starting: ${s.course.titleEn}`, titleAr: `حصتك تبدأ الآن: ${s.course.titleAr}`, link: `/admin/live/${s.id}` });

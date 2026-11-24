@@ -111,7 +111,7 @@ export class LmsAdminService {
 
   private announceLesson(courseId: string, titleEn: string, titleAr: string) {
     return this.prisma.course.findUniqueOrThrow({ where: { id: courseId } }).then((c) => c.publishStatus !== 'PUBLISHED' ? undefined : this.notifications.notifyCourse(courseId, {
-      type: 'lesson', titleEn: `New lecture: ${titleEn}`, titleAr: `محاضرة جديدة: ${titleAr}`, bodyEn: c.titleEn, bodyAr: c.titleAr, link: `/account/courses/${c.slug}`,
+      type: 'lesson', titleEn: `New lecture: ${titleEn}`, titleAr: `محاضرة جديدة: ${titleAr}`, bodyEn: c.titleEn, bodyAr: c.titleAr, link: `/portal/courses/${c.slug}`,
     }));
   }
 

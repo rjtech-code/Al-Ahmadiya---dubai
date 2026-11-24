@@ -135,7 +135,7 @@ export class PaymentsService {
     const e = await db.enrollment.update({ where: { id: enrollmentId }, data: { status: 'ACTIVE', activatedAt: new Date() }, include: { course: true } });
     await this.notifications.notify([e.userId], {
       type: 'enrollment', titleEn: `Course activated: ${e.course.titleEn}`, titleAr: `تم تفعيل المقرر: ${e.course.titleAr}`,
-      bodyEn: 'Start learning from your dashboard.', bodyAr: 'ابدأ التعلّم من لوحة حسابك.', link: `/account/courses/${e.course.slug}`,
+      bodyEn: 'Start learning from your dashboard.', bodyAr: 'ابدأ التعلّم من لوحة حسابك.', link: `/portal/courses/${e.course.slug}`,
     }, tx);
   }
 

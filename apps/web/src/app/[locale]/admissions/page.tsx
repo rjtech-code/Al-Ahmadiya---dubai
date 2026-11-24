@@ -34,7 +34,7 @@ export default async function AdmissionsPage({ params }: LocaleParams) {
     { icon: UserPlus, label: t('links.register'), href: '/register' },
     { icon: LogIn, label: t('links.login'), href: '/login' },
     { icon: MonitorSmartphone, label: t('links.apply'), href: '/admissions/apply' },
-    { icon: CreditCard, label: t('links.payment'), href: '/account' },
+    { icon: CreditCard, label: t('links.payment'), href: '/portal/payments' },
     { icon: Search, label: t('links.status'), href: '/admissions/status' },
   ];
 

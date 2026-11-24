@@ -21,7 +21,7 @@ export function LoginForm() {
   const router = useRouter();
   const nextParam = useSearchParams().get('next');
   // Only allow local, non-admin paths (prevents open redirects).
-  const next = nextParam && /^\/(?!\/)/.test(nextParam) && !nextParam.startsWith('/admin') ? nextParam : '/account';
+  const next = nextParam && /^\/(?!\/)/.test(nextParam) && !nextParam.startsWith('/admin') ? nextParam : '/portal';
   useEffect(() => { if (state.status === 'authed') router.replace(next); }, [state.status, next, router]);
   const [mode, setMode] = useState<'login' | 'forgot' | 'forgot-done'>('login');
   const [serverError, setServerError] = useState('');

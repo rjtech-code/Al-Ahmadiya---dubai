@@ -31,7 +31,7 @@ export function RegisterForm() {
     try {
       const { data } = await apiFetch<{ data: { accessToken: string } }>('/auth/register', { method: 'POST', auth: false, json: { fullName: v.fullName, email: v.email, password: v.password, locale } });
       await setSessionFromToken(data.accessToken);
-      router.push('/account');
+      router.push('/portal');
     } catch (e) {
       setServerError(e instanceof ApiError && e.status !== 0 ? e.message : tc('networkError'));
     }

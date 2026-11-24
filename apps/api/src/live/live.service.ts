@@ -81,7 +81,7 @@ export class LiveService {
     const s = await this.prisma.liveSession.create({ data: { ...body, hostId: actor.id, roomName: `alahmadiya-${randomBytes(12).toString('hex')}` } });
     await this.notifications.notifyCourse(course.id, {
       type: 'live-class', titleEn: `Class scheduled: ${s.titleEn}`, titleAr: `حصة مجدولة: ${s.titleAr}`,
-      bodyEn: `${course.titleEn} · ${s.scheduledAt.toISOString()}`, bodyAr: course.titleAr, link: '/account#live',
+      bodyEn: `${course.titleEn} · ${s.scheduledAt.toISOString()}`, bodyAr: course.titleAr, link: '/portal/live',
     });
     await this.audit.log({ actorId: actor.id, action: 'live.schedule', entityType: 'LiveSession', entityId: s.id });
     return { data: s };
@@ -97,7 +97,7 @@ export class LiveService {
       data: { courseId, hostId: actor.id, titleEn: `${course.titleEn} — live class`, titleAr: `${course.titleAr} — حصة مباشرة`, scheduledAt: now, startedAt: now, notifiedAt: now, status: 'LIVE', durationMin: 60, roomName: `alahmadiya-${randomBytes(12).toString('hex')}` },
     });
     await this.notifications.notifyCourse(courseId, {
-      type: 'live-class', titleEn: `Live now: ${course.titleEn}`, titleAr: `مباشر الآن: ${course.titleAr}`, bodyEn: 'Your teacher started a live class — join now.', bodyAr: 'بدأ المعلم حصة مباشرة — انضم الآن.', link: `/account/live/${s.id}`,
+      type: 'live-class', titleEn: `Live now: ${course.titleEn}`, titleAr: `مباشر الآن: ${course.titleAr}`, bodyEn: 'Your teacher started a live class — join now.', bodyAr: 'بدأ المعلم حصة مباشرة — انضم الآن.', link: `/portal/live/${s.id}`,
     });
     await this.audit.log({ actorId: actor.id, action: 'live.golive', entityType: 'LiveSession', entityId: s.id });
     return { data: s };
@@ -110,7 +110,7 @@ export class LiveService {
     if (s.status !== 'LIVE') {
       await this.notifications.notifyCourse(s.courseId, {
         type: 'live-class', titleEn: `Live now: ${s.titleEn}`, titleAr: `مباشر الآن: ${s.titleAr}`,
-        bodyEn: `${s.course.titleEn} — join the class`, bodyAr: `${s.course.titleAr} — انضم إلى الحصة`, link: `/account/live/${s.id}`,
+        bodyEn: `${s.course.titleEn} — join the class`, bodyAr: `${s.course.titleAr} — انضم إلى الحصة`, link: `/portal/live/${s.id}`,
       });
     }
     return { data: updated };
@@ -188,7 +188,7 @@ export class LiveService {
       if (meta.notesEn || meta.notesAr) await tx.courseNote.create({ data: { courseId: s.courseId, lessonId: l.id, titleEn: `Notes: ${titleEn}`, titleAr: `ملاحظات: ${titleAr}`, bodyEn: meta.notesEn, bodyAr: meta.notesAr } });
       if (questions) await tx.quiz.create({ data: { courseId: s.courseId, lessonId: l.id, titleEn: `Quiz: ${titleEn}`, titleAr: `اختبار: ${titleAr}`, questions } });
       await tx.liveSession.update({ where: { id: s.id }, data: { recordingStatus: 'PUBLISHED' } });
-      await this.notifications.notifyCourse(s.courseId, { type: 'lesson', titleEn: `Recording available: ${titleEn}`, titleAr: `التسجيل متاح: ${titleAr}`, link: `/account/courses/${s.course.slug}` }, tx);
+      await this.notifications.notifyCourse(s.courseId, { type: 'lesson', titleEn: `Recording available: ${titleEn}`, titleAr: `التسجيل متاح: ${titleAr}`, link: `/portal/courses/${s.course.slug}` }, tx);
       return l;
     });
     await this.audit.log({ actorId: actor.id, action: 'live.recording.publish', entityType: 'LiveSession', entityId: s.id });

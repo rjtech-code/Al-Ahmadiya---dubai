@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Footer } from '@/components/site/Footer';
 import { Header } from '@/components/site/Header';
+import { HideOnPortal } from '@/components/site/HideOnPortal';
 import { routing } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import { pageMetadata } from '@/lib/seo';
@@ -40,9 +41,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       <body className="flex min-h-dvh flex-col antialiased">
         <NextIntlClientProvider>
           <a href="#main" className="sr-only z-50 rounded bg-gold-500 px-4 py-2 font-semibold text-brand-950 focus:not-sr-only focus:fixed focus:start-4 focus:top-4">{t('skipToContent')}</a>
-          <Header />
+          <HideOnPortal><Header /></HideOnPortal>
           <main id="main" className="flex-1">{children}</main>
-          <Footer settings={settings} nameEn="Al Ahmadiya" nameAr="الأحمدية" />
+          <HideOnPortal><Footer settings={settings} nameEn="Al Ahmadiya" nameAr="الأحمدية" /></HideOnPortal>
         </NextIntlClientProvider>
       </body>
     </html>

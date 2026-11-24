@@ -110,7 +110,7 @@ export function Header() {
             <button type="button" lang="en" onClick={() => switchTo('en')} aria-pressed={locale === 'en'} className={cn('px-1', locale === 'en' ? 'font-bold text-brand-900' : 'text-muted hover:text-brand-900')}>EN</button>
           </div>
           {authed && <NotificationBell />}
-          <Link href={authed ? '/account' : '/login'} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
+          <Link href={authed ? '/portal' : '/login'} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
             {authed ? t('account') : t('portal')}<ArrowRight className="flip-rtl size-4" aria-hidden />
           </Link>
           <button type="button" className="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-white/70 xl:hidden" aria-expanded={open} aria-controls="mobile-nav" aria-label={t('openMenu')} onClick={() => setOpen((o) => !o)}>
@@ -139,7 +139,7 @@ export function Header() {
                 </div>
               ))}
               <div className="flex items-center gap-3">
-                <Link href={authed ? '/account' : '/login'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : t('portal')}</Link>
+                <Link href={authed ? '/portal' : '/login'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : t('portal')}</Link>
                 <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
               </div>
             </nav>

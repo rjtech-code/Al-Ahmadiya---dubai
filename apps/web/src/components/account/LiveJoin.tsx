@@ -68,7 +68,7 @@ export function LiveJoin({ id }: { id: string }) {
     <div className="glass mx-auto max-w-xl rounded-[2rem] p-8 text-center">
       <Radio className="mx-auto size-10 text-gold-600" />
       <p className="mt-3 font-display text-2xl font-semibold text-brand-900">{error.code === 'NOT_LIVE' ? (error.message.includes('not started') ? t('notStarted') : t('ended')) : error.message}</p>
-      <Link href="/account?tab=live" className="mt-5 inline-block rounded-full bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white">{t('backToAccount')}</Link>
+      <Link href="/portal/live" className="mt-5 inline-block rounded-full bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white">{t('backToAccount')}</Link>
     </div>
   );
   if (!info) return <p className="flex items-center gap-2 text-muted"><Loader2 className="size-4 animate-spin" />{t('joining')}</p>;
@@ -97,7 +97,7 @@ export function LiveJoin({ id }: { id: string }) {
               <div>
                 <p className="font-display text-2xl">{phase === 'ended' ? t('classEnded') : t('reconnecting')}</p>
                 {phase === 'lost' ? <button onClick={() => { setInfo(null); setAttempt((n) => n + 1); }} className="mt-4 rounded-full bg-gold-400 px-5 py-2 text-sm font-semibold text-brand-950">{t('rejoin')}</button>
-                  : <Link href={`/account/courses/${info.session.course.slug}`} className="mt-4 inline-block rounded-full bg-gold-400 px-5 py-2 text-sm font-semibold text-brand-950">{t('goToCourse')}</Link>}
+                  : <Link href={`/portal/courses/${info.session.course.slug}`} className="mt-4 inline-block rounded-full bg-gold-400 px-5 py-2 text-sm font-semibold text-brand-950">{t('goToCourse')}</Link>}
               </div>
             </div>
           )}
