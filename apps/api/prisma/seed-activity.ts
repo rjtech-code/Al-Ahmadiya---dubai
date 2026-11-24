@@ -4,6 +4,7 @@
  * student portal) can be exercised end-to-end before launch.
  *
  *   npm run db:seed:activity -w apps/api            # create (safe to re-run; existing accounts are kept)
+ *   npm run db:seed:activity -w apps/api -- --staff-only  # only the staff accounts (one per role)
  *   npm run db:seed:activity -w apps/api -- --remove  # delete everything this script created
  *
  * Requires `npm run db:seed` and `npm run db:seed:content` first (roles, courses, programmes).
@@ -160,6 +161,7 @@ async function create() {
       if (c && !c.teacherId) { await prisma.course.update({ where: { id: c.id }, data: { teacherId: id } }); c.teacherId = id; }
     }
   }
+  if (process.argv.includes('--staff-only')) return;
   // Fresh run only below this point (activity is created once).
   if (await prisma.auditLog.count({ where: { action: TAG } })) {
     console.log('Activity already exists; accounts checked. Use --remove first to recreate it.');
