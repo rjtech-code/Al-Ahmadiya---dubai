@@ -27,7 +27,7 @@ export function LoginForm() {
   const [serverError, setServerError] = useState('');
   const schema = z.object({ email: z.string().trim().email(), password: z.string().min(1), rememberMe: z.boolean() });
   type V = z.infer<typeof schema>;
-  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<V>({ resolver: zodResolver(schema), defaultValues: { rememberMe: false } });
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<V>({ resolver: zodResolver(schema), defaultValues: { rememberMe: true } });
   const [forgotBusy, setForgotBusy] = useState(false);
 
   if (state.status === 'authed') {
