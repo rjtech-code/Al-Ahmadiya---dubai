@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Browser API client. Requests go directly to the NestJS API origin configured
- * in NEXT_PUBLIC_API_ORIGIN. The short-lived access token stays in memory;
- * the refresh token is an httpOnly, Secure, partitioned cookie.
+ * Browser API client. All browser requests use the same-origin Next.js API proxy.
+ * The short-lived access token stays in memory; the refresh token is an httpOnly
+ * cookie scoped to this website, so it survives a page reload without third-party cookies.
  */
 export interface ApiErrorBody { code: string; message: string; details?: unknown }
 export class ApiError extends Error {
@@ -12,24 +12,10 @@ export class ApiError extends Error {
   }
 }
 
-const configuredApiOrigin = process.env.NEXT_PUBLIC_API_ORIGIN?.trim();
-if (!configuredApiOrigin) {
-  throw new Error('NEXT_PUBLIC_API_ORIGIN is required. Set it to the NestJS API origin, without /api/v1.');
-}
+const API_BASE_URL = '/api/v1';
 
-let parsedApiOrigin: URL;
-try {
-  parsedApiOrigin = new URL(configuredApiOrigin);
-} catch {
-  throw new Error('NEXT_PUBLIC_API_ORIGIN must be a valid absolute HTTP(S) origin.');
-}
-if (!['http:', 'https:'].includes(parsedApiOrigin.protocol) || parsedApiOrigin.pathname !== '/' || parsedApiOrigin.search || parsedApiOrigin.hash) {
-  throw new Error('NEXT_PUBLIC_API_ORIGIN must contain only the HTTP(S) origin, without a path, query, or hash.');
-}
-const API_BASE_URL = `${parsedApiOrigin.origin}/api/v1`;
-
-/** Turns an API-relative link (e.g. a signed /api/v1/media/… URL) into an absolute URL on the API origin. */
-export const apiUrl = (url: string) => (url.startsWith('/api/') ? `${parsedApiOrigin.origin}${url}` : url);
+/** API-relative media links are served through the same-origin Next.js proxy too. */
+export const apiUrl = (url: string) => url.startsWith('/api/') ? url : url;
 
 let accessToken: string | null = null;
 let refreshing: Promise<boolean> | null = null;
