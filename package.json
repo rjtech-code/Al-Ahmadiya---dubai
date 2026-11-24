@@ -17,6 +17,8 @@
     "db:seed": "npm run db:seed -w apps/api",
     "db:deploy": "npm run db:deploy -w apps/api",
     "start:api": "npm run start -w apps/api",
-    "start:web": "npm run start -w apps/web"
+    "start:web": "npm run start -w apps/web",
+    "dev:live": "npm run dev:live -w apps/api",
+    "build:live": "npm run build:live -w apps/api"
   }
 }

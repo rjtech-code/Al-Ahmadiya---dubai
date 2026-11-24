@@ -34,6 +34,8 @@ const EnvSchema = z.object({
   LIVE_RTC_MIN_PORT: z.coerce.number().int().default(40000),
   LIVE_RTC_MAX_PORT: z.coerce.number().int().default(40200),
   LIVE_SERVER_URL: z.string().url().optional(),
+  /** Port of the separate live-class server (main.live.ts); defaults to PORT. */
+  LIVE_PORT: z.coerce.number().int().optional(),
   MAX_VIDEO_MB: z.coerce.number().int().positive().default(2048),
   /** Shared with the website: refreshes cached public pages after admin changes. */
   REVALIDATE_SECRET: z.string().min(16).optional(),

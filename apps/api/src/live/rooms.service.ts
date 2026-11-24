@@ -45,6 +45,11 @@ export class LiveRoomsService implements OnModuleInit, OnModuleDestroy {
     return this.worker;
   }
 
+  /** Ids of rooms currently open on this server. */
+  ids() {
+    return [...this.rooms.keys()];
+  }
+
   get(sessionId: string) {
     return this.rooms.get(sessionId) ?? null;
   }

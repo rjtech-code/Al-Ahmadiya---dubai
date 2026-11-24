@@ -11,3 +11,4 @@ apps/api/storage
 storage-test
 .vscode/
 *.tsbuildinfo
+dist-live

@@ -18,6 +18,17 @@ module.exports = {
       time: true,
     },
     {
+      // Live-class server (mediasoup + Socket.IO). Runs on the VPS that has UDP ports open.
+      name: 'ahmadiya-live',
+      cwd: './apps/api',
+      script: 'dist-live/main.live.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '1500M',
+      time: true,
+    },
+    {
       name: 'ahmadiya-web',
       cwd: './apps/web',
       script: '../../node_modules/next/dist/bin/next',

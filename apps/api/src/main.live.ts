@@ -9,7 +9,8 @@ async function bootstrap() {
   const cfg = env();
   const app = await NestFactory.create(LiveServerModule, { cors: { origin: cfg.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: true } });
   app.enableShutdownHooks();
-  await app.listen(cfg.PORT, cfg.HOST);
-  Logger.log(`Live signalling service listening on port ${cfg.PORT}; Socket.IO namespace /live`, 'LiveBootstrap');
+  const port = cfg.LIVE_PORT ?? cfg.PORT;
+  await app.listen(port, cfg.HOST);
+  Logger.log(`Live class server listening on port ${port}; Socket.IO namespace /live`, 'LiveBootstrap');
 }
 void bootstrap();

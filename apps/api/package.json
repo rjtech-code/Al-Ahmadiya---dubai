@@ -14,7 +14,9 @@
     "db:deploy": "prisma db push",
     "db:seed": "prisma db seed",
     "db:seed:content": "tsx prisma/seed-content.ts",
-    "start:live": "node -e \"console.error('Live SFU is not hosted by the Render API service; move it to the UDP-capable VPS when ready.'); process.exit(1)\""
+    "start:live": "node dist-live/main.live.js",
+    "build:live": "tsc -p tsconfig.live.json",
+    "dev:live": "tsc -p tsconfig.live.json && node dist-live/main.live.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.11",
@@ -61,5 +63,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.73.0"
+  },
+  "optionalDependencies": {
+    "mediasoup": "^3.32.2"
   }
 }

@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import type { types as ms } from 'mediasoup';
@@ -18,11 +18,37 @@ const fail = (code: string, message: string): Ack<never> => ({ ok: false, error:
  * Clients connect to the configured browser-reachable live origin + '/live' with their access token.
  */
 @WebSocketGateway({ namespace: '/live', cors: { origin: env().CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: true } })
-export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('LiveGateway');
   @WebSocketServer() server!: Server;
 
+  private sweeper?: NodeJS.Timeout;
+
   constructor(private readonly jwt: JwtService, private readonly prisma: PrismaService, private readonly rooms: LiveRoomsService) {}
+
+  /**
+   * This server runs apart from the core API, so it cannot be told directly when a teacher ends a class.
+   * Every 15 s it closes rooms whose class is ENDED or CANCELLED in the database (viewers see "class ended"
+   * and their attendance is finalised).
+   */
+  onModuleInit() {
+    this.sweeper = setInterval(() => void this.sweep(), 15_000);
+  }
+
+  onModuleDestroy() {
+    if (this.sweeper) clearInterval(this.sweeper);
+  }
+
+  private async sweep() {
+    const open = this.rooms.ids();
+    if (!open.length) return;
+    try {
+      const done = await this.prisma.liveSession.findMany({ where: { id: { in: open }, status: { in: ['ENDED', 'CANCELLED'] } }, select: { id: true } });
+      for (const s of done) await this.endRoom(s.id);
+    } catch (e) {
+      this.logger.warn(`Room sweep failed: ${(e as Error).message}`);
+    }
+  }
 
   private data(s: Socket) {
     return s.data as SocketData;
