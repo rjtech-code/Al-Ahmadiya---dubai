@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  BarChart3, Bell, BookOpen, CalendarDays, ChevronDown, ClipboardCheck, FileText, Globe, HelpCircle, Home, LayoutGrid, Loader2, LogOut, Menu,
+  BarChart3, Bell, LibraryBig, BookOpen, CalendarDays, ChevronDown, ClipboardCheck, FileText, Globe, HelpCircle, Home, LayoutGrid, Loader2, LogOut, Menu,
   PlayCircle, Radio, Search, User, UserCheck, Wallet, X,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -26,6 +26,7 @@ const NAV = [
   { href: '/portal/results', key: 'results', icon: BarChart3 },
   { href: '/portal/payments', key: 'payments', icon: Wallet },
   { href: '/portal/documents', key: 'documents', icon: FileText },
+  { href: '/portal/library', key: 'library', icon: LibraryBig },
   { href: '/portal/notifications', key: 'notifications', icon: Bell },
   { href: '/portal/profile', key: 'profile', icon: User },
 ] as const;

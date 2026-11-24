@@ -899,7 +899,8 @@
       "menu": "Open menu",
       "more": "More",
       "notifications": "Notifications",
-      "home": "Home"
+      "home": "Home",
+      "library": "Library"
     },
     "dash": {
       "welcome": "Welcome, {name}",
@@ -1159,6 +1160,25 @@
       "all": "All",
       "unread": "Unread",
       "empty": "No notifications."
+    },
+    "library": {
+      "title": "Library",
+      "subtitle": "Search the catalogue and see the books you have borrowed.",
+      "search": "Search title, author or subject",
+      "all": "All",
+      "books": "Books",
+      "digital": "Digital resources",
+      "available": "{n} available",
+      "none": "All copies on loan",
+      "open": "Open",
+      "myLoans": "My loans",
+      "noLoans": "You have no books on loan.",
+      "due": "Due {date}",
+      "overdue": "Overdue since {date}",
+      "returned": "Returned {date}",
+      "renew": "Renew",
+      "empty": "Nothing found.",
+      "borrowHint": "To borrow a book, ask at the library desk with your student ID."
     }
   }
 }

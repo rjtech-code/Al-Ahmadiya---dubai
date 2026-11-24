@@ -36,9 +36,9 @@ export function IconStat({ icon: Icon, label, value, hint, href }: { icon: React
   return href ? <Link href={href} className={cn(cls, 'transition hover:-translate-y-0.5')}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
-export function DashPanel({ title, action, children, className }: { title: string; action?: ReactNode; children: ReactNode; className?: string }) {
+export function DashPanel({ title, action, children, className, id }: { title: string; action?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section className={cn('rounded-[1.5rem] border border-white/80 bg-cream-50 p-5 shadow-[var(--shadow-card)]', className)}>
+    <section id={id} className={cn('rounded-[1.5rem] border border-white/80 bg-cream-50 p-5 shadow-[var(--shadow-card)]', className)}>
       <div className="mb-4 flex items-center justify-between gap-2"><h2 className="font-[family-name:var(--font-cormorant)] text-xl font-semibold text-brand-900">{title}</h2>{action}</div>
       {children}
     </section>

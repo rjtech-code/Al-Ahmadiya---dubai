@@ -75,6 +75,9 @@ model User {
   results        CourseResult[]
   leaveRequests  LeaveRequest[] @relation("LeaveApplicant")
   leaveDecisions LeaveRequest[] @relation("LeaveDecider")
+  loans          LibraryLoan[]
+  purchaseRequests PurchaseRequest[] @relation("PrRequester")
+  purchaseDecisions PurchaseRequest[] @relation("PrApprover")
 }
 
 model Role {
@@ -1202,4 +1205,100 @@ model LeaveRequest {
 
   @@index([status, startDate])
   @@index([userId])
+}
+
+enum LibraryItemType {
+  BOOK
+  EBOOK
+  JOURNAL
+  DATABASE
+  PAPER
+}
+
+/// Library catalogue entry. Physical books have copies; digital resources have a URL.
+model LibraryItem {
+  id          String          @id @default(uuid()) @db.Uuid
+  type        LibraryItemType
+  title       String
+  author      String?
+  isbn        String?
+  subject     String?
+  year        Int?
+  url         String?
+  copies      Int             @default(1)
+  isPublic    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  loans       LibraryLoan[]
+
+  @@index([type])
+  @@index([title])
+}
+
+model LibraryLoan {
+  id         String      @id @default(uuid()) @db.Uuid
+  itemId     String      @db.Uuid
+  userId     String      @db.Uuid
+  issuedAt   DateTime    @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  renewals   Int         @default(0)
+  item       LibraryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, returnedAt])
+  @@index([itemId, returnedAt])
+}
+
+enum PurchaseStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ORDERED
+  RECEIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Purchase request: submitted → approved/rejected → ordered → received.
+model PurchaseRequest {
+  id           String         @id @default(uuid()) @db.Uuid
+  number       String         @unique // PR-2026-0001
+  title        String
+  category     String
+  vendor       String?
+  amountFils   Int
+  priority     Priority       @default(MEDIUM)
+  status       PurchaseStatus @default(SUBMITTED)
+  notes        String?
+  requestedById String        @db.Uuid
+  approvedById String?        @db.Uuid
+  decidedAt    DateTime?
+  orderedAt    DateTime?
+  receivedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  requestedBy  User           @relation("PrRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  approvedBy   User?          @relation("PrApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+enum FacilityStatus {
+  OPERATIONAL
+  MAINTENANCE
+  CLOSED
+}
+
+model Facility {
+  id        String         @id @default(uuid()) @db.Uuid
+  name      String         @unique
+  status    FacilityStatus @default(OPERATIONAL)
+  note      String?
+  updatedAt DateTime       @updatedAt
+  createdAt DateTime       @default(now())
 }

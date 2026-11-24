@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Briefcase, Building2, CalendarOff, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X } from 'lucide-react';
+import { BookOpen, Briefcase, LibraryBig, ScrollText, ShoppingCart, Building2, CalendarOff, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -18,7 +18,10 @@ export const NAV: NavItem[] = [
   { href: '/admin/admissions/overview', label: 'Admissions overview', icon: LayoutDashboard, show: (c) => c('admissions.read') && !c('dashboard.read') },
   { href: '/admin/admissions', label: 'Applications', icon: GraduationCap, show: (c) => c('admissions.read') },
   { href: '/admin/academics', label: 'Programmes & eligibility', icon: Library, show: (c) => c('academics.manage') },
+  { href: '/admin/records', label: 'Registrar', icon: ScrollText, show: (c) => c('records.manage') },
   { href: '/admin/finance', label: 'Finance', icon: Wallet, show: (c) => c('payments.read') },
+  { href: '/admin/library', label: 'Library', icon: LibraryBig, show: (c) => c('library.manage') },
+  { href: '/admin/procurement', label: 'Procurement & campus', icon: ShoppingCart, show: (c) => c('procurement.manage') },
   { href: '/admin/cms', label: 'Website content', icon: FileText, show: (c) => c('cms.read') },
   { href: '/admin/settings', label: 'Site settings', icon: Settings, show: (c) => c('settings.write') },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare, show: (c) => c('engagement.read') },
@@ -28,7 +31,7 @@ export const NAV: NavItem[] = [
   { href: '/admin/staff-logins', label: 'Staff logins', icon: KeyRound, show: (c) => c('security.read') },
   { href: '/admin/leave', label: 'My leave', icon: CalendarOff, show: () => true },
 ];
-const UPCOMING = ['Payroll', 'Recruitment', 'Reports'];
+const UPCOMING = ['Payroll', 'Recruitment'];
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, can, signOut } = useAdmin();

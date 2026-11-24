@@ -56,6 +56,7 @@ const SETTINGS: Setting[] = [
   { key: 'admissions.applicationFeeAed', en: null, ar: null, confirmed: false },
 
   // Contact — required from client
+  { key: 'procurement.budgetAed', en: null, ar: null, confirmed: false, note: 'Annual procurement budget in AED (used by the operations dashboard).' },
   { key: 'contact.email', en: null, ar: null, confirmed: false },
   { key: 'contact.phone', en: null, ar: null, confirmed: false },
   { key: 'contact.address', en: null, ar: null, confirmed: false },
