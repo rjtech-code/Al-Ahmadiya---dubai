@@ -133,7 +133,7 @@ export class AdmissionsService {
     const count = await this.prisma.applicationDocument.count({ where: { applicationId: app.id } });
     if (count >= 15) throw new BadRequestException({ code: 'TOO_MANY_FILES', message: 'Maximum of 15 documents per application' });
 
-    const { key, sha256 } = await this.storage.put(`applications/${app.id}`, file.buffer);
+    const { key, sha256 } = await this.storage.put(`applications/${app.id}`, file.buffer, file.mimetype);
     const doc = await this.prisma.applicationDocument.create({
       data: { applicationId: app.id, docType: type.data, originalName: file.originalname.slice(0, 200), storageKey: key, mimeType: file.mimetype, sizeBytes: file.size, sha256 },
       select: { id: true, docType: true, originalName: true, sizeBytes: true, status: true, createdAt: true },

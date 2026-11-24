@@ -1,7 +1,4 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { mkdir, rename, rm } from 'node:fs/promises';
-import { dirname } from 'node:path';
 import { z } from 'zod';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser } from '../common/decorators';
@@ -66,12 +63,8 @@ export class CourseBuilderService {
   async setImage(id: string, file: Express.Multer.File | undefined) {
     const c = await this.get(id);
     const mime = await assertFileType(file, Object.keys(IMAGE_EXT), 'image');
-    const key = `public/courses/${randomUUID()}.${IMAGE_EXT[mime]}`;
-    const dest = this.storage.pathFor(key);
-    await mkdir(dirname(dest), { recursive: true });
-    await rename(file!.path, dest);
-    if (c.imagePath?.startsWith(PUBLIC_IMAGE_PREFIX)) await rm(this.storage.pathFor(`public/${c.imagePath.slice(PUBLIC_IMAGE_PREFIX.length)}`), { force: true });
-    const imagePath = `${PUBLIC_IMAGE_PREFIX}${key.slice('public/'.length)}`;
+    const imagePath = await this.storage.putImage(file!.path, 'courses', IMAGE_EXT[mime]);
+    await this.storage.removeImage(c.imagePath);
     return { data: await this.prisma.course.update({ where: { id }, data: { imagePath } }) };
   }
 

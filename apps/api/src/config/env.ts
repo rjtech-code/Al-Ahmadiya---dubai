@@ -15,6 +15,9 @@ const EnvSchema = z.object({
   /** Where the API reaches the website server-side (cache revalidation). Defaults to WEB_BASE_URL when omitted. */
   WEB_INTERNAL_URL: z.string().url().optional(),
   STORAGE_DIR: z.string().default('./storage'),
+  /** cloudinary://API_KEY:API_SECRET@CLOUD_NAME — images and videos. Without it (development only) files stay on local disk. */
+  CLOUDINARY_URL: z.string().regex(/^cloudinary:\/\/[^:]+:[^@]+@.+$/, 'Use cloudinary://API_KEY:API_SECRET@CLOUD_NAME').optional(),
+  CLOUDINARY_FOLDER: z.string().regex(/^[\w-]+$/).default('al-ahmadiya'),
   SHOW_DEMO_CONTENT: z
     .string()
     .default('false')

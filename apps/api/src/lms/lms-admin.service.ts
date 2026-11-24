@@ -64,7 +64,7 @@ export class LmsAdminService {
     const m = S.LessonMeta.safeParse(meta);
     if (!m.success) { if (file) await rm(file.path, { force: true }); throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'Validation failed', details: m.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) }); }
     const mime = await assertFileType(file, VIDEO, 'video');
-    const { key, bytes } = await this.storage.putFile(`courses/${courseId}/lessons`, file!.path);
+    const { key, bytes } = await this.storage.putFile(`courses/${courseId}/lessons`, file!.path, 'video', mime);
     const last = await this.prisma.lesson.aggregate({ where: { courseId }, _max: { sortOrder: true } });
     const lesson = await this.prisma.lesson.create({ data: { courseId, ...m.data, videoKey: key, videoMime: mime, videoBytes: BigInt(bytes), sortOrder: (last._max.sortOrder ?? 0) + 10 } });
     if (lesson.status === 'PUBLISHED') await this.announceLesson(courseId, lesson.titleEn, lesson.titleAr);
@@ -85,7 +85,7 @@ export class LmsAdminService {
     const lesson = await this.prisma.lesson.findUnique({ where: { id } });
     if (!lesson) { if (file) await rm(file.path, { force: true }); throw new NotFoundException({ code: 'NOT_FOUND', message: 'Lesson not found' }); }
     const mime = await assertFileType(file, VIDEO, 'video');
-    const { key, bytes } = await this.storage.putFile(`courses/${lesson.courseId}/lessons`, file!.path);
+    const { key, bytes } = await this.storage.putFile(`courses/${lesson.courseId}/lessons`, file!.path, 'video', mime);
     if (lesson.videoKey) await this.storage.remove(lesson.videoKey);
     return { data: ser(await this.prisma.lesson.update({ where: { id }, data: { videoKey: key, videoMime: mime, videoBytes: BigInt(bytes) } })) };
   }
@@ -124,7 +124,7 @@ export class LmsAdminService {
     let fileData = {};
     if (file) {
       const mime = await assertFileType(file, ['application/pdf'], 'PDF');
-      const { key } = await this.storage.putFile(`courses/${courseId}/notes`, file.path);
+      const { key } = await this.storage.putFile(`courses/${courseId}/notes`, file.path, 'pdf', mime);
       fileData = { fileKey: key, fileMime: mime, fileName: file.originalname.slice(0, 200) };
     }
     const last = await this.prisma.courseNote.aggregate({ where: { courseId }, _max: { sortOrder: true } });

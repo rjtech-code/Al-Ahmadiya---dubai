@@ -16,7 +16,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  images: { formats: ['image/avif', 'image/webp'] },
+  // Course and site images are stored on Cloudinary.
+  images: { formats: ['image/avif', 'image/webp'], remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }] },
   // Browser API traffic goes directly to the configured NestJS origin.
   async headers() {
     return [

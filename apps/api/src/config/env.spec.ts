@@ -8,7 +8,7 @@ const good: Env = {
   STORAGE_DIR: '/var/lib/app', SHOW_DEMO_CONTENT: false, PAYMENT_PROVIDER: 'razorpay',
   RAZORPAY_KEY_ID: 'rzp_live_abc', RAZORPAY_KEY_SECRET: 's3cr3t', RAZORPAY_WEBHOOK_SECRET: 'whsec',
   LIVE_LISTEN_IP: '0.0.0.0', LIVE_ANNOUNCED_IP: '203.0.113.10', LIVE_RTC_MIN_PORT: 40000, LIVE_RTC_MAX_PORT: 40200,
-  MAX_VIDEO_MB: 2048, REVALIDATE_SECRET: 'c'.repeat(32),
+  MAX_VIDEO_MB: 2048, REVALIDATE_SECRET: 'c'.repeat(32), CLOUDINARY_URL: 'cloudinary://1:abc@demo', CLOUDINARY_FOLDER: 'test',
 };
 
 describe('productionProblems', () => {

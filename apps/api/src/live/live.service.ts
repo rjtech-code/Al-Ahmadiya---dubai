@@ -159,7 +159,7 @@ export class LiveService {
     if (!m.success) { if (file) await rm(file.path, { force: true }); throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'Validation failed', details: m.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) }); }
     if (file) {
       const mime = await assertFileType(file, VIDEO, 'video');
-      const { key } = await this.storage.putFile(`courses/${s.courseId}/recordings`, file.path);
+      const { key } = await this.storage.putFile(`courses/${s.courseId}/recordings`, file.path, 'video', mime);
       if (s.recordingKey && s.recordingStatus !== 'PUBLISHED') await this.storage.remove(s.recordingKey);
       await this.prisma.liveSession.update({ where: { id }, data: { recordingKey: key, recordingMime: mime, recordingStatus: 'DRAFT', status: s.status === 'LIVE' ? 'ENDED' : s.status, endedAt: s.endedAt ?? new Date() } });
     }

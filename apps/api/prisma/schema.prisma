@@ -1076,3 +1076,13 @@ model LivePollVote {
 
   @@unique([pollId, userId])
 }
+
+/// Private files kept inside PostgreSQL: note PDFs and applicants' documents.
+model StoredFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  mime      String
+  bytes     Int
+  sha256    String
+  data      Bytes
+  createdAt DateTime @default(now())
+}
