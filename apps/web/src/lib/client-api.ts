@@ -28,6 +28,9 @@ if (!['http:', 'https:'].includes(parsedApiOrigin.protocol) || parsedApiOrigin.p
 }
 const API_BASE_URL = `${parsedApiOrigin.origin}/api/v1`;
 
+/** Turns an API-relative link (e.g. a signed /api/v1/media/… URL) into an absolute URL on the API origin. */
+export const apiUrl = (url: string) => (url.startsWith('/api/') ? `${parsedApiOrigin.origin}${url}` : url);
+
 let accessToken: string | null = null;
 let refreshing: Promise<boolean> | null = null;
 

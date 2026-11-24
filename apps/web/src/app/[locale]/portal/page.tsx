@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Empty, ErrorBox, Loading, useApi, useFmt } from '@/components/portal/ui';
 import { cn } from '@/components/ui/cn';
 import { Link } from '@/i18n/navigation';
+import { apiUrl } from '@/lib/client-api';
 import { useSession } from '@/lib/session';
 
 interface Dash {
@@ -81,7 +82,7 @@ export default function Dashboard() {
             {next ? (
               <div className="grid gap-0 md:grid-cols-[minmax(0,20rem)_1fr]">
                 <div className="relative hidden aspect-[16/10] md:block md:aspect-auto">
-                  {next.course.imagePath ? <Image src={next.course.imagePath} alt="" fill sizes="320px" className="object-cover" /> : <div className="pattern-girih absolute inset-0 bg-brand-900" />}
+                  {next.course.imagePath ? <Image src={apiUrl(next.course.imagePath)} unoptimized={next.course.imagePath.startsWith('/api/')} alt="" fill sizes="320px" className="object-cover" /> : <div className="pattern-girih absolute inset-0 bg-brand-900" />}
                   <span className={cn('absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white', next.status === 'LIVE' ? 'bg-danger' : 'bg-brand-900/90')}><Video className="size-3.5" />{next.status === 'LIVE' ? t('live') : t('upcoming')}</span>
                   <span className="absolute inset-0 grid place-items-center"><span className="grid size-14 place-items-center rounded-full bg-white/85 text-brand-900 shadow-lg"><PlayCircle className="size-8" /></span></span>
                 </div>
@@ -168,7 +169,7 @@ export default function Dashboard() {
                     <li key={l.id}>
                       <Link href={`/portal/courses/${l.course.slug}?lesson=${l.id}`} className="group block">
                         <span className="relative block aspect-video overflow-hidden rounded-xl bg-brand-900">
-                          {l.course.imagePath && <Image src={l.course.imagePath} alt="" fill sizes="240px" className="object-cover transition group-hover:scale-105" />}
+                          {l.course.imagePath && <Image src={apiUrl(l.course.imagePath)} unoptimized={l.course.imagePath.startsWith('/api/')} alt="" fill sizes="240px" className="object-cover transition group-hover:scale-105" />}
                           <span className="absolute inset-0 grid place-items-center bg-brand-950/20"><span className="grid size-10 place-items-center rounded-full bg-white/90 text-brand-900"><PlayCircle className="size-6" /></span></span>
                         </span>
                         <span className="mt-1.5 block truncate text-sm font-semibold text-brand-900">{f.L(l)}</span>

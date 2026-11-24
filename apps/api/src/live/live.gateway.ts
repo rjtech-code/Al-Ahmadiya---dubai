@@ -32,14 +32,14 @@ export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * and their attendance is finalised).
    */
   onModuleInit() {
-    this.sweeper = setInterval(() => void this.sweep(), 15_000);
+    this.sweeper = setInterval(() => void this.closeEndedRooms(), 15_000);
   }
 
   onModuleDestroy() {
     if (this.sweeper) clearInterval(this.sweeper);
   }
 
-  private async sweep() {
+  async closeEndedRooms() {
     const open = this.rooms.ids();
     if (!open.length) return;
     try {

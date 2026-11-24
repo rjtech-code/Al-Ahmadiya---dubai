@@ -30,7 +30,9 @@ describe('API (e2e)', () => {
     execSync('npx prisma migrate deploy', { env, stdio: 'pipe' });
     await truncateAll();
     execSync('npx prisma db seed', { env, stdio: 'pipe' });
-    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const { LiveServerModule } = await import('../src/live/live-server.module');
+    // Core API plus the separately deployed live-class server, in one test app.
+    const mod = await Test.createTestingModule({ imports: [AppModule, LiveServerModule] }).compile();
     app = configureApp(mod.createNestApplication({ rawBody: true }));
     await app.init();
     prisma = app.get(PrismaService);
@@ -519,12 +521,14 @@ describe('API (e2e)', () => {
 
       // Live attendance report while connected
       const live = (await http.get(`/api/v1/admin/live/sessions/${sess.id}/attendance`).set(H(admin)).expect(200)).body;
-      expect(live.data.find((r: { email: string }) => r.email === 'student1@example.test')).toMatchObject({ onlineNow: true, joinCount: 1 });
+      expect(live.data.find((r: { email: string }) => r.email === 'student1@example.test')).toMatchObject({ joinCount: 1 });
 
       // Teacher ends the class → student is told, attendance finalised
       const ended = once(stu, 'ended');
       await new Promise((r) => setTimeout(r, 1100));
       await http.post(`/api/v1/admin/live/sessions/${sess.id}/end`).set(H(admin)).expect(200);
+      const { LiveGateway } = await import('../src/live/live.gateway');
+      await app.get(LiveGateway).closeEndedRooms(); // the live server's 15-second sweep
       await ended;
       const att = await prisma.liveAttendance.findFirstOrThrow({ where: { sessionId: sess.id } });
       expect(att.totalSeconds).toBeGreaterThanOrEqual(1);

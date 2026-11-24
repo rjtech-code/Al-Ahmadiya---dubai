@@ -4,7 +4,7 @@ import { CheckCircle2, Download, Eye, FileText, Loader2, PlayCircle, Radio, XCir
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
-import { apiFetch, ApiError } from '@/lib/client-api';
+import { apiFetch, ApiError, apiUrl } from '@/lib/client-api';
 import { Markdown } from '@/lib/markdown';
 import { cn } from '../ui/cn';
 import { useAuthed } from './useAuthed';
@@ -35,7 +35,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
       const first = r.data.lessons.find((l) => l.id === initialLesson);
       if (first) {
         setCurrent(first);
-        apiFetch<{ data: { url: string } }>(`/me/lessons/${first.id}/url`).then((u) => { if (!c) setVideoUrl(u.data.url); }).catch(() => undefined);
+        apiFetch<{ data: { url: string } }>(`/me/lessons/${first.id}/url`).then((u) => { if (!c) setVideoUrl(apiUrl(u.data.url)); }).catch(() => undefined);
       }
     }).catch((e: unknown) => { if (!c) setError(e instanceof ApiError ? e.message : 'Error'); });
     return () => { c = true; };
@@ -43,7 +43,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
 
   const play = async (l: Lesson) => {
     setCurrent(l); setVideoUrl(null);
-    try { setVideoUrl((await apiFetch<{ data: { url: string } }>(`/me/lessons/${l.id}/url`)).data.url); } catch (e) { setError(e instanceof ApiError ? e.message : 'Error'); }
+    try { setVideoUrl(apiUrl((await apiFetch<{ data: { url: string } }>(`/me/lessons/${l.id}/url`)).data.url)); } catch (e) { setError(e instanceof ApiError ? e.message : 'Error'); }
   };
   // Save watch progress every 15 s, and mark the lecture done near the end.
   const lastSent = useRef(0);
@@ -57,7 +57,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
     if (nearEnd && !course?.lessons.find((x) => x.id === current.id)?.completed) { report(current.id, v.currentTime, true); return; }
     if (Date.now() - lastSent.current > 15_000) { lastSent.current = Date.now(); report(current.id, v.currentTime, false); }
   };
-  const noteUrl = async (n: Note, download: boolean) => (await apiFetch<{ data: { url: string } }>(`/me/notes/${n.id}/url${download ? '?download=1' : ''}`)).data.url;
+  const noteUrl = async (n: Note, download: boolean) => apiUrl((await apiFetch<{ data: { url: string } }>(`/me/notes/${n.id}/url${download ? '?download=1' : ''}`)).data.url);
 
   if (error) return <div className="rounded-3xl bg-red-50 p-6 text-danger">{error} <Link href="/portal/courses" className="ms-2 underline">{t('backToAccount')}</Link></div>;
   if (!course) return <p className="flex items-center gap-2 text-muted"><Loader2 className="size-4 animate-spin" />{t('loadingVideo')}</p>;

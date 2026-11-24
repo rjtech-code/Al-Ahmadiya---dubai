@@ -3,7 +3,7 @@
 import { FileText, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { adminBtn, adminBtnOutline, adminInput, ErrorNote, Panel, StatusPill, Table } from '@/components/admin/ui';
-import { apiFetch, ApiError } from '@/lib/client-api';
+import { apiFetch, ApiError, apiUrl } from '@/lib/client-api';
 
 interface Assignment { id: string; titleEn: string; titleAr: string; dueAt: string; maxMarks: number; allowResubmit: boolean; submitted: number; graded: number; students: number }
 interface Submission { id: string; student: { fullName: string; email: string }; text: string | null; fileName: string | null; fileUrl: string | null; submittedAt: string; attempts: number; marks: number | null; feedback: string | null; gradedAt: string | null; late: boolean }
@@ -93,7 +93,7 @@ function SubmissionsDrawer({ assignmentId, onClose }: { assignmentId: string; on
                 <li key={s.id} className="rounded-2xl border border-line bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-brand-900">{s.student.fullName}<span className="ms-2 text-xs font-normal text-muted">{s.student.email}</span></p><span className="flex items-center gap-2 text-xs text-muted">{when(s.submittedAt)}{s.late && <span className="text-danger">late</span>}{s.gradedAt ? <StatusPill status="APPROVED" /> : <StatusPill status="SUBMITTED" />}</span></div>
                   {s.text && <p className="mt-2 whitespace-pre-line rounded-xl bg-cream-50 p-3 text-sm">{s.text}</p>}
-                  {s.fileUrl && <a href={s.fileUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700"><FileText className="size-4" />{s.fileName}</a>}
+                  {s.fileUrl && <a href={apiUrl(s.fileUrl)} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700"><FileText className="size-4" />{s.fileName}</a>}
                   <div className="mt-3 grid gap-2 sm:grid-cols-[7rem_1fr_auto]">
                     <input type="number" min={0} max={a?.maxMarks} aria-label="Marks" placeholder="Marks" className={adminInput} value={v.marks} onChange={(e) => setMarks({ ...marks, [s.id]: { ...v, marks: e.target.value } })} />
                     <input aria-label="Feedback" placeholder="Feedback for the student (optional)" className={adminInput} value={v.feedback} onChange={(e) => setMarks({ ...marks, [s.id]: { ...v, feedback: e.target.value } })} />

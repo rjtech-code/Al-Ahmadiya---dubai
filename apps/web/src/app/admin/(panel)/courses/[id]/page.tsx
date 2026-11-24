@@ -10,7 +10,7 @@ import { emptyQ, QuizBuilder, type QuizQ } from '@/components/admin/QuizBuilder'
 import { Stepper } from '@/components/admin/Stepper';
 import { adminBtn, adminBtnDanger, adminBtnOutline, adminInput, ErrorNote, PageHeader, Panel, StatusPill } from '@/components/admin/ui';
 import { cn } from '@/components/ui/cn';
-import { apiFetch, ApiError, formatMoney, uploadWithProgress } from '@/lib/client-api';
+import { apiFetch, ApiError, formatMoney, uploadWithProgress, apiUrl } from '@/lib/client-api';
 
 interface Lesson { id: string; titleEn: string; titleAr: string; descriptionEn: string | null; descriptionAr: string | null; status: string; isPreview: boolean; videoBytes: number | null; topicId: string | null; liveSessionId: string | null }
 interface Note { id: string; titleEn: string; titleAr: string; bodyEn: string | null; fileName: string | null; lessonId: string | null }
@@ -79,7 +79,7 @@ function DetailsStep({ c, opts, onSaved, fail }: { c: Course | null; opts: Optio
     creditHours: String(c?.creditHours ?? 3), priceAed: c?.priceFils ? String(c.priceFils / 100) : '0',
   });
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(c?.imagePath ?? null);
+  const [preview, setPreview] = useState<string | null>(c?.imagePath ? apiUrl(c.imagePath) : null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const lines = (v: string) => v.split('\n').map((s) => s.trim()).filter(Boolean);
@@ -327,7 +327,7 @@ function LectureRow({ h, lesson: l, number, siblings }: { h: Helpers; lesson: Le
     try { await apiFetch(`/admin/lms/courses/${c.id}/lessons/reorder`, { method: 'POST', json: { ids: order } }); await reload(); } catch (err) { fail(err); }
   };
   const del = async () => { if (!window.confirm(`Delete lecture "${l.titleEn}" and its video?`)) return; try { await apiFetch(`/admin/lms/lessons/${l.id}`, { method: 'DELETE' }); await reload(); ok('Lecture deleted'); } catch (err) { fail(err); } };
-  const watch = async () => { if (open === 'video') return setOpen(null); try { setVideo((await apiFetch<{ data: { url: string } }>(`/admin/lms/lessons/${l.id}/preview`)).data.url); setOpen('video'); } catch (err) { fail(err); } };
+  const watch = async () => { if (open === 'video') return setOpen(null); try { setVideo(apiUrl((await apiFetch<{ data: { url: string } }>(`/admin/lms/lessons/${l.id}/preview`)).data.url)); setOpen('video'); } catch (err) { fail(err); } };
 
   return (
     <div className="rounded-2xl border border-line bg-white">

@@ -1,11 +1,12 @@
 'use client';
+/* eslint-disable @next/next/no-img-element -- course covers may be Cloudinary or API URLs */
 
 import { BookOpen, Heart, Radio, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Empty, ErrorBox, inputCls, Loading, PageTitle, Progress, Segmented, useApi, useFmt } from '@/components/portal/ui';
 import { Link } from '@/i18n/navigation';
-import { apiFetch, formatMoney } from '@/lib/client-api';
+import { apiFetch, formatMoney, apiUrl } from '@/lib/client-api';
 
 interface Course { id: string; slug: string; code: string; titleEn: string; titleAr: string; imagePath: string | null; instructor: string | null; progress: number; lecturesDone: number; lecturesTotal: number; pendingAssignments: number; pendingQuizzes: number; nextClass: { scheduledAt: string; status: string } | null }
 interface Wish { id: string; slug: string; code: string; titleEn: string; titleAr: string; imagePath: string | null; priceFils: number | null; currency: string }
@@ -18,7 +19,7 @@ export default function MyCourses() {
   const mine = useApi<Course[]>('/me/portal/courses');
   const wish = useApi<Wish[]>('/me/portal/wishlist');
   const match = (c: { code: string; titleEn: string; titleAr: string }) => !q || `${c.code} ${c.titleEn} ${c.titleAr}`.toLowerCase().includes(q.toLowerCase());
-  const img = (src: string | null) => (src ? <img src={src} alt="" className="aspect-[16/9] w-full object-cover" /> : <div className="pattern-girih aspect-[16/9] bg-brand-900" />);
+  const img = (src: string | null) => (src ? <img src={apiUrl(src)} alt="" className="aspect-[16/9] w-full object-cover" /> : <div className="pattern-girih aspect-[16/9] bg-brand-900" />);
 
   return (
     <>

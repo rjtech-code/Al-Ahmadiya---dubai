@@ -36,9 +36,12 @@ export function InitialsAvatar({ name, className }: { name: string; className?: 
 /** Image from CMS path; when absent, a monogram for people (`person`) or a labelled placeholder. */
 export async function CmsImage({ src, alt, className, sizes = '(min-width: 1024px) 33vw, 100vw', priority = false, person = false }: { src: string | null | undefined; alt: string; className?: string; sizes?: string; priority?: boolean; person?: boolean }) {
   if (!src) return person && alt ? <InitialsAvatar name={alt} className={cn('@container', className)} /> : <PendingImage className={className} />;
+  // Images uploaded without Cloudinary are served by the API itself.
+  const fromApi = src.startsWith('/api/');
+  const url = fromApi ? `${(process.env.NEXT_PUBLIC_API_ORIGIN ?? '').replace(/\/$/, '')}${src}` : src;
   return (
     <div className={cn('relative overflow-hidden', className)}>
-      <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+      <Image src={url} alt={alt} fill sizes={sizes} priority={priority} unoptimized={fromApi} className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
     </div>
   );
 }

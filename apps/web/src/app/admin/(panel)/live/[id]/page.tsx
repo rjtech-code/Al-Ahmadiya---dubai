@@ -8,7 +8,7 @@ import { LivePollCard } from '@/components/account/LivePoll';
 import { QuizBuilder, type QuizQ } from '@/components/admin/QuizBuilder';
 import { adminBtn, adminBtnDanger, adminBtnOutline, adminInput, ErrorNote, PageHeader, Panel, StatusPill } from '@/components/admin/ui';
 import { cn } from '@/components/ui/cn';
-import { apiFetch, ApiError, uploadWithProgress } from '@/lib/client-api';
+import { apiFetch, ApiError, uploadWithProgress, apiUrl } from '@/lib/client-api';
 import { LiveClient, type ChatMsg, type Participant, type PollState } from '@/lib/live-client';
 
 interface S { id: string; titleEn: string; titleAr: string; scheduledAt: string; startedAt: string | null; status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'; recordingStatus: 'NONE' | 'DRAFT' | 'PUBLISHED'; recordingKey: string | null; course: { titleEn: string; slug: string }; lesson: { id: string } | null }
@@ -165,7 +165,7 @@ export default function LiveConsole() {
 
   const download = async () => {
     if (blob) { const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = `${s?.titleEn ?? 'class'}.webm`; a.click(); URL.revokeObjectURL(u); return; }
-    try { window.location.href = (await apiFetch<{ data: { url: string } }>(`/admin/live/sessions/${id}/recording-url`)).data.url; } catch (e) { setError(e instanceof ApiError ? e.message : 'Failed'); }
+    try { window.location.href = apiUrl((await apiFetch<{ data: { url: string } }>(`/admin/live/sessions/${id}/recording-url`)).data.url); } catch (e) { setError(e instanceof ApiError ? e.message : 'Failed'); }
   };
   const upload = async (action: 'draft' | 'publish', file?: File) => {
     setError('');

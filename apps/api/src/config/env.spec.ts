@@ -21,7 +21,11 @@ describe('productionProblems', () => {
       LIVE_ANNOUNCED_IP: '127.0.0.1', DATABASE_URL: 'postgresql://u:p@db.remote:5432/app', REVALIDATE_SECRET: undefined, RAZORPAY_WEBHOOK_SECRET: undefined,
     });
     expect(p.join('\n')).toMatch(/JWT_ACCESS_SECRET/);
-    expect(p).toHaveLength(7);
+    expect(p).toHaveLength(6);
+  });
+  it('requires a public media address only when a separate live server is configured', () => {
+    expect(productionProblems({ ...good, LIVE_ANNOUNCED_IP: '127.0.0.1' })).toEqual([]);
+    expect(productionProblems({ ...good, LIVE_ANNOUNCED_IP: '127.0.0.1', LIVE_SERVER_URL: 'https://live.site.ae' }).join()).toMatch(/LIVE_ANNOUNCED_IP/);
   });
   it('allows a local database without sslmode', () => {
     expect(productionProblems({ ...good, DATABASE_URL: 'postgresql://app@localhost/app' })).toEqual([]);

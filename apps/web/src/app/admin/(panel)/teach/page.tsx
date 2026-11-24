@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin/AdminContext';
 import { DashPanel, IconStat, QuickActions, Ring, WelcomeBanner } from '@/components/admin/dash';
 import { adminBtn, adminBtnOutline, ErrorNote } from '@/components/admin/ui';
-import { apiFetch, ApiError } from '@/lib/client-api';
+import { apiFetch, ApiError, apiUrl } from '@/lib/client-api';
 
 interface Overview {
   courses: { id: string; code: string; slug: string; titleEn: string; imagePath: string | null; publishStatus: string; students: number; lectures: number; quizzes: number }[];
@@ -136,7 +136,7 @@ export default function TeachHome() {
           <div id="courses" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {d.courses.map((c) => (
               <article key={c.id} className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
-                {c.imagePath ? <img src={c.imagePath} alt="" className="aspect-[16/8] w-full object-cover" /> : <div className="pattern-girih aspect-[16/8] bg-brand-900" />}
+                {c.imagePath ? <img src={apiUrl(c.imagePath)} alt="" className="aspect-[16/8] w-full object-cover" /> : <div className="pattern-girih aspect-[16/8] bg-brand-900" />}
                 <div className="p-5">
                   <p className="text-xs font-semibold text-gold-700">{c.code}{c.publishStatus !== 'PUBLISHED' && ' · draft'}</p>
                   <h2 className="font-[family-name:var(--font-cormorant)] text-2xl font-semibold text-brand-900">{c.titleEn}</h2>
