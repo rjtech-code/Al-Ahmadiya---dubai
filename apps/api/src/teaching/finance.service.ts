@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { lastMonths } from '../common/dubai-time';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Finance view: what each student has bought, paid and still owes, with receipts. */
@@ -14,8 +15,20 @@ export class FinanceService {
       this.prisma.enrollment.findMany({ where: { status: 'PENDING_PAYMENT' }, select: { course: { select: { priceFils: true } } } }),
       this.prisma.payment.groupBy({ by: ['userId'], where: { status: 'SUCCEEDED' } }),
     ]);
+    const months = lastMonths(6);
+    const [monthly, pendingRows, recent] = await Promise.all([
+      Promise.all(months.map((m) => this.prisma.payment.aggregate({ where: { status: 'SUCCEEDED', paidAt: { gte: m.start, lt: m.end } }, _sum: { amountFils: true } }))),
+      this.prisma.enrollment.findMany({ where: { status: 'PENDING_PAYMENT' }, orderBy: { createdAt: 'asc' }, select: { createdAt: true, user: { select: { id: true, fullName: true, email: true } }, course: { select: { code: true, priceFils: true } } } }),
+      this.prisma.payment.findMany({ orderBy: { createdAt: 'desc' }, take: 8, select: { id: true, amountFils: true, currency: true, status: true, receiptNumber: true, paidAt: true, createdAt: true, purpose: true, user: { select: { id: true, fullName: true } } } }),
+    ]);
+    const now = Date.now();
+    const age = (d: Date) => (now - d.getTime()) / 86_400_000;
+    const bucket = (lo: number, hi: number) => pendingRows.filter((e) => age(e.createdAt) >= lo && age(e.createdAt) < hi).reduce((s, e) => s + (e.course.priceFils ?? 0), 0);
     return {
       data: {
+        monthly: months.map((m, i) => ({ month: m.key, collectedFils: monthly[i]._sum.amountFils ?? 0 })),
+        aging: [{ label: '0-30', fils: bucket(0, 31) }, { label: '31-60', fils: bucket(31, 61) }, { label: '61-90', fils: bucket(61, 91) }, { label: '90+', fils: bucket(91, Infinity) }],
+        recent, dueStudents: pendingRows.slice(0, 6).map((e) => ({ ...e.user, course: e.course.code, fils: e.course.priceFils ?? 0, since: e.createdAt })),
         collectedFils: all._sum.amountFils ?? 0, payments: all._count._all, thisMonthFils: month._sum.amountFils ?? 0,
         dueFils: pending.reduce((s, e) => s + (e.course.priceFils ?? 0), 0), dueCount: pending.length, payingStudents: payers.length,
       },

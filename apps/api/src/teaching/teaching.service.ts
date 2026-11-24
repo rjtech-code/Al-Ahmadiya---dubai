@@ -37,7 +37,42 @@ export class TeachingService {
       orderBy: { scheduledAt: 'asc' }, take: 50,
       select: { id: true, titleEn: true, scheduledAt: true, durationMin: true, status: true, course: { select: { id: true, code: true, titleEn: true } } },
     });
-    return { data: { courses: courses.map(({ _count, ...c }) => ({ ...c, students: _count.enrollments, lectures: _count.lessons, quizzes: _count.quizzes })), classes } };
+    const dayStart = new Date(now); dayStart.setUTCHours(-4, 0, 0, 0);
+    if (dayStart > now) dayStart.setTime(dayStart.getTime() - 86_400_000);
+    const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+    const [ungraded, ended, notes] = await Promise.all([
+      this.prisma.assignmentSubmission.findMany({
+        where: { gradedAt: null, assignment: { courseId: { in: ids } } }, orderBy: { submittedAt: 'asc' }, take: 50,
+        select: { id: true, submittedAt: true, user: { select: { fullName: true } }, assignment: { select: { id: true, titleEn: true, dueAt: true, course: { select: { id: true, code: true } } } } },
+      }),
+      this.prisma.liveSession.findMany({ where: { courseId: { in: ids }, status: 'ENDED' }, select: { id: true, courseId: true, startedAt: true, scheduledAt: true, endedAt: true, durationMin: true, presentPercent: true, lateAfterMin: true, attendance: { select: { userId: true, totalSeconds: true, firstJoinedAt: true } } } }),
+      this.prisma.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' }, take: 5 }),
+    ]);
+    // Attendance across all ended classes: one row per enrolled student per class.
+    const enrolledBy = new Map<string, number>(courses.map((c) => [c.id, c._count.enrollments]));
+    let present = 0, late = 0, partial = 0, expected = 0;
+    for (const s of ended) {
+      expected += enrolledBy.get(s.courseId) ?? 0;
+      const start = s.startedAt ?? s.scheduledAt;
+      const length = Math.max(60, ((s.endedAt ?? new Date(start.getTime() + s.durationMin * 60_000)).getTime() - start.getTime()) / 1000);
+      for (const a of s.attendance) {
+        const ok = (a.totalSeconds / length) * 100 >= s.presentPercent;
+        if (!ok) partial++; else if (a.firstJoinedAt.getTime() > start.getTime() + s.lateAfterMin * 60_000) late++; else present++;
+      }
+    }
+    const pct = (n: number) => (expected ? Math.round((n / expected) * 100) : null);
+    const weekMinutes = classes.filter((c) => c.status === 'SCHEDULED' || c.status === 'LIVE').reduce((s, c) => s + c.durationMin, 0);
+    return {
+      data: {
+        courses: courses.map(({ _count, ...c }) => ({ ...c, students: _count.enrollments, lectures: _count.lessons, quizzes: _count.quizzes })), classes,
+        stats: {
+          todayClasses: classes.filter((c) => c.scheduledAt >= dayStart && c.scheduledAt < dayEnd).length,
+          students: courses.reduce((s, c) => s + c._count.enrollments, 0), pendingGrading: ungraded.length, teachingHoursWeek: Math.round((weekMinutes / 60) * 10) / 10,
+        },
+        attendance: expected ? { present: pct(present), late: pct(late), partial: pct(partial), absent: pct(expected - present - late - partial), classes: ended.length } : null,
+        toGrade: ungraded.slice(0, 5), notifications: notes,
+      },
+    };
   }
 
   /** One row per enrolled student: lectures watched, quizzes, live-class attendance. */

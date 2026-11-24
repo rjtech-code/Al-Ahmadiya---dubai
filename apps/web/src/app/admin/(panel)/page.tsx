@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { NAV } from '@/components/admin/AdminShell';
 import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin/AdminContext';
-import { ErrorNote, PageHeader, Panel, StatCard } from '@/components/admin/ui';
+import { BookOpen, CalendarClock, CalendarDays, FileText, GraduationCap, LayoutGrid, Library, Shield, Users } from 'lucide-react';
+import { BarChart, DashPanel, IconStat, monthLabel, QuickActions, ViewAll, WelcomeBanner } from '@/components/admin/dash';
+import { ErrorNote } from '@/components/admin/ui';
 import { apiFetch, ApiError, formatMoney } from '@/lib/client-api';
 
 interface Summary {
@@ -16,6 +18,7 @@ interface Summary {
   settingsAwaitingConfirmation: number;
   learning: { onlineCourses: number; activeEnrollments: number; liveNow: number };
   payments: { count: number; amountFils: number };
+  overview: { students: number; faculty: number; programs: number; applications: number; enrollmentTrend: { month: string; count: number }[]; operations: { pendingRegistrations: number; classesThisWeek: number; draftCourses: number; coursesWithoutTeacher: number } };
   recentStaffLogins: { id: string; email: string; success: boolean; reason: string | null; ip: string | null; createdAt: string; user: { fullName: string } | null }[];
 }
 
@@ -35,44 +38,63 @@ export default function Dashboard() {
   }, [can]);
 
   if (!can('dashboard.read')) return <p className="text-sm text-muted">Opening your workspace…</p>;
+  const o = d?.overview;
+  const alerts = d ? [
+    d.admissions.pendingReview > 0 && { text: `${d.admissions.pendingReview} application${d.admissions.pendingReview === 1 ? '' : 's'} waiting for review`, href: '/admin/admissions', tone: 'bg-warning' },
+    d.learning.liveNow > 0 && { text: `${d.learning.liveNow} live class${d.learning.liveNow === 1 ? '' : 'es'} in progress`, href: '/admin/live', tone: 'bg-danger' },
+    d.engagement.unhandledMessages > 0 && { text: `${d.engagement.unhandledMessages} unanswered contact message${d.engagement.unhandledMessages === 1 ? '' : 's'}`, href: '/admin/messages', tone: 'bg-brand-700' },
+    d.settingsAwaitingConfirmation > 0 && { text: `${d.settingsAwaitingConfirmation} site settings awaiting confirmation`, href: '/admin/settings', tone: 'bg-gold-500' },
+    (o?.operations.coursesWithoutTeacher ?? 0) > 0 && { text: `${o!.operations.coursesWithoutTeacher} published course${o!.operations.coursesWithoutTeacher === 1 ? ' has' : 's have'} no teacher`, href: '/admin/courses', tone: 'bg-warning' },
+  ].filter(Boolean) as { text: string; href: string; tone: string }[] : [];
   return (
     <>
-      <PageHeader title="Dashboard" description="All figures are live counts from the database." />
+      <WelcomeBanner title="Welcome, University Administrator" subtitle="University operations overview — live figures from the database." />
       <ErrorNote message={error} />
-      {!d ? <p className="text-sm text-muted">Loading…</p> : (
-        <div className="space-y-6">
-          {d.settingsAwaitingConfirmation > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warning">
-              <span><strong>{d.settingsAwaitingConfirmation}</strong> institutional settings are awaiting client confirmation and are hidden or shown as “To be announced” on the website.</span>
-              <Link href="/admin/settings" className="font-semibold underline">Review settings</Link>
-            </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Applications pending review" value={d.admissions.pendingReview} />
-            <StatCard label="Submitted (last 30 days)" value={d.admissions.submittedLast30Days} />
-            <StatCard label="Active course students" value={d.learning.activeEnrollments} hint={`${d.learning.onlineCourses} online courses`} />
-            <StatCard label="Payments received" value={formatMoney(d.payments.amountFils)} hint={`${d.payments.count} payments`} />
+      {!d || !o ? <p className="text-sm text-muted">Loading…</p> : (
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <IconStat icon={Users} label="Active students" value={o.students} hint={`${d.users.total} accounts in total`} href="/admin/users" />
+            <IconStat icon={GraduationCap} label="Teachers" value={o.faculty} href="/admin/users" />
+            <IconStat icon={LayoutGrid} label="Published programmes" value={o.programs} href="/admin/academics" />
+            <IconStat icon={FileText} label="Applications" value={o.applications} hint={`${d.admissions.submittedLast30Days} in the last 30 days`} href="/admin/admissions" />
           </div>
-          {d.learning.liveNow > 0 && <p className="rounded-[1.5rem] bg-red-50 px-4 py-3 text-sm font-semibold text-danger">● {d.learning.liveNow} live class{d.learning.liveNow > 1 ? 'es' : ''} in progress — <Link href="/admin/live" className="underline">open live classes</Link></p>}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Panel title="Applications by status">
-              {Object.keys(d.admissions.byStatus).length ? (
-                <ul className="space-y-2 text-sm">{Object.entries(d.admissions.byStatus).map(([k, v]) => <li key={k} className="flex justify-between"><span>{k.replace(/_/g, ' ')}</span><strong>{v}</strong></li>)}</ul>
-              ) : <p className="text-sm text-muted">No applications yet. Admissions are closed until confirmed.</p>}
-            </Panel>
-            <Panel title="Published content">
-              <ul className="space-y-2 text-sm">{Object.entries(d.content).map(([k, v]) => <li key={k} className="flex justify-between capitalize"><span>{k}</span><strong>{v}</strong></li>)}</ul>
-            </Panel>
-            <Panel title="Users">
-              <ul className="space-y-2 text-sm"><li className="flex justify-between"><span>Total accounts</span><strong>{d.users.total}</strong></li><li className="flex justify-between"><span>Staff accounts</span><strong>{d.users.staff}</strong></li></ul>
-            </Panel>
+          <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
+            <DashPanel title="New enrolments per month" action={<span className="text-xs text-muted">Last 6 months</span>}>
+              <BarChart label="New course enrolments per month" data={o.enrollmentTrend.map((m) => ({ x: monthLabel(m.month), y: m.count }))} />
+              <p className="mt-2 text-xs text-muted">{d.learning.activeEnrollments} active enrolments across {d.learning.onlineCourses} online courses · {formatMoney(d.payments.amountFils)} collected</p>
+            </DashPanel>
+            <DashPanel title="Alerts" action={<span className="text-xs text-muted">{alerts.length} open</span>}>
+              {alerts.length ? <ul className="space-y-3">{alerts.map((a) => <li key={a.text}><Link href={a.href} className="flex items-start gap-3 text-sm hover:text-brand-700"><span className={`mt-1.5 size-2 shrink-0 rounded-full ${a.tone}`} />{a.text}</Link></li>)}</ul> : <p className="text-sm text-muted">Nothing needs attention right now.</p>}
+            </DashPanel>
           </div>
-          <Panel title="Recent staff sign-ins" actions={can('security.read') && <Link href="/admin/staff-logins" className="text-xs font-semibold text-brand-700 hover:underline">Staff login history</Link>}>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <DashPanel title="Academic operations">
+              <ul className="divide-y divide-line text-sm">
+                {[
+                  ['Course registrations awaiting payment', o.operations.pendingRegistrations, '/admin/finance'],
+                  ['Applications pending review', d.admissions.pendingReview, '/admin/admissions'],
+                  ['Live classes in the next 7 days', o.operations.classesThisWeek, '/admin/live'],
+                  ['Draft online courses', o.operations.draftCourses, '/admin/courses'],
+                ].map(([label, n, href]) => <li key={label as string}><Link href={href as string} className="flex justify-between py-2.5 hover:text-brand-700"><span>{label}</span><strong className="text-brand-900">{n}</strong></Link></li>)}
+              </ul>
+            </DashPanel>
+            <DashPanel title="Quick actions">
+              <QuickActions items={[
+                { href: '/admin/users', label: 'Manage staff & students', icon: Users },
+                { href: '/admin/courses/new', label: 'New course', icon: BookOpen },
+                { href: '/admin/academics', label: 'Programmes', icon: Library },
+                { href: '/admin/live', label: 'Timetable & live', icon: CalendarDays },
+                { href: '/admin/cms/events', label: 'Events calendar', icon: CalendarClock },
+                { href: '/admin/roles', label: 'Roles', icon: Shield },
+              ]} />
+            </DashPanel>
+          </div>
+          <DashPanel title="Recent staff sign-ins" action={can('security.read') && <ViewAll href="/admin/staff-logins" label="Staff login history" />}>
             <ul className="divide-y divide-line text-sm">
               {d.recentStaffLogins.length === 0 && <li className="py-2 text-muted">No staff sign-ins recorded yet.</li>}
-              {d.recentStaffLogins.map((l) => <li key={l.id} className="flex flex-wrap justify-between gap-2 py-2"><span>{l.user?.fullName ?? l.email} {l.success ? <span className="text-success">signed in</span> : <span className="text-danger">failed ({l.reason?.replace(/_/g, ' ').toLowerCase()})</span>}</span><span className="text-xs text-muted">{new Date(l.createdAt).toLocaleString('en-GB')} · {l.ip}</span></li>)}
+              {d.recentStaffLogins.slice(0, 6).map((l) => <li key={l.id} className="flex flex-wrap justify-between gap-2 py-2"><span>{l.user?.fullName ?? l.email} {l.success ? <span className="text-success">signed in</span> : <span className="text-danger">failed ({l.reason?.replace(/_/g, ' ').toLowerCase()})</span>}</span><span className="text-xs text-muted">{new Date(l.createdAt).toLocaleString('en-GB')} · {l.ip}</span></li>)}
             </ul>
-          </Panel>
+          </DashPanel>
         </div>
       )}
     </>

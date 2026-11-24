@@ -1,7 +1,8 @@
 'use client';
 
 import { CheckCircle2, Circle, X } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { AssignmentsTab, GradebookTab } from './tabs';
 import { useEffect, useState } from 'react';
 import { ErrorNote, PageHeader, Panel, Table } from '@/components/admin/ui';
 import { cn } from '@/components/ui/cn';
@@ -26,8 +27,7 @@ function Bar({ value, total }: { value: number; total: number }) {
   );
 }
 
-export default function CourseStudents() {
-  const { id } = useParams<{ id: string }>();
+function StudentsTab({ id }: { id: string }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [course, setCourse] = useState<{ code: string; titleEn: string } | null>(null);
   const [open, setOpen] = useState<{ row: Row; detail: Detail | null } | null>(null);
@@ -48,8 +48,7 @@ export default function CourseStudents() {
 
   return (
     <>
-      <PageHeader title={course ? `${course.code} — students` : 'Students'} crumbs={[{ label: 'My teaching', href: '/admin/teach' }, { label: course?.code ?? '…' }]}
-        description="What each student has watched, which quizzes they passed and how many live classes they attended. Click a student for details." />
+      <p className="mb-4 text-sm text-muted">What each student has watched, which quizzes they passed and how many live classes they attended{course ? ` in ${course.code}` : ''}. Click a student for details.</p>
       <ErrorNote message={error} />
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or email" className="mb-4 h-10 w-full max-w-sm rounded-xl border border-line bg-white px-3.5 text-sm" />
       {!rows ? <p className="text-sm text-muted">Loading…</p> : (
@@ -89,6 +88,29 @@ export default function CourseStudents() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function TeachCourse() {
+  const { id } = useParams<{ id: string }>();
+  const sp = useSearchParams();
+  const [tab, setTab] = useState<'students' | 'assignments' | 'results'>((sp.get('tab') as 'assignments' | 'results' | null) ?? 'students');
+  const [course, setCourse] = useState<{ code: string; titleEn: string; creditHours?: number } | null>(null);
+  useEffect(() => {
+    apiFetch<{ data: Row[]; meta: { course: { code: string; titleEn: string } } }>(`/teach/courses/${id}/students`).then((r) => setCourse(r.meta.course)).catch(() => undefined);
+  }, [id]);
+  return (
+    <>
+      <PageHeader title={course ? `${course.code} — ${course.titleEn}` : 'Course'} crumbs={[{ label: 'My teaching', href: '/admin/teach' }, { label: course?.code ?? '…' }]} />
+      <div role="tablist" className="mb-5 inline-flex gap-1 rounded-full bg-cream-200 p-1">
+        {([['students', 'Students & progress'], ['assignments', 'Assignments & grading'], ['results', 'Gradebook']] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn('rounded-full px-4 py-2 text-sm font-semibold', tab === k ? 'bg-brand-900 text-white' : 'text-brand-900')}>{l}</button>
+        ))}
+      </div>
+      {tab === 'students' && <StudentsTab id={id} />}
+      {tab === 'assignments' && <AssignmentsTab courseId={id} openId={sp.get('a')} />}
+      {tab === 'results' && <GradebookTab courseId={id} />}
     </>
   );
 }

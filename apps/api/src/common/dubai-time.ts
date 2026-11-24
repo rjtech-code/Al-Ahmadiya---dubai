@@ -16,3 +16,15 @@ export const minutesBetween = (a: string, b: string) => {
   const m = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
   return m(b) - m(a);
 };
+
+/** Last `n` calendar months (Dubai), oldest first: { key: 'YYYY-MM', start, end } in UTC. */
+export function lastMonths(n: number, now = new Date()) {
+  const d = new Date(now.getTime() + 4 * 3600_000);
+  const out: { key: string; start: Date; end: Date }[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const y = d.getUTCFullYear(), m = d.getUTCMonth() - i;
+    const start = new Date(Date.UTC(y, m, 1) - 4 * 3600_000), end = new Date(Date.UTC(y, m + 1, 1) - 4 * 3600_000);
+    out.push({ key: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7), start, end });
+  }
+  return out;
+}

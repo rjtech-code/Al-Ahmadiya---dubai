@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../common/decorators';
+import { lastMonths } from '../common/dubai-time';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** All figures are live database counts. */
@@ -38,6 +39,19 @@ export class DashboardController {
       this.prisma.payment.aggregate({ where: { status: 'SUCCEEDED' }, _sum: { amountFils: true }, _count: { _all: true } }),
     ]);
     const statusCounts = Object.fromEntries(byStatus.map((s) => [s.status, s._count._all]));
+    const months = lastMonths(6);
+    const weekEnd = new Date(Date.now() + 7 * 86_400_000);
+    const [students, faculty, programs, applications, trend, pendingRegistrations, classesThisWeek, draftCourses, coursesWithoutTeacher] = await Promise.all([
+      this.prisma.user.count({ where: { deletedAt: null, enrollments: { some: { status: 'ACTIVE' } } } }),
+      this.prisma.user.count({ where: { deletedAt: null, isActive: true, roles: { some: { role: { permissions: { some: { permission: { key: 'teach.own' } } } } } } } }),
+      this.prisma.program.count({ where: { deletedAt: null, publishStatus: 'PUBLISHED' } }),
+      this.prisma.application.count({ where: { deletedAt: null, status: { not: 'DRAFT' } } }),
+      Promise.all(months.map((m) => this.prisma.enrollment.count({ where: { status: 'ACTIVE', activatedAt: { gte: m.start, lt: m.end } } }))),
+      this.prisma.enrollment.count({ where: { status: 'PENDING_PAYMENT' } }),
+      this.prisma.liveSession.count({ where: { status: { in: ['SCHEDULED', 'LIVE'] }, scheduledAt: { lte: weekEnd } } }),
+      this.prisma.course.count({ where: { deletedAt: null, onlineEnabled: true, publishStatus: 'DRAFT' } }),
+      this.prisma.course.count({ where: { deletedAt: null, onlineEnabled: true, publishStatus: 'PUBLISHED', teacherId: null } }),
+    ]);
     return {
       data: {
         admissions: { byStatus: statusCounts, submittedLast30Days: newApps, pendingReview: (statusCounts.SUBMITTED ?? 0) + (statusCounts.UNDER_REVIEW ?? 0) + (statusCounts.DOCUMENTS_PENDING ?? 0) },
@@ -48,6 +62,11 @@ export class DashboardController {
         learning: { onlineCourses, activeEnrollments, liveNow },
         payments: { count: revenue._count._all, amountFils: revenue._sum.amountFils ?? 0 },
         recentStaffLogins: recent,
+        overview: {
+          students, faculty, programs, applications,
+          enrollmentTrend: months.map((m, i) => ({ month: m.key, count: trend[i] })),
+          operations: { pendingRegistrations, classesThisWeek, draftCourses, coursesWithoutTeacher },
+        },
       },
     };
   }
