@@ -61,7 +61,19 @@ export class LiveClient {
   async connect(): Promise<JoinInfo> {
     await restoreSession();
     const configuredOrigin = process.env.NEXT_PUBLIC_LIVE_ORIGIN?.trim() || process.env.NEXT_PUBLIC_API_ORIGIN?.trim();
-    const origin = configuredOrigin ? new URL(configuredOrigin, window.location.origin).origin : window.location.origin;
+    if (!configuredOrigin) {
+      throw new LiveError('CONFIGURATION', 'Set NEXT_PUBLIC_LIVE_ORIGIN or NEXT_PUBLIC_API_ORIGIN in the environment.');
+    }
+    let liveOrigin: URL;
+    try {
+      liveOrigin = new URL(configuredOrigin);
+    } catch {
+      throw new LiveError('CONFIGURATION', 'The configured live signalling origin must be an absolute URL.');
+    }
+    if (!['http:', 'https:'].includes(liveOrigin.protocol) || liveOrigin.pathname !== '/' || liveOrigin.search || liveOrigin.hash) {
+      throw new LiveError('CONFIGURATION', 'The configured live signalling value must contain only an HTTP(S) origin.');
+    }
+    const origin = liveOrigin.origin;
     this.socket = io(`${origin}/live`, { auth: { token: tokenStore.get() }, transports: ['websocket'], forceNew: true });
     await new Promise<void>((resolve, reject) => {
       this.socket.once('connect', () => resolve());
