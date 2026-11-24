@@ -2,11 +2,10 @@
  * Canonical server-side NestJS API origin for Next.js fetches, sitemap and rewrites.
  * Keep this private: browser REST requests use the same-origin /api/v1 proxy.
  */
-const configuredOrigin = process.env.API_ORIGIN?.trim()
-  || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000');
+const configuredOrigin = process.env.API_ORIGIN?.trim();
 
 if (!configuredOrigin) {
-  throw new Error('API_ORIGIN is required in production. Set it to the NestJS API origin, without /api/v1.');
+  throw new Error('API_ORIGIN is required. Set it to the NestJS API origin, without /api/v1.');
 }
 
 let parsedOrigin: URL;
