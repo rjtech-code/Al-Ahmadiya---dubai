@@ -11,8 +11,8 @@ cp apps/web/.env.example apps/web/.env.local
 npm run db:migrate          # prisma migrate dev
 npm run db:seed             # roles, admin, settings, heritage
 npm run db:seed:content -w apps/api   # colleges, programmes, courses, news, events, research, tour + images
-npm run dev:api             # http://localhost:4000/api/v1  (docs /api/docs)
-npm run dev:web             # http://localhost:3000/en      (admin /admin)
+npm run dev:api             # API (docs /api/docs)
+npm run dev:web             # Website (admin /admin)
 ```
 
 The initial Super Admin comes from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`. **Change the password after first sign-in.**
@@ -41,8 +41,8 @@ Target: one Linux server (Ubuntu 22.04/24.04, 4 vCPU / 8 GB RAM or more, in the 
 
 Keep origins in environment variables; do not add deployment hostnames to application source:
 
-- `API_ORIGIN` — private/server-side NestJS API origin used by Next.js server fetches, the sitemap, and the `/api/v1/*` rewrite. Set only the origin (for example `https://<render-service>.onrender.com`), without `/api/v1`.
-- `NEXT_PUBLIC_API_ORIGIN` — browser-reachable API origin used by the live-class Socket.IO client when signalling is hosted separately. In a Vercel + Render deployment, set it to the Render API origin. When the website reverse-proxies Socket.IO on the same host, leave it blank.
+- `API_ORIGIN` — private/server-side NestJS API origin used by Next.js server fetches, the sitemap, and the `/api/v1/*` rewrite. Set only the absolute API origin in the environment, without `/api/v1`.
+- `NEXT_PUBLIC_API_ORIGIN` — browser-reachable API origin used by the live-class Socket.IO client when signalling is hosted separately. Set it to the browser-reachable API origin. For same-origin Socket.IO, set it to the website origin; do not rely on browser-origin inference.
 - `NEXT_PUBLIC_LIVE_ORIGIN` — optional dedicated live-signalling origin; when set, it takes priority over `NEXT_PUBLIC_API_ORIGIN`.
 - `NEXT_PUBLIC_SITE_URL` — public website origin for canonical URLs and sitemap links.
 - `WEB_BASE_URL` / `WEB_INTERNAL_URL` — API-to-website origin for password-reset links and cache revalidation. `WEB_INTERNAL_URL` may be an internal address when both services share a private network.
@@ -104,7 +104,7 @@ cd /srv/ahmadiya && git pull && bash deploy/deploy.sh
 `deploy.sh` applies new migrations with `prisma migrate deploy` (never `migrate dev`/`reset` in production) and reloads PM2.
 
 ### Payments (Razorpay)
-Live keys from the Razorpay dashboard go in `apps/api/.env`. Add a webhook to `https://<domain>/api/v1/payments/razorpay/webhook` (events `payment.captured`, `order.paid`) with the same secret as `RAZORPAY_WEBHOOK_SECRET`. Make one small real payment and refund it before launch.
+Live keys from the Razorpay dashboard go in `apps/api/.env`. Set the webhook URL from the deployed API origin plus `/api/v1/payments/razorpay/webhook` (events `payment.captured`, `order.paid`) with the same secret as `RAZORPAY_WEBHOOK_SECRET`. Make one small real payment and refund it before launch.
 
 ### Live classes (self-hosted media server)
 Open UDP and TCP `LIVE_RTC_MIN_PORT`–`LIVE_RTC_MAX_PORT` (default 40000–40200), set `LIVE_ANNOUNCED_IP` to the server's public IP, and keep HTTPS on (browsers only allow camera/microphone over HTTPS). The API runs as a single process because live-class rooms live in memory. Roughly 200 viewers per CPU core; for users on strict networks add a TURN server (coturn) in the UAE region.
