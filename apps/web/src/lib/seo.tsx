@@ -1,7 +1,20 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+if (!configuredSiteUrl) {
+  throw new Error('NEXT_PUBLIC_SITE_URL is required. Set the public website origin in the environment.');
+}
+let parsedSiteUrl: URL;
+try {
+  parsedSiteUrl = new URL(configuredSiteUrl);
+} catch {
+  throw new Error('NEXT_PUBLIC_SITE_URL must be a valid absolute HTTP(S) origin.');
+}
+if (!['http:', 'https:'].includes(parsedSiteUrl.protocol) || parsedSiteUrl.pathname !== '/' || parsedSiteUrl.search || parsedSiteUrl.hash) {
+  throw new Error('NEXT_PUBLIC_SITE_URL must contain only the HTTP(S) origin, without a path, query, or hash.');
+}
+export const SITE_URL = parsedSiteUrl.origin;
 
 /** Builds per-page metadata with canonical URL and hreflang alternates for both languages. */
 export async function pageMetadata({ locale, path, title, description, noindex = false, image }: {
