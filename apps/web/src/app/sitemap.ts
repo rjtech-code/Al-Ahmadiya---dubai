@@ -1,12 +1,11 @@
 import type { MetadataRoute } from 'next';
+import { API_BASE_URL } from '@/lib/api-origin';
 import { SITE_URL } from '@/lib/seo';
-
-const API = `${process.env.API_ORIGIN ?? 'http://localhost:4000'}/api/v1`;
 const STATIC = ['', '/about', '/colleges', '/programs', '/faculty', '/news', '/events', '/research', '/campus-tour', '/contact', '/admissions', '/admissions/eligibility'];
 
 async function slugs(path: string): Promise<string[]> {
   try {
-    const r = await fetch(`${API}${path}`, { next: { revalidate: 3600 } });
+    const r = await fetch(`${API_BASE_URL}${path}`, { next: { revalidate: 3600 } });
     if (!r.ok) return [];
     const j = (await r.json()) as { data: { slug: string; departments?: { slug: string }[] }[] };
     return j.data.map((x) => x.slug);

@@ -11,6 +11,6 @@ async function bootstrap() {
   const app = configureApp(await NestFactory.create(AppModule, { rawBody: true }));
   if (cfg.NODE_ENV !== 'production') setupSwagger(app);
   await app.listen(cfg.PORT, cfg.HOST);
-  Logger.log(`API listening on http://${cfg.HOST === '0.0.0.0' ? 'localhost' : cfg.HOST}:${cfg.PORT}/api/v1${cfg.NODE_ENV !== 'production' ? ' (docs: /api/docs)' : ''}`, 'Bootstrap');
+  Logger.log(`API listening on port ${cfg.PORT} (host ${cfg.HOST}) at /api/v1${cfg.NODE_ENV !== 'production' ? ' (docs: /api/docs)' : ''}`, 'Bootstrap');
 }
 void bootstrap();

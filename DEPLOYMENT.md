@@ -37,6 +37,19 @@ Target: one Linux server (Ubuntu 22.04/24.04, 4 vCPU / 8 GB RAM or more, in the 
 | `deploy/deploy.sh` | Install → migrate → build → start/reload → health check |
 | `deploy/backup.sh` | Nightly `pg_dump` + uploaded files archive |
 
+### Origin configuration
+
+Keep origins in environment variables; do not add deployment hostnames to application source:
+
+- `API_ORIGIN` — private/server-side NestJS API origin used by Next.js server fetches, the sitemap, and the `/api/v1/*` rewrite. Set only the origin (for example `https://<render-service>.onrender.com`), without `/api/v1`.
+- `NEXT_PUBLIC_API_ORIGIN` — browser-reachable API origin used by the live-class Socket.IO client when signalling is hosted separately. In a Vercel + Render deployment, set it to the Render API origin. When the website reverse-proxies Socket.IO on the same host, leave it blank.
+- `NEXT_PUBLIC_LIVE_ORIGIN` — optional dedicated live-signalling origin; when set, it takes priority over `NEXT_PUBLIC_API_ORIGIN`.
+- `NEXT_PUBLIC_SITE_URL` — public website origin for canonical URLs and sitemap links.
+- `WEB_BASE_URL` / `WEB_INTERNAL_URL` — API-to-website origin for password-reset links and cache revalidation. `WEB_INTERNAL_URL` may be an internal address when both services share a private network.
+- `CORS_ORIGINS` — comma-separated website origins allowed by the API; these are not API endpoint URLs.
+
+Browser REST requests intentionally use relative `/api/v1/*` paths through the Next.js proxy so the refresh cookie remains first-party. E2E tests also use in-process Supertest requests and a temporary loopback Socket.IO server; those test URLs are not production API origins.
+
 ### Safety built into the code
 With `NODE_ENV=production` the API refuses to start if any of these is wrong, and prints what to fix:
 - JWT/cookie secrets shorter than 64 characters, identical, or still placeholders; missing `REVALIDATE_SECRET`

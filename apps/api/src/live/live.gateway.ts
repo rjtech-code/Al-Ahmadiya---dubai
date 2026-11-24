@@ -15,7 +15,7 @@ const fail = (code: string, message: string): Ack<never> => ({ ok: false, error:
 
 /**
  * Real-time live-class signalling, presence, attendance and comments.
- * Clients connect with their access token: io(API_ORIGIN + '/live', { auth: { token } }).
+ * Clients connect to the configured browser-reachable live origin + '/live' with their access token.
  */
 @WebSocketGateway({ namespace: '/live', cors: { origin: env().CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: true } })
 export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {

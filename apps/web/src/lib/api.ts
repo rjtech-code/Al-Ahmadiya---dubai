@@ -1,7 +1,8 @@
 import 'server-only';
 import type * as T from './types';
+import { API_BASE_URL } from './api-origin';
 
-const API = `${process.env.API_ORIGIN ?? 'http://localhost:4000'}/api/v1`;
+const API = API_BASE_URL;
 
 export class ApiUnavailableError extends Error {}
 

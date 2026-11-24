@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
-
-const API_ORIGIN = process.env.API_ORIGIN ?? 'http://localhost:4000';
+import { API_ORIGIN } from './src/lib/api-origin';
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
