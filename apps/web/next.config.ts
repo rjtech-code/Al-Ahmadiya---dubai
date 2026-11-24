@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
-import { API_ORIGIN } from './src/lib/api-origin';
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -18,11 +17,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   images: { formats: ['image/avif', 'image/webp'] },
-  // Browser calls go same-origin to /api/v1 and are proxied to the NestJS API,
-  // so the httpOnly refresh cookie stays first-party.
-  async rewrites() {
-    return [{ source: '/api/v1/:path*', destination: `${API_ORIGIN}/api/v1/:path*` }];
-  },
+  // Browser API traffic goes directly to the configured NestJS origin.
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
