@@ -60,7 +60,8 @@ export class LiveClient {
 
   async connect(): Promise<JoinInfo> {
     await restoreSession();
-    const origin = process.env.NEXT_PUBLIC_API_ORIGIN || process.env.NEXT_PUBLIC_LIVE_ORIGIN || window.location.origin;
+    const configuredOrigin = process.env.NEXT_PUBLIC_LIVE_ORIGIN?.trim() || process.env.NEXT_PUBLIC_API_ORIGIN?.trim();
+    const origin = configuredOrigin ? new URL(configuredOrigin, window.location.origin).origin : window.location.origin;
     this.socket = io(`${origin}/live`, { auth: { token: tokenStore.get() }, transports: ['websocket'], forceNew: true });
     await new Promise<void>((resolve, reject) => {
       this.socket.once('connect', () => resolve());
