@@ -14,6 +14,7 @@
     "db:deploy": "prisma db push",
     "db:seed": "prisma db seed",
     "db:seed:content": "tsx prisma/seed-content.ts",
+    "db:seed:activity": "tsx prisma/seed-activity.ts",
     "start:live": "node dist-live/main.live.js",
     "build:live": "tsc -p tsconfig.live.json",
     "dev:live": "tsc -p tsconfig.live.json && node dist-live/main.live.js"

@@ -12,3 +12,6 @@ storage-test
 .vscode/
 *.tsbuildinfo
 dist-live
+
+# Generated login list from prisma/seed-activity.ts
+apps/api/activity-credentials.txt
