@@ -12,7 +12,7 @@ export default function Documents() {
   const ta = useTranslations('apply.docTypes');
   const f = useFmt();
   const { data, error } = useApi<Doc[]>('/me/portal/documents');
-  const status: Record<string, string> = { PENDING: t('pending'), VERIFIED: t('verified'), REJECTED: t('rejected') };
+  const status: Record<string, string> = { UPLOADED: t('pending'), VERIFIED: t('verified'), REJECTED: t('rejected') };
   return (
     <>
       <PageTitle title={t('title')} subtitle={t('subtitle')} actions={<Link href="/admissions/apply" className="rounded-full bg-brand-900 px-4 py-2 text-sm font-semibold text-white">{t('upload')}</Link>} />

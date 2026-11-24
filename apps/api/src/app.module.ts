@@ -19,6 +19,7 @@ import { StorageModule } from './storage/storage.module';
 import { SystemModule } from './system/system.module';
 import { TeachingModule } from './teaching/teaching.module';
 import { PortalModule } from './portal/portal.module';
+import { StaffModule } from './staff/staff.module';
 import { UsersModule } from './users/users.module';
 
 /**
@@ -42,7 +43,7 @@ import { UsersModule } from './users/users.module';
     PaymentsModule,
     LmsModule,
     LiveModule,
-    TeachingModule, PortalModule,
+    TeachingModule, PortalModule, StaffModule,
     AcademicsModule,
     MediaModule,
     MaintenanceModule,

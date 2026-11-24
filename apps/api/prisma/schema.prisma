@@ -39,6 +39,9 @@ model User {
   passwordHash   String
   fullName       String
   phone          String?
+  /// Department a staff member belongs to (Head of Department dashboard scope).
+  departmentId   String?   @db.Uuid
+  department     Department? @relation("DepartmentStaff", fields: [departmentId], references: [id], onDelete: SetNull)
   locale         String    @default("en")
   isActive       Boolean   @default(true)
   emailVerified  Boolean   @default(false)
@@ -70,6 +73,8 @@ model User {
   wishlist       CourseWishlist[]
   submissions    AssignmentSubmission[]
   results        CourseResult[]
+  leaveRequests  LeaveRequest[] @relation("LeaveApplicant")
+  leaveDecisions LeaveRequest[] @relation("LeaveDecider")
 }
 
 model Role {
@@ -273,6 +278,7 @@ model Department {
 
   @@index([collegeId])
   @@index([publishStatus, sortOrder])
+  staff         User[]        @relation("DepartmentStaff")
 }
 
 enum DegreeLevel {
@@ -1161,5 +1167,39 @@ model CourseResult {
   course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId, term])
+  @@index([userId])
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  CASUAL
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// Staff leave request, approved or rejected by HR.
+model LeaveRequest {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  type        LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  decidedById String?     @db.Uuid
+  decidedAt   DateTime?
+  note        String?
+  createdAt   DateTime    @default(now())
+  user        User        @relation("LeaveApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy   User?       @relation("LeaveDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([status, startDate])
   @@index([userId])
 }

@@ -87,7 +87,7 @@ const TONES: Record<string, string> = {
   LIVE: 'bg-danger text-white', SCHEDULED: 'bg-brand-50 text-brand-800', ENDED: 'bg-cream-200 text-muted', CANCELLED: 'bg-gray-100 text-muted line-through',
   PENDING: 'bg-amber-50 text-warning', SUBMITTED: 'bg-brand-50 text-brand-800', GRADED: 'bg-emerald-50 text-success', OVERDUE: 'bg-red-50 text-danger',
   PRESENT: 'bg-emerald-50 text-success', LATE: 'bg-amber-50 text-warning', PARTIAL: 'bg-amber-50 text-warning', ABSENT: 'bg-red-50 text-danger',
-  VERIFIED: 'bg-emerald-50 text-success', REJECTED: 'bg-red-50 text-danger', SUCCEEDED: 'bg-emerald-50 text-success', FAILED: 'bg-red-50 text-danger',
+  UPLOADED: 'bg-amber-50 text-warning', VERIFIED: 'bg-emerald-50 text-success', REJECTED: 'bg-red-50 text-danger', SUCCEEDED: 'bg-emerald-50 text-success', FAILED: 'bg-red-50 text-danger',
 };
 export function Pill({ status, label }: { status: string; label?: string }) {
   return <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold', TONES[status] ?? 'bg-cream-200 text-brand-900')}>{label ?? status.replace(/_/g, ' ')}</span>;

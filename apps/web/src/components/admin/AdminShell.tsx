@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X } from 'lucide-react';
+import { BookOpen, Briefcase, Building2, CalendarOff, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -11,26 +11,32 @@ import { useAdmin } from './AdminContext';
 type NavItem = { href: string; label: string; icon: typeof BookOpen; show: (can: (p: string) => boolean) => boolean };
 export const NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, show: (c) => c('dashboard.read') },
+  { href: '/admin/department', label: 'My department', icon: Building2, show: (c) => c('department.lead') },
   { href: '/admin/teach', label: 'My teaching', icon: Presentation, show: (c) => c('teach.own') },
   { href: '/admin/courses', label: 'Online courses', icon: BookOpen, show: (c) => c('lms.manage') },
   { href: '/admin/live', label: 'All live classes', icon: Radio, show: (c) => c('lms.manage') && c('live.host') },
+  { href: '/admin/admissions/overview', label: 'Admissions overview', icon: LayoutDashboard, show: (c) => c('admissions.read') && !c('dashboard.read') },
   { href: '/admin/admissions', label: 'Applications', icon: GraduationCap, show: (c) => c('admissions.read') },
   { href: '/admin/academics', label: 'Programmes & eligibility', icon: Library, show: (c) => c('academics.manage') },
   { href: '/admin/finance', label: 'Finance', icon: Wallet, show: (c) => c('payments.read') },
   { href: '/admin/cms', label: 'Website content', icon: FileText, show: (c) => c('cms.read') },
   { href: '/admin/settings', label: 'Site settings', icon: Settings, show: (c) => c('settings.write') },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare, show: (c) => c('engagement.read') },
+  { href: '/admin/hr', label: 'HR overview', icon: Briefcase, show: (c) => c('hr.manage') },
   { href: '/admin/users', label: 'Staff & users', icon: Users, show: (c) => c('users.read') },
   { href: '/admin/roles', label: 'Roles', icon: Shield, show: (c) => c('roles.read') },
   { href: '/admin/staff-logins', label: 'Staff logins', icon: KeyRound, show: (c) => c('security.read') },
+  { href: '/admin/leave', label: 'My leave', icon: CalendarOff, show: () => true },
 ];
-const UPCOMING = ['Student records (SIS)', 'HR & payroll', 'Reports'];
+const UPCOMING = ['Payroll', 'Recruitment', 'Reports'];
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { user, can, signOut } = useAdmin();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const active = (h: string) => (h === '/admin' ? pathname === '/admin' : pathname.startsWith(h));
+  // The most specific matching entry is active (e.g. Admissions overview vs Applications).
+  const current = NAV.filter((n) => (n.href === '/admin' ? pathname === '/admin' : pathname === n.href || pathname.startsWith(`${n.href}/`))).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const active = (h: string) => h === current;
 
   const sidebar = (
     <nav aria-label="Administration" className="flex h-full flex-col">

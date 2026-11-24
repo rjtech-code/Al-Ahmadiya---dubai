@@ -15,16 +15,18 @@ const CreateUser = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: PasswordSchema,
   roleKeys: z.array(z.string().max(40)).min(1).max(10),
+  departmentId: z.uuid().nullable().optional(),
 });
 const UpdateUser = z.object({
   fullName: z.string().trim().min(2).max(150),
   isActive: z.boolean(),
   roleKeys: z.array(z.string().max(40)).min(1).max(10),
+  departmentId: z.uuid().nullable().optional(),
 });
 const RolePerms = z.object({ permissionKeys: z.array(z.enum(Object.keys(PERMISSIONS_CATALOGUE) as [string, ...string[]])).max(100) });
 
 const userSelect = {
-  id: true, email: true, fullName: true, isActive: true, lastLoginAt: true, createdAt: true, mfaEnabled: true,
+  id: true, email: true, fullName: true, isActive: true, lastLoginAt: true, createdAt: true, mfaEnabled: true, departmentId: true, department: { select: { nameEn: true } },
   roles: { select: { role: { select: { key: true, nameEn: true, nameAr: true } } } },
 } as const;
 
@@ -49,6 +51,13 @@ export class UsersController {
     return { data: rows, meta: pageMeta(q, total) };
   }
 
+  /** Departments for the staff form (Head of Department scope). */
+  @Get('users-departments')
+  @RequirePermissions('users.read')
+  async departments() {
+    return { data: await this.prisma.department.findMany({ where: { deletedAt: null }, orderBy: { nameEn: 'asc' }, select: { id: true, nameEn: true } }) };
+  }
+
   @Get('users/:id')
   @RequirePermissions('users.read')
   async get(@Param('id', ParseUUIDPipe) id: string) {
@@ -63,7 +72,7 @@ export class UsersController {
     const roles = await this.resolveRoles(body.roleKeys, actor);
     const user = await this.prisma.user.create({
       data: {
-        email: body.email, fullName: body.fullName, passwordHash: await hashPassword(body.password), emailVerified: true,
+        email: body.email, fullName: body.fullName, passwordHash: await hashPassword(body.password), emailVerified: true, departmentId: body.departmentId ?? null,
         roles: { create: roles.map((r) => ({ roleId: r.id })) },
       },
       select: userSelect,
@@ -84,7 +93,7 @@ export class UsersController {
       await tx.userRole.deleteMany({ where: { userId: id } });
       const u = await tx.user.update({
         where: { id },
-        data: { fullName: body.fullName, isActive: body.isActive, roles: { create: roles.map((r) => ({ roleId: r.id })) } },
+        data: { fullName: body.fullName, isActive: body.isActive, ...(body.departmentId !== undefined ? { departmentId: body.departmentId } : {}), roles: { create: roles.map((r) => ({ roleId: r.id })) } },
         select: userSelect,
       });
       if (!body.isActive) await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });

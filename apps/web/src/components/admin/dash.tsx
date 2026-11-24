@@ -120,7 +120,7 @@ export function Ring({ value, label }: { value: number; label: string }) {
 
 export function QuickActions({ items }: { items: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] }) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2">
       {items.map((q) => (
         <Link key={q.label} href={q.href} className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-white p-3 text-center text-[11px] font-semibold text-brand-900 transition hover:border-gold-400 hover:bg-cream-100">
           <q.icon className="size-5 text-brand-700" />{q.label}
