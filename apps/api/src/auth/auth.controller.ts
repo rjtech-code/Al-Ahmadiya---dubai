@@ -12,10 +12,15 @@ import { AuthService, IssuedTokens } from './auth.service';
 export const REFRESH_COOKIE = 'aau_rt';
 
 function cookieOptions(expires?: Date): CookieOptions {
+  const crossSite = env().NODE_ENV === 'production' || env().NODE_ENV === 'staging';
   return {
     httpOnly: true,
-    secure: env().NODE_ENV === 'production' || env().NODE_ENV === 'staging',
-    sameSite: 'strict',
+    secure: crossSite,
+    // The Vercel frontend and Render API are different sites. SameSite=None
+    // permits credentialed cross-site requests; Partitioned (CHIPS) keeps the
+    // refresh cookie isolated to this top-level website in supporting browsers.
+    sameSite: crossSite ? 'none' : 'lax',
+    ...(crossSite ? { partitioned: true } : {}),
     path: '/api/v1/auth',
     ...(expires ? { expires } : {}),
   };
