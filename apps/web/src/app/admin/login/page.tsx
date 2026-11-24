@@ -19,7 +19,7 @@ function LoginInner() {
     e.preventDefault();
     setBusy(true); setError('');
     try {
-      const { data } = await apiFetch<{ data: { accessToken: string } }>('/auth/login', { method: 'POST', auth: false, json: { email, password, audience: 'admin' } });
+      const { data } = await apiFetch<{ data: { accessToken: string } }>('/auth/login', { method: 'POST', auth: false, json: { email, password, audience: 'admin', rememberMe: true } });
       tokenStore.set(data.accessToken);
       router.replace(next && next.startsWith('/admin') && !next.startsWith('/admin/login') ? next : '/admin');
     } catch (err) {
