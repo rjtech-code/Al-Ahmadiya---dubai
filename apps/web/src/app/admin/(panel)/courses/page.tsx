@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { adminBtn, ErrorNote, PageHeader, StatusPill, Table } from '@/components/admin/ui';
 import { apiFetch, ApiError, formatMoney } from '@/lib/client-api';
 
-interface C { id: string; slug: string; code: string; titleEn: string; publishStatus: string; confirmation: string; isDemo: boolean; onlineEnabled: boolean; deliveryMode: string; priceFils: number | null; currency: string; department: { nameEn: string }; _count: { lessons: number; notes: number; quizzes: number; liveSessions: number }; activeStudents: number }
+interface C { id: string; slug: string; code: string; titleEn: string; publishStatus: string; confirmation: string; isDemo: boolean; isFeatured: boolean; onlineEnabled: boolean; deliveryMode: string; priceFils: number | null; currency: string; department: { nameEn: string }; _count: { lessons: number; notes: number; quizzes: number; liveSessions: number }; activeStudents: number }
 
 export default function CoursesAdmin() {
   const [rows, setRows] = useState<C[] | null>(null);
@@ -26,7 +26,7 @@ export default function CoursesAdmin() {
             <td className="px-4 py-3 text-xs">{c.priceFils ? formatMoney(c.priceFils, c.currency) : c.onlineEnabled ? 'Free' : '—'}</td>
             <td className="px-4 py-3 text-xs">{c._count.lessons} videos · {c._count.notes} notes · {c._count.quizzes} quizzes{c._count.liveSessions ? ` · ${c._count.liveSessions} live` : ''}</td>
             <td className="px-4 py-3">{c.activeStudents}</td>
-            <td className="px-4 py-3"><div className="flex flex-wrap gap-1"><StatusPill status={c.publishStatus} />{c.isDemo && <StatusPill status="DEMO" />}</div></td>
+            <td className="px-4 py-3"><div className="flex flex-wrap gap-1"><StatusPill status={c.publishStatus} />{c.isFeatured && <StatusPill status="FEATURED" />}{c.isDemo && <StatusPill status="DEMO" />}</div></td>
             <td className="px-4 py-3"><Link href={`/admin/courses/${c.id}`} className="text-xs font-semibold text-brand-700 hover:underline">Open builder</Link></td>
           </tr>
         ))}
