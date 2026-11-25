@@ -1,11 +1,12 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { api } from '@/lib/api';
 import { CourseCard, ProgramCard } from './Cards';
 import { Section, SectionHeading } from '@/components/ui/Section';
 
 /** Shared featured programme and course rails, shown at the bottom of public pages. */
 export async function FeaturedContent() {
-  const [home, programsT, nav, programs, courses] = await Promise.all([
+  const [locale, home, programsT, nav, programs, courses] = await Promise.all([
+    getLocale(),
     getTranslations('home'),
     getTranslations('programs'),
     getTranslations('nav'),
@@ -29,7 +30,7 @@ export async function FeaturedContent() {
       )}
       {courses.data.length > 0 && (
         <Section labelledBy="featured-courses-heading">
-          <SectionHeading id="featured-courses-heading" title={programsT('featuredCourses')} action={{ href: '/courses', label: nav('programs') }} />
+          <SectionHeading id="featured-courses-heading" title={programsT('featuredCourses')} action={{ href: '/courses', label: locale === 'ar' ? 'جميع المقررات' : 'All courses' }} />
           <div className="-mx-2 flex snap-x snap-mandatory gap-5 overflow-x-auto px-2 pb-4">
             {courses.data.map((c) => (
               <div key={c.id} className="w-[min(84vw,23rem)] shrink-0 snap-start">
