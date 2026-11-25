@@ -47,7 +47,7 @@ export interface Program extends ProgramSummary {
 
 export interface CourseSummary {
   id: string; slug: string; code: string; titleEn: string; titleAr: string; descriptionEn: string | null; descriptionAr: string | null;
-  creditHours: number; courseType: string | null; imagePath: string | null; confirmation: Confirmation;
+  creditHours: number; courseType: string | null; imagePath: string | null; onlineEnabled: boolean; confirmation: Confirmation;
 }
 export interface Course extends CourseSummary {
   outcomesEn: string[]; outcomesAr: string[];
