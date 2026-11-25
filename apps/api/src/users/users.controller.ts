@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuditService } from '../audit/audit.service';
@@ -56,6 +56,48 @@ export class UsersController {
   @RequirePermissions('users.read')
   async departments() {
     return { data: await this.prisma.department.findMany({ where: { deletedAt: null }, orderBy: { nameEn: 'asc' }, select: { id: true, nameEn: true } }) };
+  }
+
+
+  /** Department administration is restricted to Super Admins. */
+  @Get('departments/colleges')
+  @RequirePermissions('users.read')
+  async departmentColleges(@CurrentUser() actor: AuthUser) {
+    if (!actor.roles.includes('SUPER_ADMIN')) throw new ForbiddenException({ code: 'SUPER_ADMIN_REQUIRED', message: 'Only Super Admin can manage departments.' });
+    return { data: await this.prisma.college.findMany({ where: { deletedAt: null }, orderBy: { nameEn: 'asc' }, select: { id: true, nameEn: true, nameAr: true } }) };
+  }
+
+  @Get('departments')
+  @RequirePermissions('users.read')
+  async listDepartments(@CurrentUser() actor: AuthUser) {
+    if (!actor.roles.includes('SUPER_ADMIN')) throw new ForbiddenException({ code: 'SUPER_ADMIN_REQUIRED', message: 'Only Super Admin can manage departments.' });
+    const rows = await this.prisma.department.findMany({ where: { deletedAt: null }, include: { college: { select: { nameEn: true } }, _count: { select: { staff: true, courses: true, programs: true } } }, orderBy: { nameEn: 'asc' } });
+    return { data: rows.map((d) => ({ id: d.id, slug: d.slug, nameEn: d.nameEn, nameAr: d.nameAr, collegeName: d.college.nameEn, staffCount: d._count.staff, courseCount: d._count.courses, programCount: d._count.programs })) };
+  }
+
+  @Post('departments')
+  @RequirePermissions('users.write', 'roles.write')
+  async createDepartment(@Body() body: unknown, @CurrentUser() actor: AuthUser) {
+    if (!actor.roles.includes('SUPER_ADMIN')) throw new ForbiddenException({ code: 'SUPER_ADMIN_REQUIRED', message: 'Only Super Admin can manage departments.' });
+    const input = z.object({
+      slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      collegeId: z.uuid(),
+      nameEn: z.string().trim().min(2).max(150),
+      nameAr: z.string().trim().min(2).max(150),
+      overviewEn: z.string().trim().max(2000).optional(),
+      overviewAr: z.string().trim().max(2000).optional(),
+    }).parse(body);
+    const college = await this.prisma.college.findFirst({ where: { id: input.collegeId, deletedAt: null } });
+    if (!college) throw new BadRequestException({ code: 'INVALID_COLLEGE', message: 'Select a valid college.' });
+    const exists = await this.prisma.department.findUnique({ where: { slug: input.slug } });
+    if (exists) throw new BadRequestException({ code: 'SLUG_EXISTS', message: 'This department slug already exists.' });
+    const department = await this.prisma.department.create({ data: {
+      slug: input.slug, collegeId: input.collegeId, nameEn: input.nameEn, nameAr: input.nameAr,
+      overviewEn: input.overviewEn, overviewAr: input.overviewAr,
+      objectivesEn: [], objectivesAr: [], researchAreasEn: [], researchAreasAr: [],
+    }, select: { id: true, slug: true, nameEn: true, nameAr: true } });
+    await this.audit.log({ actorId: actor.id, action: 'departments.create', entityType: 'Department', entityId: department.id, metadata: { slug: department.slug } });
+    return { data: department };
   }
 
   @Get('users/:id')
