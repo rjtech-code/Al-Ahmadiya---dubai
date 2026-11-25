@@ -27,7 +27,7 @@ export default async function CoursesPage({ params, searchParams }: { params: Pr
         {result.data.length ? (
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{result.data.map((c) => <CourseCard key={c.id} c={c} />)}</div>
-            <Pagination meta={result.meta} basePath="/courses" />
+            <Pagination meta={result.meta} basePath="/courses" params={{}} />
           </>
         ) : <TbaPanel message={locale === 'ar' ? 'لا توجد مقررات منشورة حالياً.' : 'No published courses are available yet.'} />}
       </Section>
