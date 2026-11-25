@@ -20,7 +20,7 @@ export class LmsAdminService {
     const rows = await this.prisma.course.findMany({
       where: { deletedAt: null }, orderBy: { code: 'asc' },
       select: {
-        id: true, slug: true, code: true, titleEn: true, titleAr: true, imagePath: true, publishStatus: true, teacher: { select: { fullName: true } }, confirmation: true, isDemo: true, onlineEnabled: true, deliveryMode: true, priceFils: true, currency: true,
+        id: true, slug: true, code: true, titleEn: true, titleAr: true, imagePath: true, isFeatured: true, publishStatus: true, teacher: { select: { fullName: true } }, confirmation: true, isDemo: true, onlineEnabled: true, deliveryMode: true, priceFils: true, currency: true,
         department: { select: { nameEn: true } },
         _count: { select: { lessons: true, notes: true, quizzes: true, liveSessions: true } },
         enrollments: { where: { status: 'ACTIVE' }, select: { id: true } },
