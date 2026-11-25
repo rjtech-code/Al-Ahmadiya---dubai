@@ -30,7 +30,7 @@ export function Header() {
 
   const groups: Group[] = [
     { key: 'home', label: t('home'), href: '/' },
-    { key: 'academics', label: t('academics'), items: [{ href: '/colleges', label: t('colleges') }, { href: '/programs', label: t('programs') }, { href: '/faculty', label: t('faculty') }, { href: '/research', label: t('research') }] },
+    { key: 'academics', label: t('academics'), items: [{ href: '/colleges', label: t('colleges') }, { href: '/programs', label: t('programs') }, { href: '/courses', label: locale === 'ar' ? 'المقررات' : 'Courses' }, { href: '/faculty', label: t('faculty') }, { href: '/research', label: t('research') }] },
     { key: 'admissions', label: t('admissions'), items: [{ href: '/admissions', label: t('admissions') }, { href: '/admissions/eligibility', label: t('eligibility') }, { href: '/admissions/apply', label: t('apply') }, { href: '/admissions/status', label: t('track') }, { href: '/account', label: t('myPayments') }] },
     { key: 'studentLife', label: t('studentLife'), items: [{ href: '/news', label: t('news') }, { href: '/events', label: t('events') }, { href: '/campus-tour', label: t('tour') }] },
     { key: 'about', label: t('aboutUs'), items: [{ href: '/about', label: t('about') }, { href: '/contact', label: t('contact') }] },
