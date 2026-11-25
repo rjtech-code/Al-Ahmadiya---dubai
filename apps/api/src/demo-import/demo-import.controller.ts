@@ -5,7 +5,7 @@ import { Pool } from 'pg';
 import { Public } from '../common/decorators';
 import { env } from '../config/env';
 
-const DEMO_SQL_URL = 'https://raw.githubusercontent.com/rjtech-code/Al-Ahmadiya---dubai/main/al_ahmadiya_demo.sql';
+const DEMO_SQL_URL = process.env.DEMO_SQL_URL;
 
 function decodeCopyField(field: string): string | null {
   if (field === '\\N') return null;
@@ -83,6 +83,7 @@ function prepareDump(dump: string): { sql: string; tables: string[]; copiedRows:
 export class DemoImportController {
   @Post('demo-import')
   async importDemoData() {
+    if (!DEMO_SQL_URL) throw new ServiceUnavailableException('DEMO_SQL_URL is not configured.');
     const source = await fetch(DEMO_SQL_URL).catch(() => null);
     if (!source?.ok) throw new ServiceUnavailableException('Could not download al_ahmadiya_demo.sql from GitHub.');
     const dump = await source.text();
