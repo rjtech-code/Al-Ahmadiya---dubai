@@ -64,7 +64,7 @@ export async function CourseCard({ c }: { c: CourseSummary }) {
         <h3 className="font-semibold leading-snug text-brand-900"><Link href={`/courses/${c.slug}`} className={stretched}>{pick(c, 'title', locale)}</Link></h3>
         <p className="mt-0.5 text-xs text-muted">{t('credits', { count: c.creditHours })}</p>
         <Link href={`/courses/${c.slug}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
-          {locale === 'ar' ? 'سجّل الآن' : 'Enroll now'} <ArrowRight className="size-3.5" aria-hidden />
+          {c.onlineEnabled ? (locale === 'ar' ? 'سجّل الآن' : 'Enroll now') : (locale === 'ar' ? 'عرض المقرر' : 'View course')} <ArrowRight className="size-3.5" aria-hidden />
         </Link>
       </div>
     </HoverCard>
