@@ -1,6 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { CourseCard, ProgramCard } from '@/components/site/Cards';
+import { ProgramCard } from '@/components/site/Cards';
 import { CtaBand } from '@/components/site/CtaBand';
 import { PageHero } from '@/components/site/PageHero';
 import { FilterBar } from '@/components/forms/FilterBar';
@@ -27,8 +27,8 @@ export default async function ProgramsPage({ params, searchParams }: { params: P
   const s = await searchParams;
   const q = { q: sp(s.q), level: sp(s.level), category: sp(s.category), college: sp(s.college), page: sp(s.page) };
   const [t, tn, th] = await Promise.all([getTranslations('programs'), getTranslations('nav'), getTranslations('home')]);
-  const [programs, any, colleges, courses, faqs] = await Promise.all([
-    api.programs({ ...q, pageSize: 12 }), api.programs({ pageSize: 1 }), api.colleges(), api.courses({ featured: 'true', pageSize: 4 }), api.faqs('programs'),
+  const [programs, any, colleges, faqs] = await Promise.all([
+    api.programs({ ...q, pageSize: 12 }), api.programs({ pageSize: 1 }), api.colleges(), api.faqs('programs'),
   ]);
   const filtered = Object.values(q).some(Boolean);
   const hasAny = any.meta.total > 0;
@@ -57,11 +57,6 @@ export default async function ProgramsPage({ params, searchParams }: { params: P
             <Pagination meta={programs.meta} basePath="/programs" params={{ q: q.q, level: q.level, college: q.college, category: q.category }} />
           </>
         ) : <TbaPanel message={filtered && hasAny ? t('noResults') : t('empty')} />}
-      </Section>
-
-      <Section labelledBy="fc-h">
-        <SectionHeading id="fc-h" title={t('featuredCourses')} />
-        {courses.data.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{courses.data.map((c) => <CourseCard key={c.id} c={c} />)}</div> : <TbaPanel compact message={t('coursesEmpty')} />}
       </Section>
 
       <Section tone="brand" labelledBy="why-h">
