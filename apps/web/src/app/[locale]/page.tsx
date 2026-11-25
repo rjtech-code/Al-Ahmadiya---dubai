@@ -2,7 +2,7 @@ import { StudentCard } from '@/components/portal/StudentCard';
 import { ArrowRight, BookOpenText, CalendarDays, ChevronRight, ClipboardList, CreditCard, GraduationCap, Landmark, Phone, Search, Star, Users } from 'lucide-react';
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
-import { CollegeCard, EventRow, NewsCard, ProgramCard } from '@/components/site/Cards';
+import { CollegeCard, EventRow, NewsCard } from '@/components/site/Cards';
 import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import { ButtonLink, buttonClass } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: LocaleParams) {
 export default async function HomePage({ params }: LocaleParams) {
   const locale = await initPage(params);
   const [t, tn, th] = await Promise.all([getTranslations('home'), getTranslations('nav'), getTranslations('heritage')]);
-  const [heritage, colleges, programs, news, events, adm] = await Promise.all([
-    api.heritage(), api.colleges(), api.programs({ featured: 'true', pageSize: 3 }), api.news({ pageSize: 3 }), api.events({ when: 'upcoming', limit: 3 }), admissionsConfig(),
+  const [heritage, colleges, news, events, adm] = await Promise.all([
+    api.heritage(), api.colleges(), api.news({ pageSize: 3 }), api.events({ when: 'upcoming', limit: 3 }), admissionsConfig(),
   ]);
   const facade = heritageImage(heritage.media, 'al-ahmadiya-school-front-2018-amin-alwan.jpg');
   const courtyard = heritageImage(heritage.media, 'al-ahmadiya-school-2013-culturearts.jpg');
@@ -151,14 +151,6 @@ export default async function HomePage({ params }: LocaleParams) {
         {colleges.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{colleges.slice(0, 4).map((c) => <CollegeCard key={c.id} c={c} />)}</div>
         ) : <TbaPanel message={t('collegesEmpty')} />}
-      </Section>
-
-      {/* ── Featured programmes ── */}
-      <Section tone="cream" labelledBy="programs-h">
-        <SectionHeading id="programs-h" title={t('programsTitle')} subtitle={t('programsSubtitle')} action={programs.data.length ? { href: '/programs', label: tn('programs') } : undefined} />
-        {programs.data.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{programs.data.map((p) => <ProgramCard key={p.id} p={p} />)}</div>
-        ) : <TbaPanel message={t('programsEmpty')} />}
       </Section>
 
       {/* ── News & events ── */}
