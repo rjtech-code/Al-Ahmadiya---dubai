@@ -59,6 +59,51 @@ export class UsersController {
   }
 
 
+  /** College administration is restricted to Super Admins. */
+  @Get('colleges')
+  @RequirePermissions('users.read')
+  async listColleges(@CurrentUser() actor: AuthUser) {
+    if (!actor.roles.includes('SUPER_ADMIN')) throw new ForbiddenException({ code: 'SUPER_ADMIN_REQUIRED', message: 'Only Super Admin can manage colleges.' });
+    const rows = await this.prisma.college.findMany({
+      where: { deletedAt: null },
+      include: { _count: { select: { departments: true } } },
+      orderBy: [{ sortOrder: 'asc' }, { nameEn: 'asc' }],
+    });
+    return { data: rows.map((college) => ({
+      id: college.id, slug: college.slug, nameEn: college.nameEn, nameAr: college.nameAr,
+      summaryEn: college.summaryEn, summaryAr: college.summaryAr,
+      overviewEn: college.overviewEn, overviewAr: college.overviewAr,
+      publishStatus: college.publishStatus, departmentCount: college._count.departments,
+    })) };
+  }
+
+  @Post('colleges')
+  @RequirePermissions('users.write')
+  async createCollege(@Body() body: unknown, @CurrentUser() actor: AuthUser) {
+    if (!actor.roles.includes('SUPER_ADMIN')) throw new ForbiddenException({ code: 'SUPER_ADMIN_REQUIRED', message: 'Only Super Admin can manage colleges.' });
+    const input = z.object({
+      slug: z.string().trim().min(2).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      nameEn: z.string().trim().min(2).max(150),
+      nameAr: z.string().trim().min(2).max(150),
+      summaryEn: z.string().trim().max(500).optional(),
+      summaryAr: z.string().trim().max(500).optional(),
+      overviewEn: z.string().trim().max(2000).optional(),
+      overviewAr: z.string().trim().max(2000).optional(),
+    }).parse(body);
+    const exists = await this.prisma.college.findUnique({ where: { slug: input.slug } });
+    if (exists) throw new BadRequestException({ code: 'SLUG_EXISTS', message: 'This college slug already exists.' });
+    const college = await this.prisma.college.create({
+      data: {
+        slug: input.slug, nameEn: input.nameEn, nameAr: input.nameAr,
+        summaryEn: input.summaryEn, summaryAr: input.summaryAr,
+        overviewEn: input.overviewEn, overviewAr: input.overviewAr,
+      },
+      select: { id: true, slug: true, nameEn: true, nameAr: true, publishStatus: true },
+    });
+    await this.audit.log({ actorId: actor.id, action: 'colleges.create', entityType: 'College', entityId: college.id, metadata: { slug: college.slug } });
+    return { data: college };
+  }
+
   /** Department administration is restricted to Super Admins. */
   @Get('departments/colleges')
   @RequirePermissions('users.read')
