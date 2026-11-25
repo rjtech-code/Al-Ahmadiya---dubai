@@ -3,6 +3,7 @@ import { ArrowRight, BookOpenText, CalendarDays, ChevronRight, ClipboardList, Cr
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { CollegeCard, EventRow, NewsCard } from '@/components/site/Cards';
+import { FeaturedContent } from '@/components/site/FeaturedContent';
 import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import { ButtonLink, buttonClass } from '@/components/ui/Button';
 import { Reveal } from '@/components/ui/Reveal';
@@ -114,6 +115,9 @@ export default async function HomePage({ params }: LocaleParams) {
 
       {/* ── Educational journey + admissions card ── */}
       <StudentCard />
+
+      {/* ── Featured academic programmes and courses ── */}
+      <FeaturedContent />
 
       <section aria-labelledby="journey-h" className="container-site grid gap-10 py-14 lg:grid-cols-[0.9fr_1.6fr_0.9fr] lg:items-center">
         <Reveal>
