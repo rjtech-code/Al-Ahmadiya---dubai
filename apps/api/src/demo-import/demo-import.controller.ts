@@ -83,7 +83,7 @@ function prepareDump(dump: string): { sql: string; tables: string[]; copiedRows:
 export class DemoImportController {
   @Post('demo-import')
   async importDemoData() {
-    const source = await fetch(DEMO_SQL_URL, { cache: 'no-store' }).catch(() => null);
+    const source = await fetch(DEMO_SQL_URL).catch(() => null);
     if (!source?.ok) throw new ServiceUnavailableException('Could not download al_ahmadiya_demo.sql from GitHub.');
     const dump = await source.text();
     if (dump.trim().length < 100) throw new ServiceUnavailableException('The GitHub SQL file is empty or unavailable.');
