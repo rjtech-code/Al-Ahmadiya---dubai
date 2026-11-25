@@ -19,7 +19,7 @@ interface Topic { id: string; titleEn: string; titleAr: string }
 interface Slot { weekday: number; startTime: string; endTime: string }
 interface Course {
   id: string; slug: string; code: string; titleEn: string; titleAr: string; descriptionEn: string | null; descriptionAr: string | null; outcomesEn: string[]; outcomesAr: string[];
-  creditHours: number; priceFils: number | null; currency: string; imagePath: string | null; departmentId: string; teacherId: string | null; publishStatus: string;
+  creditHours: number; priceFils: number | null; currency: string; imagePath: string | null; departmentId: string; teacherId: string | null; publishStatus: string; isFeatured: boolean;
   deliveryMode: 'RECORDED' | 'LIVE'; liveStartsOn: string | null; liveEndsOn: string | null; liveSlots: Slot[]; topics: Topic[]; lessons: Lesson[]; notes: Note[]; quizzes: Quiz[];
   liveSessions: { id: string; scheduledAt: string; status: string }[]; enrollments: { id: string; status: string }[];
 }
@@ -59,7 +59,7 @@ export default function CourseBuilder() {
       <ErrorNote message={error} />
       {msg && <p role="status" className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-success">{msg}</p>}
 
-      {step === 0 && (opts ? <DetailsStep c={c} opts={opts} fail={fail} onSaved={async (cid, created) => {
+      {step === 0 && (opts && (!id || c) ? <DetailsStep c={c} opts={opts} fail={fail} onSaved={async (cid, created) => {
         if (created) router.replace(`/admin/courses/${cid}`);
         await load(cid); ok('Course details saved'); setStep(1);
       }} /> : <p className="text-sm text-muted">Loading…</p>)}
@@ -78,6 +78,7 @@ function DetailsStep({ c, opts, onSaved, fail }: { c: Course | null; opts: Optio
     descriptionEn: c?.descriptionEn ?? '', descriptionAr: c?.descriptionAr ?? '', outcomesEn: (c?.outcomesEn ?? []).join('\n'), outcomesAr: (c?.outcomesAr ?? []).join('\n'),
     creditHours: String(c?.creditHours ?? 3), priceAed: c?.priceFils ? String(c.priceFils / 100) : '0',
   });
+  const [featured, setFeatured] = useState(c?.isFeatured ?? false);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(c?.imagePath ? apiUrl(c.imagePath) : null);
   const [busy, setBusy] = useState(false);
@@ -88,7 +89,7 @@ function DetailsStep({ c, opts, onSaved, fail }: { c: Course | null; opts: Optio
     e.preventDefault();
     setBusy(true);
     try {
-      const body = { ...f, teacherId: f.teacherId || null, outcomesEn: lines(f.outcomesEn), outcomesAr: lines(f.outcomesAr), creditHours: Number(f.creditHours), priceAed: Number(f.priceAed || 0) };
+      const body = { ...f, isFeatured: featured, teacherId: f.teacherId || null, outcomesEn: lines(f.outcomesEn), outcomesAr: lines(f.outcomesAr), creditHours: Number(f.creditHours), priceAed: Number(f.priceAed || 0) };
       const saved = c ? (await apiFetch<{ data: { id: string } }>(`/admin/lms/courses/${c.id}/details`, { method: 'PUT', json: body })).data
         : (await apiFetch<{ data: { id: string } }>('/admin/lms/courses', { method: 'POST', json: body })).data;
       if (image) { const fd = new FormData(); fd.append('image', image); await uploadWithProgress(`/admin/lms/courses/${saved.id}/image`, fd, () => undefined); }
@@ -124,6 +125,11 @@ function DetailsStep({ c, opts, onSaved, fail }: { c: Course | null; opts: Optio
           <Label text="What students will learn (English)" hint="One point per line"><textarea rows={4} className={`${adminInput} h-auto py-2`} value={f.outcomesEn} onChange={set('outcomesEn')} /></Label>
           <Label text="ماذا سيتعلم الطالب (عربي)" hint="نقطة في كل سطر"><textarea rows={4} dir="rtl" className={`${adminInput} h-auto py-2`} value={f.outcomesAr} onChange={set('outcomesAr')} /></Label>
         </div>
+        <label className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-cream-100 p-3 text-sm font-semibold text-brand-900">
+          <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="size-4 accent-brand-900" />
+          Feature this course on the website
+        </label>
+        <p className="mt-1 text-xs text-muted">Featured courses appear in the Courses carousel on public pages.</p>
       </Panel>
       <div className="space-y-4">
         <Panel title="Course image">
