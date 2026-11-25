@@ -59,6 +59,7 @@ export const CourseDetails = z.object({
   creditHours: z.coerce.number().int().min(0).max(30).default(3),
   priceAed: z.coerce.number().min(0).max(1_000_000).default(0),
   teacherId: z.uuid().nullable().optional(),
+  isFeatured: z.boolean().default(false),
 });
 
 export const TopicInput = z.object({ titleEn: z.string().trim().min(1).max(200), titleAr: z.string().trim().min(1).max(200) });
