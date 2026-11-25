@@ -30,7 +30,7 @@ export class CourseBuilderService {
   private data(b: z.infer<typeof S.CourseDetails>) {
     return {
       titleEn: b.titleEn, titleAr: b.titleAr, code: b.code, departmentId: b.departmentId, descriptionEn: b.descriptionEn || null, descriptionAr: b.descriptionAr || null,
-      outcomesEn: b.outcomesEn, outcomesAr: b.outcomesAr, creditHours: b.creditHours, priceFils: Math.round(b.priceAed * 100), teacherId: b.teacherId ?? null,
+      outcomesEn: b.outcomesEn, outcomesAr: b.outcomesAr, creditHours: b.creditHours, priceFils: Math.round(b.priceAed * 100), teacherId: b.teacherId ?? null, isFeatured: b.isFeatured,
     };
   }
 
