@@ -25,7 +25,7 @@ export const DepartmentInput = z.object({
 });
 
 export const ProgramInput = z.object({
-  slug, departmentId: uuid, degreeLevel: z.enum(['FOUNDATION', 'DIPLOMA', 'BACHELOR', 'MASTER', 'DOCTORATE', 'PROFESSIONAL']),
+  departmentId: uuid, degreeLevel: z.enum(['FOUNDATION', 'DIPLOMA', 'BACHELOR', 'MASTER', 'DOCTORATE', 'PROFESSIONAL']),
   nameEn: text(), nameAr: text(), summaryEn: optText(1000), summaryAr: optText(1000), overviewEn: optText(), overviewAr: optText(),
   durationYears: z.number().min(0.5).max(10).nullish(), totalCredits: z.number().int().min(1).max(400).nullish(),
   outcomesEn: strArr, outcomesAr: strArr, requirementsEn: strArr, requirementsAr: strArr, careersEn: strArr, careersAr: strArr,
