@@ -31,6 +31,17 @@ export class CmsAdminService {
     return (this.prisma as unknown as Record<string, Delegate>)[def.model];
   }
 
+  private async nextProgramSlug(name: string) {
+    const base = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'programme';
+    let slug = base;
+    let suffix = 2;
+    while (await this.prisma.program.findFirst({ where: { slug }, select: { id: true } })) {
+      slug = `${base}-${suffix++}`;
+    }
+    return slug;
+  }
+
   private baseWhere(def: ResourceDef) {
     return def.softDelete ? { deletedAt: null } : {};
   }
@@ -57,7 +68,10 @@ export class CmsAdminService {
     const input = new ZodPipe(def.schema).transform(body);
     this.guardPublish(def, input, canPublish);
     const data = def.toData ? def.toData(input, 'create') : input;
-    const row = await this.delegate(def).create({ data });
+    const createData = name === 'programs'
+      ? { ...data, slug: await this.nextProgramSlug(String(input.nameEn ?? 'Programme')) }
+      : data;
+    const row = await this.delegate(def).create({ data: createData });
     await this.audit.log({ actorId, action: `cms.${name}.create`, entityType: def.model, entityId: String(row.id) });
     return { data: row };
   }
