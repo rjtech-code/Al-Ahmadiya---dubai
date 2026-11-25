@@ -26,6 +26,7 @@ export const NAV: NavItem[] = [
   { href: '/admin/settings', label: 'Site settings', icon: Settings, show: (c) => c('settings.write') },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare, show: (c) => c('engagement.read') },
   { href: '/admin/hr', label: 'HR overview', icon: Briefcase, show: (c) => c('hr.manage') },
+  { href: '/admin/departments', label: 'Departments', icon: Building2, show: (c) => c('users.read') },
   { href: '/admin/users', label: 'Staff & users', icon: Users, show: (c) => c('users.read') },
   { href: '/admin/roles', label: 'Roles', icon: Shield, show: (c) => c('roles.read') },
   { href: '/admin/staff-logins', label: 'Staff logins', icon: KeyRound, show: (c) => c('security.read') },
