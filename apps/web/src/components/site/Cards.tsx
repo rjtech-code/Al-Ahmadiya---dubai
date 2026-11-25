@@ -48,6 +48,9 @@ export async function ProgramCard({ p }: { p: ProgramSummary }) {
         <Badge tone="brand">{t(`levels.${p.degreeLevel}`)}</Badge>
         <h3 className="mt-2 font-display text-2xl font-semibold leading-tight text-brand-900"><Link href={`/programs/${p.slug}`} className={stretched}>{pick(p, 'name', locale)}</Link></h3>
         {p.department && <p className="mt-1 text-xs text-muted">{pick(p.department.college, 'name', locale)}</p>}
+        <Link href={`/programs/${p.slug}#join-h`} className="relative z-10 mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
+          {locale === 'ar' ? 'قدّم الآن' : 'Apply now'} <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
         <More label={tc('learnMore')} />
       </div>
     </HoverCard>
@@ -63,7 +66,7 @@ export async function CourseCard({ c }: { c: CourseSummary }) {
         <p className="text-xs font-semibold text-gold-700" dir="ltr">{c.code}</p>
         <h3 className="font-semibold leading-snug text-brand-900"><Link href={`/courses/${c.slug}`} className={stretched}>{pick(c, 'title', locale)}</Link></h3>
         <p className="mt-0.5 text-xs text-muted">{t('credits', { count: c.creditHours })}</p>
-        <Link href={`/courses/${c.slug}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
+        <Link href={`/courses/${c.slug}`} className="relative z-10 mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500">
           {c.onlineEnabled ? (locale === 'ar' ? 'سجّل الآن' : 'Enroll now') : (locale === 'ar' ? 'عرض المقرر' : 'View course')} <ArrowRight className="size-3.5" aria-hidden />
         </Link>
       </div>
