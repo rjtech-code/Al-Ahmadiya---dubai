@@ -32,7 +32,7 @@ export class CmsAdminService {
   }
 
   private async nextProgramSlug(name: string) {
-    const base = name.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase()
+    const base = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'programme';
     let slug = base;
     let suffix = 2;
