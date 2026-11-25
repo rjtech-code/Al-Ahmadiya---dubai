@@ -18,7 +18,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Course and site images are stored on Cloudinary.
   images: { formats: ['image/avif', 'image/webp'], remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com' }] },
-  // Browser API traffic goes directly to the configured NestJS origin.
+  async rewrites() {
+    const apiOrigin = process.env.API_ORIGIN?.replace(/\/$/, '');
+    return apiOrigin ? [{ source: '/api/v1/:path*', destination: `${apiOrigin}/api/v1/:path*` }] : [];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
