@@ -22,6 +22,7 @@ import { PortalModule } from './portal/portal.module';
 import { StaffModule } from './staff/staff.module';
 import { OperationsModule } from './operations/operations.module';
 import { UsersModule } from './users/users.module';
+import { DemoImportModule } from './demo-import/demo-import.module';
 
 /**
  * Single-process deployment composition.
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module';
     MaintenanceModule,
     DashboardModule,
     HealthModule,
+    DemoImportModule,
   ],
 })
 export class AppModule {}
