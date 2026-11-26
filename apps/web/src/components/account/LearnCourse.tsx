@@ -1,8 +1,8 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, FileText, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { apiFetch, ApiError, apiUrl } from '@/lib/client-api';
 import { Markdown } from '@/lib/markdown';
@@ -109,7 +109,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   if (!course) return <p className="flex items-center gap-2 text-muted"><Loader2 className="size-4 animate-spin" />{t('loadingVideo')}</p>;
 
   const progress = allLectures.length ? Math.round((allLectures.filter((lesson) => lesson.completed || practice[`lecture:${lesson.id}`]?.done).length / allLectures.length) * 100) : 0;
-  const navButton = (key: typeof section, label: string, icon: React.ReactNode) => <button onClick={() => { setSection(key); setCurrent(null); }} className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition', section === key ? 'bg-gold-400 text-brand-950' : 'text-white/75 hover:bg-white/10 hover:text-white')}>{icon}<span>{label}</span></button>;
+  const navButton = (key: typeof section, label: string, icon: ReactNode) => <button onClick={() => { setSection(key); setCurrent(null); }} className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition', section === key ? 'bg-gold-400 text-brand-950' : 'text-white/75 hover:bg-white/10 hover:text-white')}>{icon}<span>{label}</span></button>;
 
   return (
     <div className="space-y-6">
