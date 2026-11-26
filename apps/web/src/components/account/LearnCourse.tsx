@@ -52,21 +52,14 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const [error, setError] = useState('');
   const [current, setCurrent] = useState<Lesson | null>(null);
   const [activeWeek, setActiveWeek] = useState('week-1');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ 'week-1': true });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [section, setSection] = useState<'overview' | 'lecture' | 'practice' | 'graded'>('overview');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [reader, setReader] = useState<Note | null>(null);
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [practice, setPractice] = useState<PracticeState>({});
   const [answer, setAnswer] = useState('');
-  const [outlineOpen, setOutlineOpen] = useState(false);
-
-  useEffect(() => {
-    const toggleOutline = () => setOutlineOpen((value) => !value);
-    window.addEventListener('course-outline-toggle', toggleOutline);
-    return () => window.removeEventListener('course-outline-toggle', toggleOutline);
-  }, []);
-
+ 
   useEffect(() => {
     try { setPractice(JSON.parse(localStorage.getItem(`lms.practice.${slug}`) || '{}') as PracticeState); } catch { setPractice({}); }
   }, [slug]);
@@ -80,7 +73,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
       setCourse(data);
       const firstWeekId = data.topics[0]?.id ?? 'week-1';
       setActiveWeek(firstWeekId);
-      setExpanded({ [firstWeekId]: true });
+      setExpanded({});
       const target = data.lessons.find((lesson) => lesson.id === initialLesson);
       if (target) { setCurrent(target); setSection('lecture'); setActiveWeek(target.topicId ?? data.topics[0]?.id ?? 'week-1'); }
     }).catch((e: unknown) => { if (!cancelled) setError(e instanceof ApiError ? e.message : 'Unable to load course'); });
@@ -110,7 +103,6 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   };
 
   const play = async (lesson: Lesson) => {
-    setOutlineOpen(false);
     setCurrent(lesson);
     setActiveWeek(lesson.topicId ?? activeWeek);
     setSection('lecture');
@@ -144,55 +136,9 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   if (!course) return <p className="flex items-center gap-2 text-muted"><Loader2 className="size-4 animate-spin" />{t('loadingVideo')}</p>;
 
   const progress = allLectures.length ? Math.round((allLectures.filter((lesson) => lesson.completed || practice[`lecture:${lesson.id}`]?.done).length / allLectures.length) * 100) : 0;
-  const navButton = (key: typeof section, label: string, icon: ReactNode) => <button onClick={() => { setSection(key); setCurrent(null); setOutlineOpen(false); }} className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition', section === key ? 'bg-gold-400 text-brand-950' : 'text-white/75 hover:bg-white/10 hover:text-white')}>{icon}<span>{label}</span></button>;
-
   return (
-    <div className="min-h-dvh">
-      <div className="grid min-h-dvh items-stretch gap-0 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="pattern-girih hidden h-dvh max-h-dvh self-start border-e border-white/10 bg-brand-950 p-4 text-white lg:sticky lg:top-0 lg:block lg:overflow-x-hidden lg:overflow-y-auto overscroll-contain">
-
-          <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            {navButton('practice', 'Course practice', <ClipboardCheck className="size-4" />)}
-            {navButton('graded', 'Graded work', <Trophy className="size-4" />)}
-          </div>
-          <div className="space-y-2">
-            {weeks.map((week, index) => (
-              <div key={week.id} className="overflow-hidden rounded-xl bg-white/5">
-                <button onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); setSection('overview'); setCurrent(null); }} aria-expanded={!!expanded[week.id]} className={cn('flex w-full items-center gap-2 px-3 py-3 text-start text-sm font-semibold', activeWeek === week.id && 'text-gold-300')}>
-                  {expanded[week.id] ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}<span className="flex-1">{week.titleEn || `Week ${index + 1}`}</span><span className="text-xs text-white/50">{week.lessons.length}</span>
-                </button>
-                {expanded[week.id] && <div className="space-y-1 px-2 pb-2">
-                  {week.lessons.map((lesson, i) => <button key={lesson.id} onClick={() => void play(lesson)} className={cn('flex w-full items-center gap-2 rounded-lg px-2 py-2 text-start text-xs', current?.id === lesson.id ? 'bg-gold-400 font-semibold text-brand-950' : 'text-white/75 hover:bg-white/10')}><PlayCircle className="size-4 shrink-0" /><span className="flex-1">{`Lecture ${String(i + 1).padStart(2, '0')}`}</span>{(lesson.completed || practice[`lecture:${lesson.id}`]?.done) && <CheckCircle2 className="size-4 text-emerald-400" />}</button>)}
-                  <button onClick={() => { setSection('overview'); setCurrent(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-gold-300 hover:bg-white/10"><ClipboardCheck className="size-4" />Week practice & quiz</button>
-                </div>}
-              </div>
-            ))}
-          </div>
-        
-        </aside>
-        {outlineOpen && <div className="fixed inset-0 z-[70] lg:hidden"><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute inset-0 bg-brand-950/60" /><aside className="absolute inset-y-0 start-0 w-[min(21rem,88vw)] overflow-y-auto bg-brand-950 p-4 pt-16 text-white shadow-2xl">
-          <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            {navButton('practice', 'Course practice', <ClipboardCheck className="size-4" />)}
-            {navButton('graded', 'Graded work', <Trophy className="size-4" />)}
-          </div>
-          <div className="space-y-2">
-            {weeks.map((week, index) => (
-              <div key={week.id} className="overflow-hidden rounded-xl bg-white/5">
-                <button onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); setSection('overview'); setCurrent(null); setOutlineOpen(false); }} aria-expanded={!!expanded[week.id]} className={cn('flex w-full items-center gap-2 px-3 py-3 text-start text-sm font-semibold', activeWeek === week.id && 'text-gold-300')}>
-                  {expanded[week.id] ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}<span className="flex-1">{week.titleEn || `Week ${index + 1}`}</span><span className="text-xs text-white/50">{week.lessons.length}</span>
-                </button>
-                {expanded[week.id] && <div className="space-y-1 px-2 pb-2">
-                  {week.lessons.map((lesson, i) => <button key={lesson.id} onClick={() => void play(lesson)} className={cn('flex w-full items-center gap-2 rounded-lg px-2 py-2 text-start text-xs', current?.id === lesson.id ? 'bg-gold-400 font-semibold text-brand-950' : 'text-white/75 hover:bg-white/10')}><PlayCircle className="size-4 shrink-0" /><span className="flex-1">{`Lecture ${String(i + 1).padStart(2, '0')}`}</span>{(lesson.completed || practice[`lecture:${lesson.id}`]?.done) && <CheckCircle2 className="size-4 text-emerald-400" />}</button>)}
-                  <button onClick={() => { setSection('overview'); setCurrent(null); setOutlineOpen(false); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-gold-300 hover:bg-white/10"><ClipboardCheck className="size-4" />Week practice & quiz</button>
-                </div>}
-              </div>
-            ))}
-          </div>
-        </aside><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-white text-brand-950"><X className="size-5" /></button></div>}
-
-        <main className="min-w-0 space-y-5 p-4 sm:p-8 lg:p-10">
+    <div className="min-h-[60vh]">
+      <main className="mx-auto min-w-0 max-w-7xl space-y-5">
           <div className="flex items-center gap-3 lg:hidden"><button type="button" onClick={() => setOutlineOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-900 text-white" aria-label="Open course outline"><Menu className="size-5" /></button><span className="text-sm font-semibold text-brand-900">Course outline</span></div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
@@ -228,8 +174,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
               </div>
             </section>
           )}
-        </main>
-      </div>
+      </main>
 
       {reader && <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-brand-950/60 p-4" onClick={() => setReader(null)}><div onClick={(event) => event.stopPropagation()} className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-cream-50"><div className="flex items-center justify-between border-b border-line p-4"><h2 className="font-display text-xl font-semibold text-brand-900">{L(reader)}</h2><button onClick={() => setReader(null)} className="rounded-full px-3 py-1 hover:bg-cream-200">Close</button></div><div className="flex-1 overflow-y-auto p-5">{readerUrl ? <iframe title={L(reader)} src={readerUrl} className="h-full min-h-[65vh] w-full rounded-xl border border-line" /> : reader.bodyEn || reader.bodyAr ? <Markdown source={locale === "ar" ? reader.bodyAr ?? reader.bodyEn ?? "" : reader.bodyEn ?? reader.bodyAr ?? ""} /> : <p className="text-sm text-muted">PDF preview is not available for this demo note.</p>}</div></div></div>}
     </div>
