@@ -22,9 +22,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const applyDemoRole = () => {
       const demo = readDemoSession();
-      if (!demo || demo.role === 'STUDENT') {
+      if (!demo) {
         setUser(null);
-        router.replace('/');
+        router.replace('/admin/login');
+        return;
+      }
+      if (demo.role === 'STUDENT') {
+        setUser(null);
+        router.replace('/en/portal');
         return;
       }
       setUser({ id: demo.id, email: demo.email, fullName: demo.fullName, roles: demo.roles, permissions: demo.permissions });
@@ -38,11 +43,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     };
   }, [router, pathname]);
 
-  if (!user) return <div className="grid min-h-dvh place-items-center text-sm text-muted">Loading local workspace…</div>;
+  if (!user) return <div className="grid min-h-dvh place-items-center text-sm text-muted">Opening your local workspace…</div>;
   const signOut = async () => {
     clearDemoSession();
     setUser(null);
-    router.replace('/');
+    router.replace('/admin/login');
   };
   return <AdminCtx.Provider value={{ user, can: (p) => user.permissions.includes('*') || user.permissions.includes(p), signOut }}>{children}</AdminCtx.Provider>;
 }
