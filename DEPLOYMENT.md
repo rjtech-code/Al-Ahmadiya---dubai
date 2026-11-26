@@ -1,123 +1,33 @@
-# Deployment & Local Setup
+# Frontend-only deployment
+
+The Al Ahmadiya website and ERP frontend now run in local-demo mode. The web application does not connect to NestJS, PostgreSQL, Render, or an external authentication service. ERP demo records and role selection are stored in the browser's local storage.
 
 ## Local development
-Requires Node 22+ and PostgreSQL 16 (a role for your OS user: `sudo -u postgres createuser -s $USER`).
+
+Requires Node.js 22+.
 
 ```bash
-createdb al_ahmadiya && createdb al_ahmadiya_test
 npm install
-cp apps/api/.env.example apps/api/.env      # set secrets: openssl rand -hex 32
 cp apps/web/.env.example apps/web/.env.local
-npm run db:migrate          # prisma migrate dev
-npm run db:seed             # roles, admin, settings, heritage
-npm run db:seed:content -w apps/api   # colleges, programmes, courses, news, events, research, tour + images
-npm run dev:api             # API (docs /api/docs)
-npm run dev:web             # Website (admin /admin)
+npm run dev:web
 ```
 
-The initial Super Admin comes from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`. **Change the password after first sign-in.**
+Open:
+- Website: http://localhost:3000/en
+- Admin / role selection: http://localhost:3000/admin/login
 
-Opening admissions: in Admin → Site settings, set `admissions.status` to `OPEN` and mark it Confirmed.
+Choose a demo role. The role is stored locally and opens its workspace directly. No API server or database is required.
 
-## Checks
-`npm run lint` · `npm run typecheck` · `npm test` (API unit + e2e against `al_ahmadiya_test`; the suite refuses to run against a database whose name does not end in `_test`) · `npm run build`.
+## Vercel deployment
 
----
+- Set the Vercel Root Directory to `apps/web`.
+- Build command: `npm run build`.
+- Install command: `npm install`.
+- Add `NEXT_PUBLIC_SITE_URL` with the canonical website origin.
+- Do not configure `API_ORIGIN`, `NEXT_PUBLIC_API_ORIGIN`, `NEXT_PUBLIC_LIVE_ORIGIN`, database credentials, or backend secrets for this frontend.
 
-## Production
+The frontend intentionally disables API proxying and live signalling. CRUD demo actions are stored in browser local storage and are local to each browser/device. Clearing browser storage resets the demo data.
 
-Target: one Linux server (Ubuntu 22.04/24.04, 4 vCPU / 8 GB RAM or more, in the UAE region per PDPL) running Nginx, PM2 and Node 22, with a managed PostgreSQL 16 database. Files in `deploy/`:
+## Important limitations
 
-| File | Purpose |
-|---|---|
-| `deploy/api.env.production.example` | Template for `apps/api/.env` on the server |
-| `deploy/web.env.production.example` | Template for `apps/web/.env.production.local` on the server |
-| `deploy/nginx.conf.example` | HTTPS, `/api/v1/` and `/socket.io/` to the API, everything else to the website |
-| `ecosystem.config.cjs` | PM2 processes `ahmadiya-api` (port 4000) and `ahmadiya-web` (port 3000), both bound to 127.0.0.1 |
-| `deploy/deploy.sh` | Install → migrate → build → start/reload → health check |
-| `deploy/backup.sh` | Nightly `pg_dump` + uploaded files archive |
-
-### Origin configuration
-
-Keep origins in environment variables; do not add deployment hostnames to application source:
-
-- `API_ORIGIN` — private/server-side NestJS API origin used by Next.js server fetches, the sitemap, and the `/api/v1/*` rewrite. Set only the absolute API origin in the environment, without `/api/v1`.
-- `NEXT_PUBLIC_API_ORIGIN` — browser-reachable API origin used by the live-class Socket.IO client when signalling is hosted separately. Set it to the browser-reachable API origin. For same-origin Socket.IO, set it to the website origin; do not rely on browser-origin inference.
-- `NEXT_PUBLIC_LIVE_ORIGIN` — optional dedicated live-signalling origin; when set, it takes priority over `NEXT_PUBLIC_API_ORIGIN`.
-- `NEXT_PUBLIC_SITE_URL` — public website origin for canonical URLs and sitemap links.
-- `WEB_BASE_URL` / `WEB_INTERNAL_URL` — API-to-website origin for password-reset links and cache revalidation. `WEB_INTERNAL_URL` may be an internal address when both services share a private network.
-- `CORS_ORIGINS` — comma-separated website origins allowed by the API; these are not API endpoint URLs.
-
-Browser REST requests intentionally use relative `/api/v1/*` paths through the Next.js proxy so the refresh cookie remains first-party. E2E tests also use in-process Supertest requests and a temporary loopback Socket.IO server; those test URLs are not production API origins.
-
-### Safety built into the code
-With `NODE_ENV=production` the API refuses to start if any of these is wrong, and prints what to fix:
-- JWT/cookie secrets shorter than 64 characters, identical, or still placeholders; missing `REVALIDATE_SECRET`
-- `WEB_BASE_URL` / `CORS_ORIGINS` not `https://`
-- a remote `DATABASE_URL` without `sslmode=`
-- `LIVE_ANNOUNCED_IP` left as a local address
-- `PAYMENT_PROVIDER=test` (development gateway), or Razorpay selected with missing or placeholder keys / webhook secret
-- `SHOW_DEMO_CONTENT=true`
-
-Also in production: Swagger (`/api/docs`) is off, cookies are `Secure`, HSTS is sent, and `npm run db:seed` rejects a weak or `@localhost` admin account.
-
-### First deployment
-```bash
-# 1. Server packages
-sudo apt install -y nginx certbot python3-certbot-nginx postgresql-client build-essential python3
-curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && nvm install 22
-npm install -g pm2 && pm2 startup         # follow the printed command once
-
-# 2. Code
-sudo mkdir -p /srv/ahmadiya /var/lib/ahmadiya/storage && sudo chown -R $USER /srv/ahmadiya /var/lib/ahmadiya
-git clone <repository> /srv/ahmadiya && cd /srv/ahmadiya
-
-# 3. Settings (fill in every value; generate secrets with: openssl rand -hex 32)
-cp deploy/api.env.production.example apps/api/.env
-cp deploy/web.env.production.example apps/web/.env.production.local
-chmod 600 apps/api/.env apps/web/.env.production.local
-
-# 4. Build, migrate, start
-bash deploy/deploy.sh
-
-# 5. First data (once)
-npm run db:seed                         # roles, Super Admin, settings, heritage timeline
-npm run db:seed:content -w apps/api     # academic content + images (skip if you will enter content in the admin panel)
-#    then delete SEED_ADMIN_PASSWORD from apps/api/.env
-
-# 6. Web server and HTTPS
-sudo cp deploy/nginx.conf.example /etc/nginx/sites-available/ahmadiya   # replace example.com
-sudo ln -s /etc/nginx/sites-available/ahmadiya /etc/nginx/sites-enabled/
-sudo certbot --nginx -d example.com -d www.example.com
-sudo nginx -t && sudo systemctl reload nginx
-
-# 7. Firewall
-sudo ufw allow OpenSSH && sudo ufw allow 'Nginx Full'
-sudo ufw allow 40000:40200/udp && sudo ufw allow 40000:40200/tcp     # live classes
-sudo ufw enable
-```
-
-### Updates
-```bash
-cd /srv/ahmadiya && git pull && bash deploy/deploy.sh
-```
-`deploy.sh` applies new migrations with `prisma migrate deploy` (never `migrate dev`/`reset` in production) and reloads PM2.
-
-### Payments (Razorpay)
-Live keys from the Razorpay dashboard go in `apps/api/.env`. Set the webhook URL from the deployed API origin plus `/api/v1/payments/razorpay/webhook` (events `payment.captured`, `order.paid`) with the same secret as `RAZORPAY_WEBHOOK_SECRET`. Make one small real payment and refund it before launch.
-
-### Live classes (self-hosted media server)
-Open UDP and TCP `LIVE_RTC_MIN_PORT`–`LIVE_RTC_MAX_PORT` (default 40000–40200), set `LIVE_ANNOUNCED_IP` to the server's public IP, and keep HTTPS on (browsers only allow camera/microphone over HTTPS). The API runs as a single process because live-class rooms live in memory. Roughly 200 viewers per CPU core; for users on strict networks add a TURN server (coturn) in the UAE region.
-
-### Backups
-`deploy/backup.sh` writes a database dump and an archive of `STORAGE_DIR` (uploaded videos, notes, applicant documents) to `/var/backups/ahmadiya`, keeping 14 days. Schedule it with cron (example inside the script), copy the backups off the server, and run a restore test before go-live. Use the managed database's point-in-time recovery as well.
-
-### Before go-live
-- [ ] Domain DNS points at the server; HTTPS certificate issued
-- [ ] `apps/api/.env` and `apps/web/.env.production.local` filled; API starts without "Unsafe production configuration"
-- [ ] Super Admin password changed after first sign-in; `SEED_ADMIN_PASSWORD` removed from the file
-- [ ] Placeholder faculty names, publications and course prices replaced with real ones in the admin panel
-- [ ] Site settings filled and Confirmed (contact details, admissions status, application fee)
-- [ ] Razorpay live payment and webhook tested
-- [ ] A live class tested from a phone on mobile data
-- [ ] Backup cron running and one restore tested
+This is a frontend demonstration environment, not a production ERP deployment. Local demo data is not shared between users or devices. Real payments, live streaming, private document uploads, email delivery, and cross-device account authentication are not available in this mode. The NestJS source remains in the repository for reference but is not used by the website.
