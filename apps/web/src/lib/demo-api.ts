@@ -185,7 +185,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/admin/finance/students/')) {
     const studentId = clean.split('/')[4]; const student = financeStudents.find((x) => x.id === studentId) ?? financeStudents[0];
     return wrap({ fullName: student.name, email: student.email, paidFils: student.paidFils, dueFils: student.dueFils,
-      enrollments: student.courses.map((course, index) => ({ id: `${student.id}-enrol-${index}`, status: course.status, activatedAt: course.status === 'ACTIVE' ? now() : null, createdAt: now(), course: { code: course.code, titleEn: course.title, priceFils: 250000, currency: 'AED' } })),
+      enrollments: student.courses.map((course: any, index: number) => ({ id: `${student.id}-enrol-${index}`, status: course.status, activatedAt: course.status === 'ACTIVE' ? now() : null, createdAt: now(), course: { code: course.code, titleEn: course.title, priceFils: 250000, currency: 'AED' } })),
       payments: student.paidFils ? [{ id: `${student.id}-payment`, purpose: 'course', description: 'Demo course payment', amountFils: student.paidFils, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-RECEIPT', paidAt: now(), createdAt: now() }] : [],
     }) as R;
   }
@@ -387,7 +387,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
       course.lessons.push({ id: id(), status: 'DRAFT', isPreview: false, videoBytes: null, topicId: null, liveSessionId: null, descriptionEn: null, descriptionAr: null, ...payload }); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
     }
     if (parts[5] === 'lessons' && parts.length === 6 && method === 'PUT') {
-      const row = course.lessons.find((x) => x.id === payload.id); if (row) Object.assign(row, payload); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+      const row = course.lessons.find((x: any) => x.id === payload.id); if (row) Object.assign(row, payload); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
     }
     if (parts[5] === 'lessons' && parts[6] === 'reorder' && method === 'POST') {
       course.lessons = [...course.lessons].sort((a, b) => payload.ids.indexOf(a.id) - payload.ids.indexOf(b.id)); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
@@ -402,18 +402,18 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/admin/lms/topics/')) {
     const topicId = clean.split('/').pop(); const courses = getList(store, 'lms.courses', [courseSeed]);
     for (const course of courses) {
-      const topic = course.topics.find((x) => x.id === topicId);
+      const topic = course.topics.find((x: any) => x.id === topicId);
       if (topic && method === 'PUT') Object.assign(topic, payload);
-      if (topic && method === 'DELETE') course.topics = course.topics.filter((x) => x.id !== topicId);
+      if (topic && method === 'DELETE') course.topics = course.topics.filter((x: any) => x.id !== topicId);
     }
     store['lms.courses'] = courses; writeStore(store); return wrap({ success: true }) as R;
   }
   if (clean.startsWith('/admin/lms/lessons/')) {
     const lessonId = clean.split('/')[4]; const courses = getList(store, 'lms.courses', [courseSeed]);
     for (const course of courses) {
-      const lesson = course.lessons.find((x) => x.id === lessonId);
+      const lesson = course.lessons.find((x: any) => x.id === lessonId);
       if (lesson && method === 'PUT') Object.assign(lesson, payload);
-      if (lesson && method === 'DELETE') course.lessons = course.lessons.filter((x) => x.id !== lessonId);
+      if (lesson && method === 'DELETE') course.lessons = course.lessons.filter((x: any) => x.id !== lessonId);
     }
     store['lms.courses'] = courses; writeStore(store);
     if (clean.endsWith('/preview')) return wrap({ url: '' }) as R;
@@ -422,8 +422,8 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/admin/lms/notes/') || clean.startsWith('/admin/lms/quizzes/')) {
     const recordId = clean.split('/').pop(); const courses = getList(store, 'lms.courses', [courseSeed]);
     for (const course of courses) {
-      course.notes = course.notes.filter((x) => x.id !== recordId);
-      course.quizzes = course.quizzes.filter((x) => x.id !== recordId);
+      course.notes = course.notes.filter((x: any) => x.id !== recordId);
+      course.quizzes = course.quizzes.filter((x: any) => x.id !== recordId);
     }
     store['lms.courses'] = courses; writeStore(store); return wrap({ success: true }) as R;
   }
@@ -652,7 +652,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/applications/') && clean.includes('/documents/') && method === 'DELETE') {
     const parts = clean.split('/'); const appId = parts[2]; const docId = parts[4];
     const app = applicationRows.find((a) => a.id === appId && (a.userId === user?.id || a.applicant?.email === user?.email));
-    if (app) app.documents = (app.documents ?? []).filter((d) => d.id !== docId);
+    if (app) app.documents = (app.documents ?? []).filter((d: any) => d.id !== docId);
     store['admissions.applications'] = applicationRows; writeStore(store); return wrap({ success: true }) as R;
   }
   if (clean.startsWith('/payments/application/') && method === 'POST') {
@@ -663,7 +663,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean === '/public/admissions/status' && method === 'POST') {
     const app = applicationRows.find((a) => a.reference === payload.reference && a.applicant?.email?.toLowerCase() === String(payload.email || '').toLowerCase());
     if (!app) return wrap({ reference: payload.reference, status: 'DRAFT', submittedAt: null, program: null, timeline: [], pendingDocuments: ['identity'] }) as R;
-    return wrap({ reference: app.reference, status: app.status, submittedAt: app.submittedAt, program: app.program, timeline: (app.statusHistory ?? []).map((h) => ({ toStatus: h.toStatus, createdAt: h.createdAt })), pendingDocuments: [] }) as R;
+    return wrap({ reference: app.reference, status: app.status, submittedAt: app.submittedAt, program: app.program, timeline: (app.statusHistory ?? []).map((h: any) => ({ toStatus: h.toStatus, createdAt: h.createdAt })), pendingDocuments: [] }) as R;
   }
   if (clean === '/public/admissions/eligibility' && method === 'POST') {
     const program = (cmsSeeds.programs ?? []).find((p) => p.slug === payload.programSlug);
@@ -701,9 +701,9 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
 
   if (method === 'POST') {
     const rows = getList(store, `collection:${clean}`, []);
-    const created = { id: id(), ...payload, createdAt: now(), createdBy: role };
+    const created = { ...payload, id: id(), createdAt: now(), createdBy: role };
     rows.push(created); store[`collection:${clean}`] = rows; writeStore(store);
-    return wrap({ success: true, id: created.id, ...created }) as R;
+    return wrap({ success: true, ...created }) as R;
   }
   if (method === 'PUT' || method === 'PATCH') {
     const parts = clean.split('/');
