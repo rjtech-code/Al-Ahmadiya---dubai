@@ -7,7 +7,9 @@ const STORAGE = 'al-ahmadiya-local-erp-data';
 const now = () => new Date().toISOString();
 const id = () => `local-${Math.random().toString(36).slice(2, 10)}`;
 
-const ROLE_DEMO_PERMISSIONS: Record<string, string[]> = { UNIVERSITY_ADMIN: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'] };\n\nconst initialItems = [
+const ROLE_DEMO_PERMISSIONS: Record<string, string[]> = { UNIVERSITY_ADMIN: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'] };
+
+const initialItems = [
   { id: 'book-001', type: 'BOOK', title: 'Introduction to Computer Science', author: 'A. Rahman', isbn: '9780000000011', subject: 'Computing', year: 2023, url: null, copies: 12, isPublic: true, available: 9, onLoan: 3 },
   { id: 'book-002', type: 'BOOK', title: 'Principles of Business Management', author: 'M. Hassan', isbn: '9780000000028', subject: 'Business', year: 2022, url: null, copies: 8, isPublic: true, available: 6, onLoan: 2 },
   { id: 'book-003', type: 'BOOK', title: 'Academic Writing and Research', author: 'S. Karim', isbn: '9780000000035', subject: 'Research', year: 2024, url: null, copies: 10, isPublic: true, available: 10, onLoan: 0 },
