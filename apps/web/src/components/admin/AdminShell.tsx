@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Briefcase, LibraryBig, ScrollText, ShoppingCart, Building2, CalendarOff, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X } from 'lucide-react';
+import { BookOpen, Briefcase, LibraryBig, ScrollText, ShoppingCart, Building2, CalendarOff, Presentation, Wallet, FileText, GraduationCap, KeyRound, LayoutDashboard, Library, LogOut, Menu, MessageSquare, Radio, Settings, Shield, Users, X, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -13,6 +13,7 @@ export const NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, show: (c) => c('dashboard.read') },
   { href: '/admin/department', label: 'My department', icon: Building2, show: (c) => c('department.lead') },
   { href: '/admin/teach', label: 'My teaching', icon: Presentation, show: (c) => c('teach.own') },
+  { href: '/admin/assessment-results', label: 'Graded assignment results', icon: ClipboardCheck, show: (c) => c('teach.own') || c('department.lead') },
   { href: '/admin/courses', label: 'Online courses', icon: BookOpen, show: (c) => c('lms.manage') },
   { href: '/admin/live', label: 'All live classes', icon: Radio, show: (c) => c('lms.manage') && c('live.host') },
   { href: '/admin/admissions/overview', label: 'Admissions overview', icon: LayoutDashboard, show: (c) => c('admissions.read') && !c('dashboard.read') },
