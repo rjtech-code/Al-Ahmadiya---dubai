@@ -50,7 +50,7 @@ export default function MyCourses() {
         </div>
       ) : <Empty text={t('empty')}><Link href="/courses" className="font-semibold text-brand-700">{t('browse')}</Link></Empty>)}
       {tab === 'wishlist' && (!wish.data ? <Loading /> : wish.data.filter(match).length ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
           {wish.data.filter(match).map((c) => (
             <article key={c.id} className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
               {img(c.imagePath)}
