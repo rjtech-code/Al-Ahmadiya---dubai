@@ -174,16 +174,41 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   }
 
   const listPaths = ['/admin/applications', '/admin/users', '/admin/roles', '/admin/cms', '/admin/contact-messages', '/admin/newsletter-subscribers', '/admin/leave', '/admin/live/sessions', '/admin/lms/courses', '/admin/records/students', '/admin/payments', '/me/notifications', '/me/courses', '/me/live'];
-  if (listPaths.includes(clean)) return wrap([], listMeta([])) as R;
-
-  if (method !== 'GET' && method !== 'HEAD') {
-    const key = `mutation:${clean}`;
-    const rows = getList(store, key, []);
-    rows.push({ id: id(), ...payload, createdAt: now(), createdBy: role });
-    store[key] = rows; writeStore(store);
-    return wrap({ success: true, id: rows[rows.length - 1].id }) as R;
+  if (listPaths.includes(clean)) {
+    const rows = getList(store, `collection:${clean}`, []);
+    return wrap(rows, listMeta(rows)) as R;
   }
 
+  if (method === 'POST') {
+    const rows = getList(store, `collection:${clean}`, []);
+    const created = { id: id(), ...payload, createdAt: now(), createdBy: role };
+    rows.push(created); store[`collection:${clean}`] = rows; writeStore(store);
+    return wrap({ success: true, id: created.id, ...created }) as R;
+  }
+  if (method === 'PUT' || method === 'PATCH') {
+    const parts = clean.split('/');
+    const recordId = parts.pop() || '';
+    const collection = parts.join('/');
+    const rows = getList(store, `collection:${collection}`, []);
+    const index = rows.findIndex((row) => row.id === recordId);
+    if (index >= 0) rows[index] = { ...rows[index], ...payload, updatedAt: now() };
+    else rows.push({ id: recordId || id(), ...payload, updatedAt: now() });
+    store[`collection:${collection}`] = rows; writeStore(store);
+    return wrap({ success: true }) as R;
+  }
+  if (method === 'DELETE') {
+    const parts = clean.split('/');
+    const recordId = parts.pop() || '';
+    const collection = parts.join('/');
+    const rows = getList(store, `collection:${collection}`, []).filter((row) => row.id !== recordId);
+    store[`collection:${collection}`] = rows; writeStore(store);
+    return wrap({ success: true }) as R;
+  }
+
+  if (Array.isArray(store[`collection:${clean}`])) {
+    const rows = store[`collection:${clean}`];
+    return wrap(rows, listMeta(rows)) as R;
+  }
   if (clean.includes('/overview') || clean.includes('/summary') || clean.endsWith('/config') || clean.endsWith('/dashboard')) return wrap({}) as R;
   if (clean.includes('/students')) return wrap([], listMeta([])) as R;
   if (clean.includes('/items') || clean.includes('/loans') || clean.includes('/applications') || clean.includes('/notifications') || clean.includes('/courses') || clean.includes('/sessions')) return wrap([]) as R;
