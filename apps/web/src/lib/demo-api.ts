@@ -245,6 +245,97 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     }
     return wrap(app ?? {}) as R;
   }
+  const courseSeed = {
+    id: 'course-01', slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة',
+    descriptionEn: 'Sample course for the local ERP preview.', descriptionAr: 'مقرر تجريبي لمعاينة نظام تخطيط الموارد.',
+    outcomesEn: ['Understand computing fundamentals'], outcomesAr: ['فهم أساسيات الحوسبة'], creditHours: 3, priceFils: 250000, currency: 'AED',
+    imagePath: null, departmentId: 'dept-01', teacherId: 'faculty-01', publishStatus: 'PUBLISHED', isFeatured: true, deliveryMode: 'RECORDED',
+    liveStartsOn: null, liveEndsOn: null, liveSlots: [],
+    topics: [{ id: 'topic-01', titleEn: 'Programming basics', titleAr: 'أساسيات البرمجة' }],
+    lessons: [{ id: 'lesson-01', titleEn: 'Variables and data types', titleAr: 'المتغيرات وأنواع البيانات', descriptionEn: 'An introductory lesson.', descriptionAr: 'درس تمهيدي.', status: 'PUBLISHED', isPreview: true, videoBytes: null, topicId: 'topic-01', liveSessionId: null }],
+    notes: [{ id: 'note-01', titleEn: 'Course outline', titleAr: 'مخطط المقرر', bodyEn: 'Sample notes for preview.', fileName: null, lessonId: null }],
+    quizzes: [{ id: 'quiz-01', titleEn: 'Programming basics quiz', passPercent: 60, questions: [], lessonId: 'lesson-01' }],
+    liveSessions: [], enrollments: [{ id: 'enrol-01', status: 'ACTIVE' }],
+  };
+  const courseRows = getList(store, 'lms.courses', [courseSeed, { ...courseSeed, id: 'course-02', slug: 'business-foundations', code: 'BUS101', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال', departmentId: 'dept-02', teacherId: null, deliveryMode: 'LIVE', topics: [], lessons: [], notes: [], quizzes: [], enrollments: [] }]);
+  if (clean === '/admin/lms/options') return wrap({ departments: [{ id: 'dept-01', nameEn: 'Computer Science', college: { nameEn: 'College of Computing' } }, { id: 'dept-02', nameEn: 'Business Administration', college: { nameEn: 'College of Business' } }], teachers: [{ id: 'faculty-01', fullName: 'Demo Faculty Member', email: 'faculty.demo@example.test' }] }) as R;
+  if (clean === '/admin/lms/courses' && method === 'POST') {
+    const created = { ...courseSeed, ...payload, id: id(), slug: String(payload.slug || payload.titleEn || 'new-course').toLowerCase().replace(/[^a-z0-9]+/g, '-'), publishStatus: 'DRAFT', topics: [], lessons: [], notes: [], quizzes: [], liveSessions: [], enrollments: [] };
+    courseRows.push(created); store['lms.courses'] = courseRows; writeStore(store); return wrap({ id: created.id }) as R;
+  }
+  if (clean === '/admin/lms/courses') return wrap(courseRows.map((x) => ({ ...x, _count: { lessons: x.lessons.length, notes: x.notes.length, quizzes: x.quizzes.length, liveSessions: x.liveSessions.length }, activeStudents: x.enrollments.length }))) as R;
+  if (clean.startsWith('/admin/lms/courses/')) {
+    const parts = clean.split('/'); const courseId = parts[4]; const course = courseRows.find((x) => x.id === courseId) ?? courseRows[0];
+    if (parts.length === 5 && method === 'GET') return wrap(course) as R;
+    if (parts[5] === 'details' && method === 'PUT') {
+      Object.assign(course, payload); store['lms.courses'] = courseRows; writeStore(store); return wrap({ id: course.id }) as R;
+    }
+    if (parts[5] === 'live-plan' && method === 'PUT') {
+      Object.assign(course, payload); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'publish' && method === 'POST') {
+      course.publishStatus = payload.publish ? 'PUBLISHED' : 'DRAFT'; store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'topics' && parts.length === 6 && method === 'POST') {
+      course.topics.push({ id: id(), titleEn: payload.titleEn, titleAr: payload.titleAr }); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'topics' && parts[6] === 'reorder' && method === 'POST') {
+      course.topics = [...course.topics].sort((a, b) => payload.ids.indexOf(a.id) - payload.ids.indexOf(b.id)); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'lessons' && parts.length === 6 && method === 'POST') {
+      course.lessons.push({ id: id(), status: 'DRAFT', isPreview: false, videoBytes: null, topicId: null, liveSessionId: null, descriptionEn: null, descriptionAr: null, ...payload }); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'lessons' && parts.length === 6 && method === 'PUT') {
+      const row = course.lessons.find((x) => x.id === payload.id); if (row) Object.assign(row, payload); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'lessons' && parts[6] === 'reorder' && method === 'POST') {
+      course.lessons = [...course.lessons].sort((a, b) => payload.ids.indexOf(a.id) - payload.ids.indexOf(b.id)); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'notes' && parts.length === 6 && method === 'POST') {
+      course.notes.push({ id: id(), bodyEn: null, fileName: null, lessonId: null, ...payload }); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (parts[5] === 'quizzes' && parts.length === 6 && method === 'POST') {
+      course.quizzes.push({ id: id(), ...payload }); store['lms.courses'] = courseRows; writeStore(store); return wrap({ success: true }) as R;
+    }
+  }
+  if (clean.startsWith('/admin/lms/topics/')) {
+    const topicId = clean.split('/').pop(); const courses = getList(store, 'lms.courses', [courseSeed]);
+    for (const course of courses) {
+      const topic = course.topics.find((x) => x.id === topicId);
+      if (topic && method === 'PUT') Object.assign(topic, payload);
+      if (topic && method === 'DELETE') course.topics = course.topics.filter((x) => x.id !== topicId);
+    }
+    store['lms.courses'] = courses; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/admin/lms/lessons/')) {
+    const lessonId = clean.split('/')[4]; const courses = getList(store, 'lms.courses', [courseSeed]);
+    for (const course of courses) {
+      const lesson = course.lessons.find((x) => x.id === lessonId);
+      if (lesson && method === 'PUT') Object.assign(lesson, payload);
+      if (lesson && method === 'DELETE') course.lessons = course.lessons.filter((x) => x.id !== lessonId);
+    }
+    store['lms.courses'] = courses; writeStore(store);
+    if (clean.endsWith('/preview')) return wrap({ url: '' }) as R;
+    return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/admin/lms/notes/') || clean.startsWith('/admin/lms/quizzes/')) {
+    const recordId = clean.split('/').pop(); const courses = getList(store, 'lms.courses', [courseSeed]);
+    for (const course of courses) {
+      course.notes = course.notes.filter((x) => x.id !== recordId);
+      course.quizzes = course.quizzes.filter((x) => x.id !== recordId);
+    }
+    store['lms.courses'] = courses; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean === '/admin/facilities' && method === 'PUT') {
+    const rows = getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled maintenance', updatedAt: now() }]);
+    const index = rows.findIndex((x) => x.name === payload.name);
+    if (index >= 0) rows[index] = { ...rows[index], ...payload, updatedAt: now() }; else rows.push({ id: id(), ...payload, updatedAt: now() });
+    store['procurement.facilities'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/admin/facilities/') && method === 'DELETE') {
+    const rows = getList(store, 'procurement.facilities', []).filter((x) => x.id !== clean.split('/').pop());
+    store['procurement.facilities'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
   if (clean === '/admin/overview/admissions') return wrap({
     totals: { submitted: 18, inReview: 12, approved: 24, rejected: 4, drafts: 6, docsToVerify: 7 },
     pipeline: [{ stage: 'Submitted', count: 18 }, { stage: 'Under review', count: 12 }, { stage: 'Approved', count: 24 }, { stage: 'Rejected', count: 4 }],
