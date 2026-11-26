@@ -87,6 +87,53 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     store['library.loans'] = loans; writeStore(store); return wrap({ success: true }) as R;
   }
 
+  if (clean === '/admin/overview/admissions') return wrap({
+    totals: { submitted: 18, inReview: 12, approved: 24, rejected: 4, drafts: 6, docsToVerify: 7 },
+    pipeline: [{ stage: 'Submitted', count: 18 }, { stage: 'Under review', count: 12 }, { stage: 'Approved', count: 24 }, { stage: 'Rejected', count: 4 }],
+    monthly: [{ month: '2026-06', count: 18 }, { month: '2026-07', count: 22 }, { month: '2026-08', count: 31 }, { month: '2026-09', count: 26 }, { month: '2026-10', count: 39 }, { month: '2026-11', count: 18 }],
+    recent: [{ id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: '2026-11-24T10:00:00Z', applicant: { fullName: 'Demo Applicant 01' }, program: { nameEn: 'Bachelor of Business Administration' } }, { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: '2026-11-23T10:00:00Z', applicant: { fullName: 'Demo Applicant 02' }, program: { nameEn: 'Computer Science' } }],
+  }) as R;
+  if (clean === '/admin/applications') {
+    const rows = [
+      { id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: '2026-11-24T10:00:00Z', applicant: { fullName: 'Demo Applicant 01', email: 'applicant01@example.test' }, program: { nameEn: 'Bachelor of Business Administration' } },
+      { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: '2026-11-23T10:00:00Z', applicant: { fullName: 'Demo Applicant 02', email: 'applicant02@example.test' }, program: { nameEn: 'Computer Science' } },
+      { id: 'app-003', reference: 'AAU-2026-003', status: 'DOCUMENTS_PENDING', submittedAt: '2026-11-21T10:00:00Z', applicant: { fullName: 'Demo Applicant 03', email: 'applicant03@example.test' }, program: { nameEn: 'Accounting' } },
+    ];
+    const status = query.get('status'); const filtered = status ? rows.filter((r) => r.status === status) : rows;
+    return wrap(filtered, listMeta(filtered)) as R;
+  }
+  if (clean === '/admin/records/overview') return wrap({
+    totals: { students: 344, registrations: 286, thisMonth: 24, onTrackPercent: 87 },
+    registrations: { active: 238, pending: 32, cancelled: 16 },
+    events: [{ id: 'event-01', titleEn: 'Semester examinations', startsAt: '2026-12-10T08:00:00Z', category: 'academic' }, { id: 'event-02', titleEn: 'Winter break begins', startsAt: '2026-12-22T08:00:00Z', category: 'holiday' }],
+    audit: [{ name: 'Demo Student 01', programme: 'Computer Science', earned: 72, required: 120 }, { name: 'Demo Student 02', programme: 'Business', earned: 64, required: 120 }],
+    prerequisiteIssues: [], prerequisiteIssueCount: 0, activity: [{ at: now(), text: 'Demo transcript record reviewed' }],
+  }) as R;
+  if (clean === '/admin/records/students') return wrap([{ id: 'student-demo-01', fullName: 'Demo Student 01', email: 'student01@example.test', _count: { enrollments: 4, results: 12 } }, { id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', _count: { enrollments: 3, results: 9 } }]) as R;
+  if (clean === '/admin/finance/summary') return wrap({
+    collectedFils: 125000000, payments: 148, thisMonthFils: 18200000, dueFils: 16400000, dueCount: 16, payingStudents: 132,
+    monthly: [{ month: '2026-06', collectedFils: 14800000 }, { month: '2026-07', collectedFils: 17200000 }, { month: '2026-08', collectedFils: 19100000 }, { month: '2026-09', collectedFils: 16400000 }, { month: '2026-10', collectedFils: 21800000 }, { month: '2026-11', collectedFils: 18200000 }],
+    aging: [{ label: '0–30', fils: 7200000 }, { label: '31–60', fils: 5100000 }, { label: '61–90', fils: 4100000 }],
+    recent: [{ id: 'pay-01', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now(), purpose: 'course', user: { id: 'student-demo-01', fullName: 'Demo Student 01' } }],
+    dueStudents: [{ id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', course: 'Computer Science', fils: 1200000, since: '2026-11-01T00:00:00Z' }],
+  }) as R;
+  if (clean === '/admin/finance/students') return wrap([{ id: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', courses: [{ code: 'CS101', title: 'Computer Science', status: 'ACTIVE' }], paidFils: 250000, dueFils: 0, lastPaidAt: now() }, { id: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', courses: [{ code: 'BUS101', title: 'Business', status: 'PENDING_PAYMENT' }], paidFils: 0, dueFils: 1200000, lastPaidAt: null }], listMeta([])) as R;
+  if (clean === '/admin/overview/hr') return wrap({
+    totals: { staff: 42, active: 39, inactive: 3, newStaff: 2, signedInToday: 18, onLeaveToday: 2, pendingLeave: 3 },
+    byRole: [{ role: 'Faculty', count: 24 }, { role: 'Administration', count: 10 }, { role: 'Support', count: 8 }],
+    byDepartment: [{ id: 'dept-01', name: 'Academic Affairs', count: 12 }, { id: 'dept-02', name: 'Student Services', count: 8 }],
+    onLeave: [{ id: 'leave-01', type: 'ANNUAL', endDate: '2026-11-28T00:00:00Z', user: { fullName: 'Demo Staff 01' } }],
+    pending: [],
+  }) as R;
+  if (clean === '/admin/leave') return wrap(getList(store, 'hr.leave', [
+    { id: 'leave-01', type: 'ANNUAL', startDate: '2026-11-27T00:00:00Z', endDate: '2026-11-28T00:00:00Z', reason: 'Personal leave', status: 'PENDING', note: null, user: { fullName: 'Demo Staff 01', email: 'staff01@example.test' } },
+    { id: 'leave-02', type: 'CASUAL', startDate: '2026-12-02T00:00:00Z', endDate: '2026-12-02T00:00:00Z', reason: 'Appointment', status: 'APPROVED', note: null, user: { fullName: 'Demo Staff 02', email: 'staff02@example.test' } },
+  ])) as R;
+  if (clean.startsWith('/admin/leave/') && method === 'PUT') {
+    const rows = getList(store, 'hr.leave', []); const row = rows.find((x) => clean.endsWith(x.id));
+    if (row) Object.assign(row, payload); store['hr.leave'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
+
   const listPaths = ['/admin/applications', '/admin/users', '/admin/roles', '/admin/cms', '/admin/contact-messages', '/admin/newsletter-subscribers', '/admin/leave', '/admin/live/sessions', '/admin/lms/courses', '/admin/records/students', '/admin/payments', '/me/notifications', '/me/courses', '/me/live'];
   if (listPaths.includes(clean)) return wrap([], listMeta([])) as R;
 
