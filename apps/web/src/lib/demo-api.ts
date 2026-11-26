@@ -181,6 +181,13 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
       payments: student.paidFils ? [{ id: `${student.id}-payment`, purpose: 'course', description: 'Demo course payment', amountFils: student.paidFils, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-RECEIPT', paidAt: now(), createdAt: now() }] : [],
     }) as R;
   }
+  if (clean.startsWith('/admin/live/courses/') && clean.endsWith('/now') && method === 'POST') {
+    const courseId = clean.split('/')[4];
+    const course = getList(store, 'lms.courses', [{ id: courseId, code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }]).find((x) => x.id === courseId);
+    const sessions = getList(store, 'admin.live.sessions', []);
+    const session = { id: id(), titleEn: `${course?.titleEn ?? 'Demo course'} — Live class`, titleAr: course?.titleAr ?? 'حصة مباشرة تجريبية', scheduledAt: now(), startedAt: now(), durationMin: 60, status: 'LIVE', recordingStatus: 'NONE', recordingKey: null, course: { id: courseId, code: course?.code ?? 'DEMO', slug: course?.slug ?? 'demo-course', titleEn: course?.titleEn ?? 'Demo course', titleAr: course?.titleAr ?? 'مقرر تجريبي' }, lesson: null, host: { fullName: user?.fullName ?? 'Demo Faculty' } };
+    sessions.unshift(session); store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ id: session.id }) as R;
+  }
   if (clean === '/admin/live/sessions' && method === 'GET') {
     const rows = getList(store, 'admin.live.sessions', [
       { id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), startedAt: null, durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, lesson: null, host: { fullName: 'Demo Faculty' } },
@@ -236,7 +243,10 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (item) Object.assign(item, payload, { updatedAt: now() }); else rows.push({ key, ...payload, updatedAt: now() });
     store['site.settings'] = rows; writeStore(store); return wrap(rows.find((x) => x.key === key)) as R;
   }
-  if (clean === '/admin/staff-logins') return wrap([{ id: 'login-demo-01', email: 'librarian.demo@example.test', success: true, reason: null, ip: 'Local browser', createdAt: now(), user: { fullName: 'Demo Librarian' } }, { id: 'login-demo-02', email: 'registrar.demo@example.test', success: true, reason: null, ip: 'Local browser', createdAt: now(), user: { fullName: 'Demo Registrar' } }], { page: Number(query.get('page') || 1), totalPages: 1, total: 2, last30Days: { success: 2, failed: 0 } }) as R;
+  if (clean === '/admin/staff-logins') return wrap([
+    { id: 'login-demo-01', email: 'librarian.demo@example.test', success: true, reason: null, ip: 'Local browser', userAgent: 'Browser demo session', createdAt: now(), user: { fullName: 'Demo Librarian', roles: [{ role: { nameEn: 'Librarian' } }] } },
+    { id: 'login-demo-02', email: 'registrar.demo@example.test', success: true, reason: null, ip: 'Local browser', userAgent: 'Browser demo session', createdAt: now(), user: { fullName: 'Demo Registrar', roles: [{ role: { nameEn: 'Registrar' } }] } },
+  ], { page: Number(query.get('page') || 1), totalPages: 1, total: 2, last30Days: { success: 2, failed: 0 } }) as R;
   if (clean === '/admin/users-departments') return wrap([{ id: 'dept-01', nameEn: 'Computer Science' }, { id: 'dept-02', nameEn: 'Business Administration' }]) as R;
   const usersSeed = [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }, { id: 'staff-demo-02', email: 'registrar.demo@example.test', fullName: 'Demo Registrar', isActive: true, lastLoginAt: null, departmentId: 'dept-01', department: { nameEn: 'Academic Affairs' }, roles: [{ role: { key: 'REGISTRAR', nameEn: 'Registrar' } }] }, { id: 'staff-demo-03', email: 'faculty.demo@example.test', fullName: 'Demo Faculty', isActive: true, lastLoginAt: null, departmentId: 'dept-01', department: { nameEn: 'Computer Science' }, roles: [{ role: { key: 'FACULTY', nameEn: 'Faculty' } }] }];
   if (clean === '/admin/users' && method === 'GET') { const rows = getList(store, 'admin.users', usersSeed); const q = (query.get('q') || '').toLowerCase(); const filtered = q ? rows.filter((x) => `${x.fullName} ${x.email}`.toLowerCase().includes(q)) : rows; return wrap(filtered, listMeta(filtered)) as R; }
