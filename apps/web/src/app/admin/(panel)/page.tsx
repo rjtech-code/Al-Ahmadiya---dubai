@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { NAV } from '@/components/admin/AdminShell';
 import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin/AdminContext';
-import { BookOpen, CalendarClock, CalendarDays, FileText, GraduationCap, LayoutGrid, Library, Shield, Users } from 'lucide-react';
+import { BookOpen, BriefcaseBusiness, CalendarClock, CalendarDays, ClipboardList, FileText, GraduationCap, LayoutGrid, Library, Newspaper, Shield, Users, Wallet, Building2 } from 'lucide-react';
 import { BarChart, DashPanel, IconStat, monthLabel, QuickActions, ViewAll, WelcomeBanner } from '@/components/admin/dash';
 import { ErrorNote } from '@/components/admin/ui';
 import { apiFetch, ApiError, formatMoney } from '@/lib/client-api';
@@ -41,6 +41,21 @@ const DEMO_SUMMARY: Summary = {
     operations: { pendingRegistrations: 16, classesThisWeek: 28, draftCourses: 5, coursesWithoutTeacher: 2 },
   },
   recentStaffLogins: [],
+};
+
+const ROLE_DASHBOARDS: Record<string, { subtitle: string; stats: { icon: typeof Users; label: string; value: string | number; hint?: string; href?: string }[]; actions: { href: string; label: string; icon: typeof Users }[] }> = {
+  ADMISSIONS_OFFICER: { subtitle: 'Admissions workspace — applications awaiting action.', stats: [{ icon: ClipboardList, label: 'Pending review', value: 12, hint: 'Applications to review', href: '/admin/admissions' }, { icon: FileText, label: 'New submissions', value: 18, hint: 'Received this month' }, { icon: Users, label: 'Approved', value: 24, hint: 'Demo records' }], actions: [{ href: '/admin/admissions/overview', label: 'Admissions overview', icon: LayoutGrid }, { href: '/admin/admissions', label: 'Review applications', icon: ClipboardList }] },
+  ADMISSIONS_REVIEWER: { subtitle: 'Admissions review desk — check applicant information and decisions.', stats: [{ icon: ClipboardList, label: 'Pending review', value: 12, href: '/admin/admissions' }, { icon: FileText, label: 'Documents pending', value: 7 }, { icon: Users, label: 'Under review', value: 12 }], actions: [{ href: '/admin/admissions', label: 'Open application queue', icon: ClipboardList }] },
+  REGISTRAR: { subtitle: 'Registrar workspace — student records, registrations and transcripts.', stats: [{ icon: Users, label: 'Active students', value: 344 }, { icon: ClipboardList, label: 'Registrations', value: 286 }, { icon: FileText, label: 'Transcript records', value: 24 }], actions: [{ href: '/admin/records', label: 'Student records', icon: Users }] },
+  LIBRARIAN: { subtitle: 'Library workspace — catalogue, circulation and digital resources.', stats: [{ icon: Library, label: 'Catalogue titles', value: 5 }, { icon: BookOpen, label: 'Items on loan', value: 5 }, { icon: CalendarDays, label: 'Overdue items', value: 1 }], actions: [{ href: '/admin/library', label: 'Open library management', icon: Library }] },
+  PROCUREMENT_OFFICER: { subtitle: 'Procurement workspace — requests, approvals and campus facilities.', stats: [{ icon: ClipboardList, label: 'Purchase requests', value: 2 }, { icon: FileText, label: 'Awaiting approval', value: 1 }, { icon: Building2, label: 'Facilities', value: 2 }], actions: [{ href: '/admin/procurement', label: 'Manage procurement', icon: ClipboardList }] },
+  ACADEMIC_ADMIN: { subtitle: 'Academic administration — programmes, eligibility and online courses.', stats: [{ icon: GraduationCap, label: 'Programmes', value: 9 }, { icon: BookOpen, label: 'Courses', value: 46 }, { icon: ClipboardList, label: 'Eligibility rules', value: 9 }], actions: [{ href: '/admin/academics', label: 'Programmes & eligibility', icon: GraduationCap }, { href: '/admin/courses', label: 'Online courses', icon: BookOpen }] },
+  FINANCE_MANAGER: { subtitle: 'Finance workspace — fee collection, outstanding balances and student accounts.', stats: [{ icon: Wallet, label: 'Collected', value: 'AED 1.25m' }, { icon: Wallet, label: 'Outstanding', value: 'AED 164k' }, { icon: FileText, label: 'Payments', value: 148 }], actions: [{ href: '/admin/finance', label: 'Finance overview', icon: Wallet }, { href: '/admin/payments', label: 'Payment records', icon: FileText }] },
+  FINANCE_OFFICER: { subtitle: 'Finance operations — payments and student fee records.', stats: [{ icon: Wallet, label: 'Collected', value: 'AED 1.25m' }, { icon: FileText, label: 'Successful payments', value: 148 }, { icon: Users, label: 'Paying students', value: 132 }], actions: [{ href: '/admin/finance', label: 'Student accounts', icon: Users }, { href: '/admin/payments', label: 'Payment records', icon: FileText }] },
+  HR_MANAGER: { subtitle: 'Human resources — staff directory, attendance and leave requests.', stats: [{ icon: Users, label: 'Staff members', value: 42 }, { icon: CalendarDays, label: 'On leave today', value: 2 }, { icon: ClipboardList, label: 'Pending leave', value: 3 }], actions: [{ href: '/admin/hr', label: 'HR overview', icon: BriefcaseBusiness }, { href: '/admin/leave', label: 'My leave requests', icon: CalendarDays }] },
+  HEAD_OF_DEPARTMENT: { subtitle: 'Department workspace — faculty workload, student progress and courses.', stats: [{ icon: Users, label: 'Faculty', value: 8 }, { icon: GraduationCap, label: 'Students', value: 126 }, { icon: BookOpen, label: 'Courses', value: 18 }], actions: [{ href: '/admin/department', label: 'Department overview', icon: Building2 }, { href: '/admin/teach', label: 'Teaching workspace', icon: GraduationCap }] },
+  CONTENT_EDITOR: { subtitle: 'Website content workspace — maintain public pages and announcements.', stats: [{ icon: Building2, label: 'Colleges', value: 3 }, { icon: Newspaper, label: 'News items', value: 8 }, { icon: CalendarDays, label: 'Events', value: 8 }], actions: [{ href: '/admin/cms', label: 'Open content management', icon: Newspaper }] },
+  FACULTY: { subtitle: 'Teaching workspace — your courses, students and grading queue.', stats: [{ icon: BookOpen, label: 'Courses', value: 2 }, { icon: Users, label: 'Students', value: 42 }, { icon: ClipboardList, label: 'Pending grading', value: 3 }], actions: [{ href: '/admin/teach', label: 'My teaching workspace', icon: GraduationCap }] },
 };
 
 const ROLE_TITLES: Record<string, string> = {
@@ -79,6 +94,20 @@ export default function Dashboard() {
   if (!can('dashboard.read')) return <p className="text-sm text-muted">Opening your workspace…</p>;
   const o = d?.overview;
   const roleTitle = ROLE_TITLES[user.roles[0]] ?? user.roles[0]?.replace(/_/g, ' ') ?? 'Staff';
+  const roleDashboard = ROLE_DASHBOARDS[user.roles[0]];
+  if (roleDashboard) {
+    return (
+      <>
+        <WelcomeBanner title={`Welcome, ${roleTitle}`} subtitle={roleDashboard.subtitle} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {roleDashboard.stats.map((stat) => <IconStat key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} hint={stat.hint} href={stat.href} />)}
+        </div>
+        <DashPanel title="Your workspace">
+          <QuickActions items={roleDashboard.actions} />
+        </DashPanel>
+      </>
+    );
+  }
   const alerts = d ? [
     d.admissions.pendingReview > 0 && { text: `${d.admissions.pendingReview} application${d.admissions.pendingReview === 1 ? '' : 's'} waiting for review`, href: '/admin/admissions', tone: 'bg-warning' },
     d.learning.liveNow > 0 && { text: `${d.learning.liveNow} live class${d.learning.liveNow === 1 ? '' : 'es'} in progress`, href: '/admin/live', tone: 'bg-danger' },
