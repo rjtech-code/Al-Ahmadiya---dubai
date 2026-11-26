@@ -7,7 +7,7 @@ const STORAGE = 'al-ahmadiya-local-erp-data';
 const now = () => new Date().toISOString();
 const id = () => `local-${Math.random().toString(36).slice(2, 10)}`;
 
-const initialItems = [
+const ROLE_DEMO_PERMISSIONS: Record<string, string[]> = { UNIVERSITY_ADMIN: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'] };\n\nconst initialItems = [
   { id: 'book-001', type: 'BOOK', title: 'Introduction to Computer Science', author: 'A. Rahman', isbn: '9780000000011', subject: 'Computing', year: 2023, url: null, copies: 12, isPublic: true, available: 9, onLoan: 3 },
   { id: 'book-002', type: 'BOOK', title: 'Principles of Business Management', author: 'M. Hassan', isbn: '9780000000028', subject: 'Business', year: 2022, url: null, copies: 8, isPublic: true, available: 6, onLoan: 2 },
   { id: 'book-003', type: 'BOOK', title: 'Academic Writing and Research', author: 'S. Karim', isbn: '9780000000035', subject: 'Research', year: 2024, url: null, copies: 10, isPublic: true, available: 10, onLoan: 0 },
@@ -130,6 +130,53 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/me/leave/') && method === 'POST') {
     const rows = getList(store, 'hr.my-leave', []); const row = rows.find((x) => clean.includes(x.id)); if (row) row.status = 'CANCELLED'; store['hr.my-leave'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
+  if (clean === '/admin/procurement/overview') {
+    const requests = getList(store, 'procurement.requests', [
+      { id: 'pr-001', number: 'PR-2026-001', title: 'Library reference books', category: 'Books', vendor: 'Demo Books Supplier', amountFils: 420000, priority: 'MEDIUM', status: 'SUBMITTED', createdAt: now(), updatedAt: now(), requestedBy: { fullName: 'Demo Staff 01' } },
+      { id: 'pr-002', number: 'PR-2026-002', title: 'Computer lab accessories', category: 'IT equipment', vendor: null, amountFils: 780000, priority: 'HIGH', status: 'APPROVED', createdAt: now(), updatedAt: now(), requestedBy: { fullName: 'Demo Staff 02' }, approvedBy: { fullName: 'Demo Admin' } },
+    ]);
+    const facilities = getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled equipment maintenance', updatedAt: now() }]);
+    return wrap({ totals: { requests: requests.length, approved: requests.filter((x) => x.status === 'APPROVED').length, orders: requests.filter((x) => x.status === 'ORDERED' || x.status === 'RECEIVED').length, pending: requests.filter((x) => x.status === 'SUBMITTED').length }, budget: { usedFils: 1200000, totalFils: 5000000 }, pending: requests.filter((x) => x.status === 'SUBMITTED'), recent: requests.slice(0, 5), facilities }) as R;
+  }
+  if (clean === '/admin/procurement/requests') return wrap(getList(store, 'procurement.requests', [])) as R;
+  if (clean === '/admin/facilities') return wrap(getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled equipment maintenance', updatedAt: now() }])) as R;
+  if (clean.startsWith('/admin/procurement/requests/') && clean.endsWith('/status') && method === 'POST') {
+    const rows = getList(store, 'procurement.requests', []); const row = rows.find((x) => clean.includes(x.id)); if (row) row.status = payload.to; store['procurement.requests'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean === '/admin/payments') {
+    const rows = [{ id: 'pay-01', purpose: 'course', description: 'Introduction to Computing course fee', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', provider: 'local-demo', providerRef: 'LOCAL-001', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now(), user: { fullName: 'Demo Student 01', email: 'student01@example.test' } }];
+    return wrap(rows, { page: Number(query.get('page') || 1), totalPages: 1, totals: [{ purpose: 'course', count: 1, amountFils: 250000 }, { purpose: 'application-fee', count: 0, amountFils: 0 }], provider: 'local-demo' }) as R;
+  }
+  if (clean === '/admin/roles') return wrap([
+    { key: 'SUPER_ADMIN', nameEn: 'Super Admin', userCount: 1, permissions: ['*'] },
+    { key: 'UNIVERSITY_ADMIN', nameEn: 'University Admin', userCount: 1, permissions: ROLE_DEMO_PERMISSIONS.UNIVERSITY_ADMIN },
+    { key: 'LIBRARIAN', nameEn: 'Librarian', userCount: 1, permissions: ['dashboard.read', 'library.manage'] },
+    { key: 'REGISTRAR', nameEn: 'Registrar', userCount: 1, permissions: ['dashboard.read', 'records.manage'] },
+    { key: 'FACULTY', nameEn: 'Faculty', userCount: 8, permissions: ['dashboard.read', 'teach.own'] },
+  ]) as R;
+  if (clean === '/admin/settings') return wrap(getList(store, 'site.settings', [
+    { key: 'institution.name', valueEn: 'Al Ahmadiya University', valueAr: 'جامعة الأحمدية', confirmation: 'CONFIRMED', sourceUrl: null, note: 'Institution display name', updatedAt: now() },
+    { key: 'admissions.status', valueEn: 'OPEN', valueAr: 'مفتوح', confirmation: 'CONFIRMED', sourceUrl: null, note: 'Demo intake status', updatedAt: now() },
+    { key: 'contact.email', valueEn: 'info@example.test', valueAr: null, confirmation: 'CLIENT_CONFIRMATION_REQUIRED', sourceUrl: null, note: 'Replace with verified contact email', updatedAt: now() },
+  ])) as R;
+  if (clean.startsWith('/admin/settings/') && method === 'PUT') {
+    const key = decodeURIComponent(clean.split('/').pop() || '');
+    const rows = getList(store, 'site.settings', []); const item = rows.find((x) => x.key === key);
+    if (item) Object.assign(item, payload, { updatedAt: now() }); else rows.push({ key, ...payload, updatedAt: now() });
+    store['site.settings'] = rows; writeStore(store); return wrap({ data: rows.find((x) => x.key === key) }) as R;
+  }
+  if (clean === '/admin/staff-logins') return wrap([], { page: Number(query.get('page') || 1), totalPages: 1, total: 0, last30Days: { success: 0, failed: 0 } }) as R;
+  if (clean === '/admin/users-departments') return wrap([{ id: 'dept-01', nameEn: 'Computer Science' }, { id: 'dept-02', nameEn: 'Business Administration' }]) as R;
+  if (clean === '/admin/users') return wrap(getList(store, 'admin.users', [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }]), listMeta([])) as R;
+  if (clean === '/admin/live/sessions') return wrap([{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', course: { code: 'CS101', titleEn: 'Introduction to Computing' }, host: { fullName: 'Demo Faculty' } }]) as R;
+  if (clean === '/teach/overview') return wrap({
+    courses: [{ id: 'course-01', code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', imagePath: '/images/courses/cs101.jpg', publishStatus: 'PUBLISHED', students: 42, lectures: 8, quizzes: 2 }],
+    classes: [{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', course: { id: 'course-01', code: 'CS101', titleEn: 'Introduction to Computing' } }],
+    stats: { todayClasses: 1, students: 42, pendingGrading: 3, teachingHoursWeek: 8 },
+    attendance: { present: 35, late: 4, partial: 2, absent: 1, classes: 8 },
+    toGrade: [{ id: 'submission-01', submittedAt: now(), user: { fullName: 'Demo Student 01' }, assignment: { id: 'assignment-01', titleEn: 'Programming exercise', dueAt: new Date(Date.now() + 3 * 86400000).toISOString(), course: { id: 'course-01', code: 'CS101' } } }],
+    notifications: [],
+  }) as R;
   if (clean === '/admin/overview/admissions') return wrap({
     totals: { submitted: 18, inReview: 12, approved: 24, rejected: 4, drafts: 6, docsToVerify: 7 },
     pipeline: [{ stage: 'Submitted', count: 18 }, { stage: 'Under review', count: 12 }, { stage: 'Approved', count: 24 }, { stage: 'Rejected', count: 4 }],
