@@ -23,13 +23,14 @@ function buildDemoWeeks(course: Course): Week[] {
   const lessons = course.lessons.length ? course.lessons : [];
   const weeks = topics.map((topic, index) => ({ id: topic.id, titleEn: /^week\s*\d+/i.test(topic.titleEn) ? topic.titleEn : `Week ${index + 1} — ${topic.titleEn}`, titleAr: topic.titleAr, lessons: lessons.filter((lesson) => lesson.topicId === topic.id), quizzes: [] as Quiz[] }));
   const unassigned = lessons.filter((lesson) => !lesson.topicId || !topics.some((topic) => topic.id === lesson.topicId));
-  if (unassigned.length) weeks[0].lessons.push(...unassigned);
+  const firstWeek = weeks[0];
+  if (unassigned.length && firstWeek) firstWeek.lessons.push(...unassigned);
   // Give the local preview a complete week-based course structure when the seed course is still minimal.
-  if (course.slug === 'intro-to-computing' && weeks.length === 1 && weeks[0].lessons.length <= 1) {
-    const first = weeks[0].lessons[0];
+  if (course.slug === 'intro-to-computing' && weeks.length === 1 && firstWeek && firstWeek.lessons.length <= 1) {
+    const first = firstWeek.lessons[0];
     const titles = ['Variables and Data Types', 'Algorithms and Flowcharts', 'Introduction to Programming', 'Operators and Expressions', 'Conditional Statements', 'Loops and Iteration', 'Functions and Methods', 'Arrays and Collections', 'Debugging Fundamentals', 'Introduction to Problem Solving'];
-    weeks[0].titleEn = 'Week 1';
-    weeks[0].lessons = titles.map((title, index) => ({ id: index === 0 && first ? first.id : `demo-week-1-lecture-${index + 1}`, titleEn: index === 0 && first ? first.titleEn : `Lecture ${String(index + 1).padStart(2, '0')} — ${title}`, titleAr: index === 0 && first ? first.titleAr : `المحاضرة ${index + 1}`, descriptionEn: index === 0 && first ? first.descriptionEn : 'Course lecture and learning objectives.', descriptionAr: null, durationSec: 900, hasVideo: index === 0 && !!first?.hasVideo, topicId: topics[0].id, completed: false, positionSec: 0 }));
+    firstWeek.titleEn = 'Week 1';
+    firstWeek.lessons = titles.map((title, index) => ({ id: index === 0 && first ? first.id : `demo-week-1-lecture-${index + 1}`, titleEn: index === 0 && first ? first.titleEn : `Lecture ${String(index + 1).padStart(2, '0')} — ${title}`, titleAr: index === 0 && first ? first.titleAr : `المحاضرة ${index + 1}`, descriptionEn: index === 0 && first ? first.descriptionEn : 'Course lecture and learning objectives.', descriptionAr: null, durationSec: 900, hasVideo: index === 0 && !!first?.hasVideo, topicId: topics[0]?.id ?? 'week-1', completed: false, positionSec: 0 }));
     for (let i = 2; i <= 4; i++) weeks.push({ id: `demo-week-${i}`, titleEn: `Week ${i}`, titleAr: `الأسبوع ${i}`, lessons: Array.from({ length: i === 2 ? 6 : 5 }, (_, j) => ({ id: `demo-week-${i}-lecture-${j + 1}`, titleEn: `Lecture ${String(j + 1).padStart(2, '0')} — Week ${i} topic ${j + 1}`, titleAr: `المحاضرة ${j + 1}`, descriptionEn: 'Course lecture and learning objectives.', descriptionAr: null, durationSec: 900, hasVideo: false, topicId: `demo-week-${i}`, completed: false, positionSec: 0 })), quizzes: [] });
   }
   weeks.forEach((week, index) => {
