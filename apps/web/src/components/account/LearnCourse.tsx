@@ -148,13 +148,8 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3"><div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div></div>
-        {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
-      </div>
-
       <div className="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="hidden h-[calc(100dvh-4rem)] self-start rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-16 lg:block lg:max-h-none lg:overflow-y-auto overscroll-contain">
+        <aside className="hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] self-start rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-16 lg:block lg:overflow-x-hidden lg:overflow-y-auto overscroll-contain">
 
           <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
@@ -198,6 +193,10 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
         </aside><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-white text-brand-950"><X className="size-5" /></button></div>}
 
         <main className="min-w-0 space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
+            {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
+          </div>
           {section === 'lecture' && current ? (
             <>
               <div><p className="text-xs font-semibold uppercase tracking-wider text-gold-700">{active?.titleEn}</p><h2 className="mt-1 font-display text-3xl font-semibold text-brand-900">{L(current)}</h2><p className="mt-1 text-sm text-muted">{current.descriptionEn}</p></div>
