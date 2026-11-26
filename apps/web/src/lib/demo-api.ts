@@ -193,6 +193,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
       { id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), startedAt: null, durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, lesson: null, host: { fullName: 'Demo Faculty' } },
       { id: 'live-02', titleEn: 'Business Foundations — Seminar', titleAr: 'أساسيات الأعمال — ندوة', scheduledAt: new Date(Date.now() + 86400000).toISOString(), startedAt: null, durationMin: 60, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'BUS101', slug: 'business-foundations', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال' }, lesson: null, host: { fullName: 'Demo Faculty' } },
     ]);
+    if (!store['admin.live.sessions']) { store['admin.live.sessions'] = rows; writeStore(store); }
     return wrap(rows) as R;
   }
   if (clean === '/admin/facilities' && method === 'PUT') {
