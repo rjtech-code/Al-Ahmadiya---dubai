@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useSession } from '@/lib/session';
+import { saveDemoSession, USE_BACKEND } from '@/lib/demo-session';
 import { cn } from '../ui/cn';
 import { NotificationBell } from './NotificationBell';
 import { Logo } from './Logo';
@@ -87,6 +88,8 @@ export function Header() {
   const { state } = useSession();
   const authed = state.status === 'authed';
   const isHomePage = pathname === '/';
+  const studentDemoHref = USE_BACKEND ? '/login?audience=student' : '/portal';
+  const startStudentDemo = () => { if (!USE_BACKEND) saveDemoSession('STUDENT'); };
 
   const groups: Group[] = [
     { key: 'home', label: t('home'), href: '/' },
@@ -170,7 +173,7 @@ export function Header() {
             <button type="button" lang="en" onClick={() => switchTo('en')} aria-pressed={locale === 'en'} className={cn('px-1', locale === 'en' ? 'font-bold text-brand-900' : 'text-muted hover:text-brand-900')}>EN</button>
           </div>
           {authed && <NotificationBell />}
-          <Link href={authed ? '/portal' : '/login?audience=student'} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
+          <Link href={USE_BACKEND ? (authed ? '/portal' : '/login?audience=student') : '/portal'} onClick={startStudentDemo} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
             {authed ? t('account') : 'Student Login'}<ArrowRight className="flip-rtl size-4" aria-hidden />
           </Link>
           <button type="button" className="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-white/70 xl:hidden" aria-expanded={open} aria-controls="mobile-nav" aria-label={t('openMenu')} onClick={() => setOpen((o) => !o)}>
@@ -189,12 +192,12 @@ export function Header() {
         <div className="px-3 pt-1.5 sm:px-5">
           <p className="mb-1 text-[9px] font-bold uppercase leading-none tracking-[0.16em] text-gold-700 sm:text-[10px]">Demo Logins</p>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 [scrollbar-width:thin]">
-            <Link href={authed ? '/portal' : '/login?audience=student'} className="inline-flex h-7 shrink-0 items-center rounded-full bg-brand-900 px-2.5 text-[10px] font-semibold text-white shadow-sm hover:bg-brand-800">
+            <Link href={USE_BACKEND ? (authed ? '/portal' : '/login?audience=student') : '/portal'} onClick={startStudentDemo} className="inline-flex h-7 shrink-0 items-center rounded-full bg-brand-900 px-2.5 text-[10px] font-semibold text-white shadow-sm hover:bg-brand-800">
               Student Login
             </Link>
             <span className="mx-0.5 h-4 w-px shrink-0 bg-gold-300" aria-hidden />
             {staffRoles.map((role) => (
-              <a key={role.key} href={`/admin/login?role=${role.key}`} className="inline-flex h-7 shrink-0 items-center rounded-full border border-gold-300 bg-white px-2.5 text-[10px] font-medium text-brand-900 transition-colors hover:border-brand-900 hover:bg-brand-900 hover:text-white">
+              <a key={role.key} href={USE_BACKEND ? `/admin/login?role=${role.key}` : '/admin'} onClick={() => { if (!USE_BACKEND) saveDemoSession(role.key); }} className="inline-flex h-7 shrink-0 items-center rounded-full border border-gold-300 bg-white px-2.5 text-[10px] font-medium text-brand-900 transition-colors hover:border-brand-900 hover:bg-brand-900 hover:text-white">
                 {role.label}
               </a>
             ))}
@@ -222,7 +225,7 @@ export function Header() {
                 </div>
               ))}
               <div className="flex items-center gap-3">
-                <Link href={authed ? '/portal' : '/login?audience=student'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
+                <Link href={USE_BACKEND ? (authed ? '/portal' : '/login?audience=student') : '/portal'} onClick={() => { close(); startStudentDemo(); }} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
                 <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
               </div>
             </nav>
