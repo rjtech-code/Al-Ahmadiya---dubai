@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Menu, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
