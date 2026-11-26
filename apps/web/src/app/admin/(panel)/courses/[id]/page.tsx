@@ -28,7 +28,7 @@ type Helpers = { c: Course; reload: () => Promise<void>; ok: (m: string) => void
 
 const mb = (b: number | null) => (b ? `${(b / 1024 / 1024).toFixed(1)} MB` : '');
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const STEPS = ['Course details', 'Live classes', 'Topics & lectures', 'Review & publish'];
+const STEPS = ['Course details', 'Live classes', 'Weeks & lectures', 'Review & publish'];
 
 export default function CourseBuilder() {
   const { id: rawId } = useParams<{ id: string }>();
@@ -217,7 +217,7 @@ function LiveStep({ c, reload, ok, fail }: Helpers) {
   );
 }
 
-// ───────────── Step 3: topics → lectures → notes / quiz ─────────────
+// ───────────── Step 3: weeks → lectures → notes / quiz ─────────────
 function ContentStep(h: Helpers) {
   const { c, reload, ok, fail } = h;
   const [topic, setTopic] = useState({ en: '', ar: '' });
@@ -234,17 +234,17 @@ function ContentStep(h: Helpers) {
 
   return (
     <div className="space-y-4">
-      <Panel title="Step 3 — Topics & lectures">
-        <p className="mb-4 text-sm text-muted">Add a topic (for example “Week 1: Getting started”), then add lecture videos inside it. Each lecture can have its own notes and quiz.</p>
+      <Panel title="Step 3 — Weeks & lectures">
+        <p className="mb-4 text-sm text-muted">Add a week (for example “Week 1”), then add its lectures. Each lecture can have its own PDF notes and practice activity. Each lecture can have its own notes and quiz.</p>
         <form onSubmit={addTopic} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <input required className={adminInput} placeholder="New topic title (English)" value={topic.en} onChange={(e) => setTopic({ ...topic, en: e.target.value })} />
-          <input required dir="rtl" className={adminInput} placeholder="عنوان الموضوع (عربي)" value={topic.ar} onChange={(e) => setTopic({ ...topic, ar: e.target.value })} />
-          <button className={adminBtn}><Plus className="size-4" />Add topic</button>
+          <input required className={adminInput} placeholder="New week title (English)" value={topic.en} onChange={(e) => setTopic({ ...topic, en: e.target.value })} />
+          <input required dir="rtl" className={adminInput} placeholder="عنوان الأسبوع (عربي)" value={topic.ar} onChange={(e) => setTopic({ ...topic, ar: e.target.value })} />
+          <button className={adminBtn}><Plus className="size-4" />Add week</button>
         </form>
       </Panel>
       {c.topics.map((t, i) => <TopicCard key={t.id} h={h} topic={t} index={i} count={c.topics.length} move={moveTopic} lessons={c.lessons.filter((l) => l.topicId === t.id)} />)}
       {loose.length > 0 && <TopicCard h={h} topic={null} index={-1} count={0} move={moveTopic} lessons={loose} />}
-      {!c.topics.length && !loose.length && <p className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-muted">No topics yet. Add the first topic above.</p>}
+      {!c.topics.length && !loose.length && <p className="rounded-2xl border border-dashed border-line p-8 text-center text-sm text-muted">No weeks yet. Add the first week above.</p>}
     </div>
   );
 }
@@ -253,13 +253,13 @@ function TopicCard({ h, topic, index, count, move, lessons }: { h: Helpers; topi
   const { c, reload, ok, fail } = h;
   const [adding, setAdding] = useState(false);
   const del = async () => {
-    if (!topic || !window.confirm(`Delete topic "${topic.titleEn}"?`)) return;
-    try { await apiFetch(`/admin/lms/topics/${topic.id}`, { method: 'DELETE' }); await reload(); ok('Topic deleted'); } catch (err) { fail(err); }
+    if (!topic || !window.confirm(`Delete week "${topic.titleEn}"?`)) return;
+    try { await apiFetch(`/admin/lms/topics/${topic.id}`, { method: 'DELETE' }); await reload(); ok('Week deleted'); } catch (err) { fail(err); }
   };
   const rename = async () => {
     if (!topic) return;
-    const en = window.prompt('Topic title (English)', topic.titleEn); if (en === null) return;
-    const ar = window.prompt('عنوان الموضوع (عربي)', topic.titleAr); if (ar === null) return;
+    const en = window.prompt('Week title (English)', topic.titleEn); if (en === null) return;
+    const ar = window.prompt('عنوان الأسبوع (عربي)', topic.titleAr); if (ar === null) return;
     try { await apiFetch(`/admin/lms/topics/${topic.id}`, { method: 'PUT', json: { titleEn: en, titleAr: ar } }); await reload(); } catch (err) { fail(err); }
   };
   return (
@@ -273,7 +273,7 @@ function TopicCard({ h, topic, index, count, move, lessons }: { h: Helpers; topi
             <IconBtn label="Move topic up" onClick={() => void move(index, -1)} disabled={index === 0}><ArrowUp className="size-4" /></IconBtn>
             <IconBtn label="Move topic down" onClick={() => void move(index, 1)} disabled={index === count - 1}><ArrowDown className="size-4" /></IconBtn>
             <button onClick={() => void rename()} className="rounded-full px-2 text-xs font-semibold text-brand-700 hover:underline">Rename</button>
-            <IconBtn label="Delete topic" onClick={() => void del()}><Trash2 className="size-4" /></IconBtn>
+            <IconBtn label="Delete week" onClick={() => void del()}><Trash2 className="size-4" /></IconBtn>
           </div>
         )}
       </header>
@@ -345,8 +345,8 @@ function LectureRow({ h, lesson: l, number, siblings }: { h: Helpers; lesson: Le
         </div>
         {l.status !== 'PUBLISHED' && <StatusPill status={l.status} />}
         {!l.topicId && c.topics.length > 0 && (
-          <select aria-label="Move to topic" className={`${adminInput} h-8 max-w-44 text-xs`} defaultValue="" onChange={async (e) => { try { await put({ topicId: e.target.value }); await reload(); } catch (err) { fail(err); } }}>
-            <option value="" disabled>Move to topic…</option>{c.topics.map((t) => <option key={t.id} value={t.id}>{t.titleEn}</option>)}
+          <select aria-label="Move to week" className={`${adminInput} h-8 max-w-44 text-xs`} defaultValue="" onChange={async (e) => { try { await put({ topicId: e.target.value }); await reload(); } catch (err) { fail(err); } }}>
+            <option value="" disabled>Move to week…</option>{c.topics.map((t) => <option key={t.id} value={t.id}>{t.titleEn}</option>)}
           </select>
         )}
         <div className="flex flex-wrap items-center gap-1">
@@ -432,7 +432,7 @@ function PublishStep({ c, reload, ok, fail, goTo }: Helpers & { goTo: (s: number
     { done: !!c.imagePath, label: 'Course image', step: 0 },
     { done: !!c.teacherId, label: 'Teacher assigned', step: 0 },
     { done: c.deliveryMode === 'RECORDED' || c.liveSlots.length > 0, label: c.deliveryMode === 'LIVE' ? `Live timetable (${c.liveSlots.length} day${c.liveSlots.length === 1 ? '' : 's'} a week)` : 'Recorded course (no live classes)', step: 1 },
-    { done: c.lessons.length > 0 || c.liveSlots.length > 0, label: `${c.topics.length} topics · ${c.lessons.length} lectures · ${c.notes.length} notes · ${c.quizzes.length} quizzes`, step: 2 },
+    { done: c.lessons.length > 0 || c.liveSlots.length > 0, label: `${c.topics.length} weeks · ${c.lessons.length} lectures · ${c.notes.length} notes · ${c.quizzes.length} quizzes`, step: 2 },
   ];
   const toggle = async () => {
     setBusy(true);
