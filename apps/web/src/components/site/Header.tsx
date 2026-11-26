@@ -119,7 +119,7 @@ export function Header() {
   const close = () => { setOpen(false); setMenu(null); };
 
   return (
-    <header className={cn('sticky top-0 z-40 transition-all', scrolled ? 'bg-cream-50/90 shadow-[0_8px_30px_-20px_rgb(60_40_10/0.4)] backdrop-blur' : 'bg-transparent')}>
+    <header className={cn('sticky top-0 z-[60] transition-all', scrolled ? 'bg-cream-50/90 shadow-[0_8px_30px_-20px_rgb(60_40_10/0.4)] backdrop-blur' : 'bg-transparent')}>
       <div className="container-site flex h-[var(--header-h)] items-center justify-between gap-4">
         <Link href="/" aria-label={tc('home')} onClick={close}>
           <Logo nameEn="Al Ahmadiya" line1={tb('line1')} since={tb('since')} compact={scrolled} />
@@ -185,7 +185,7 @@ export function Header() {
         aria-label="Quick login access"
         className={cn(
           'relative left-1/2 w-screen -translate-x-1/2 border-t border-gold-200/70 bg-cream-50/95 transition-all duration-300',
-          isHomePage || scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
+          scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
         )}
       >
         <div className="px-3 pt-1.5 sm:px-5">
@@ -207,7 +207,7 @@ export function Header() {
       {/* Mobile drawer */}
       <AnimatePresence>
         {open && (
-          <motion.div id="mobile-nav" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="fixed inset-x-0 bottom-0 top-[var(--header-h)] overflow-y-auto bg-cream-50 xl:hidden">
+          <motion.div id="mobile-nav" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-[70] overflow-y-auto bg-cream-50 xl:hidden">
             <nav aria-label={t('primary')} className="container-site space-y-5 py-5">
               {groups.map((g) => (
                 <div key={g.key}>
