@@ -149,13 +149,28 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     const rows = [{ id: 'pay-01', purpose: 'course', description: 'Introduction to Computing course fee', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', provider: 'local-demo', providerRef: 'LOCAL-001', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now(), user: { fullName: 'Demo Student 01', email: 'student01@example.test' } }];
     return wrap(rows, { page: Number(query.get('page') || 1), totalPages: 1, totals: [{ purpose: 'course', count: 1, amountFils: 250000 }, { purpose: 'application-fee', count: 0, amountFils: 0 }], provider: 'local-demo' }) as R;
   }
-  if (clean === '/admin/roles') return wrap([
+  const roleRows = getList(store, 'admin.roles', [
     { key: 'SUPER_ADMIN', nameEn: 'Super Admin', userCount: 1, permissions: ['*'] },
     { key: 'UNIVERSITY_ADMIN', nameEn: 'University Admin', userCount: 1, permissions: ROLE_DEMO_PERMISSIONS.UNIVERSITY_ADMIN },
-    { key: 'LIBRARIAN', nameEn: 'Librarian', userCount: 1, permissions: ['dashboard.read', 'library.manage'] },
+    { key: 'ADMISSIONS_OFFICER', nameEn: 'Admissions Officer', userCount: 2, permissions: ['dashboard.read', 'admissions.read'] },
+    { key: 'ADMISSIONS_REVIEWER', nameEn: 'Admissions Reviewer', userCount: 2, permissions: ['dashboard.read', 'admissions.read'] },
     { key: 'REGISTRAR', nameEn: 'Registrar', userCount: 1, permissions: ['dashboard.read', 'records.manage'] },
+    { key: 'LIBRARIAN', nameEn: 'Librarian', userCount: 1, permissions: ['dashboard.read', 'library.manage'] },
+    { key: 'PROCUREMENT_OFFICER', nameEn: 'Procurement Officer', userCount: 1, permissions: ['dashboard.read', 'procurement.manage'] },
+    { key: 'ACADEMIC_ADMIN', nameEn: 'Academic Admin', userCount: 1, permissions: ['dashboard.read', 'academics.manage', 'lms.manage', 'live.host'] },
+    { key: 'FINANCE_MANAGER', nameEn: 'Finance Manager', userCount: 1, permissions: ['dashboard.read', 'payments.read'] },
+    { key: 'FINANCE_OFFICER', nameEn: 'Finance Officer', userCount: 2, permissions: ['dashboard.read', 'payments.read'] },
+    { key: 'HR_MANAGER', nameEn: 'HR Manager', userCount: 1, permissions: ['dashboard.read', 'hr.manage'] },
+    { key: 'HEAD_OF_DEPARTMENT', nameEn: 'Head of Department', userCount: 2, permissions: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage'] },
+    { key: 'CONTENT_EDITOR', nameEn: 'Content Editor', userCount: 1, permissions: ['dashboard.read', 'cms.read'] },
     { key: 'FACULTY', nameEn: 'Faculty', userCount: 8, permissions: ['dashboard.read', 'teach.own'] },
-  ]) as R;
+  ]);
+  if (clean === '/admin/roles' && method === 'GET') return wrap(roleRows) as R;
+  if (clean.startsWith('/admin/roles/') && clean.endsWith('/permissions') && method === 'PUT') {
+    const key = clean.split('/')[3]; const role = roleRows.find((x) => x.key === key);
+    if (role) role.permissions = payload.permissionKeys ?? role.permissions;
+    store['admin.roles'] = roleRows; writeStore(store); return wrap({ success: true }) as R;
+  }
   if (clean === '/admin/settings') return wrap(getList(store, 'site.settings', [
     { key: 'institution.name', valueEn: 'Al Ahmadiya University', valueAr: 'جامعة الأحمدية', confirmation: 'CONFIRMED', sourceUrl: null, note: 'Institution display name', updatedAt: now() },
     { key: 'admissions.status', valueEn: 'OPEN', valueAr: 'مفتوح', confirmation: 'CONFIRMED', sourceUrl: null, note: 'Demo intake status', updatedAt: now() },
@@ -167,9 +182,12 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (item) Object.assign(item, payload, { updatedAt: now() }); else rows.push({ key, ...payload, updatedAt: now() });
     store['site.settings'] = rows; writeStore(store); return wrap(rows.find((x) => x.key === key)) as R;
   }
-  if (clean === '/admin/staff-logins') return wrap([], { page: Number(query.get('page') || 1), totalPages: 1, total: 0, last30Days: { success: 0, failed: 0 } }) as R;
+  if (clean === '/admin/staff-logins') return wrap([{ id: 'login-demo-01', email: 'librarian.demo@example.test', success: true, reason: null, ip: 'Local browser', createdAt: now(), user: { fullName: 'Demo Librarian' } }, { id: 'login-demo-02', email: 'registrar.demo@example.test', success: true, reason: null, ip: 'Local browser', createdAt: now(), user: { fullName: 'Demo Registrar' } }], { page: Number(query.get('page') || 1), totalPages: 1, total: 2, last30Days: { success: 2, failed: 0 } }) as R;
   if (clean === '/admin/users-departments') return wrap([{ id: 'dept-01', nameEn: 'Computer Science' }, { id: 'dept-02', nameEn: 'Business Administration' }]) as R;
-  if (clean === '/admin/users') { const rows = getList(store, 'admin.users', [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }]); return wrap(rows, listMeta(rows)) as R; }
+  const usersSeed = [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }, { id: 'staff-demo-02', email: 'registrar.demo@example.test', fullName: 'Demo Registrar', isActive: true, lastLoginAt: null, departmentId: 'dept-01', department: { nameEn: 'Academic Affairs' }, roles: [{ role: { key: 'REGISTRAR', nameEn: 'Registrar' } }] }, { id: 'staff-demo-03', email: 'faculty.demo@example.test', fullName: 'Demo Faculty', isActive: true, lastLoginAt: null, departmentId: 'dept-01', department: { nameEn: 'Computer Science' }, roles: [{ role: { key: 'FACULTY', nameEn: 'Faculty' } }] }];
+  if (clean === '/admin/users' && method === 'GET') { const rows = getList(store, 'admin.users', usersSeed); const q = (query.get('q') || '').toLowerCase(); const filtered = q ? rows.filter((x) => `${x.fullName} ${x.email}`.toLowerCase().includes(q)) : rows; return wrap(filtered, listMeta(filtered)) as R; }
+  if (clean === '/admin/users' && method === 'POST') { const rows = getList(store, 'admin.users', usersSeed); const roleKey = payload.roleKeys?.[0] ?? 'FACULTY'; const role = roleRows.find((x) => x.key === roleKey) ?? { key: roleKey, nameEn: roleKey }; const created = { id: id(), email: payload.email, fullName: payload.fullName, isActive: true, lastLoginAt: null, departmentId: payload.departmentId ?? null, department: null, roles: [{ role }] }; rows.push(created); store['admin.users'] = rows; writeStore(store); return wrap(created) as R; }
+  if (clean.startsWith('/admin/users/') && method === 'PUT') { const recordId = clean.split('/').pop(); const rows = getList(store, 'admin.users', usersSeed); const row = rows.find((x) => x.id === recordId); if (row) { Object.assign(row, payload); if (payload.roleKeys) row.roles = payload.roleKeys.map((key: string) => ({ role: roleRows.find((x) => x.key === key) ?? { key, nameEn: key } })); } store['admin.users'] = rows; writeStore(store); return wrap({ success: true }) as R; }
   if (clean === '/admin/live/sessions') return wrap(getList(store, 'admin.live.sessions', [{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', course: { code: 'CS101', titleEn: 'Introduction to Computing' }, host: { fullName: 'Demo Faculty' } }])) as R;
   if (clean === '/teach/overview') return wrap({
     courses: [{ id: 'course-01', code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', imagePath: '/images/courses/cs101.jpg', publishStatus: 'PUBLISHED', students: 42, lectures: 8, quizzes: 2 }],
