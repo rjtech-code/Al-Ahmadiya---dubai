@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { clearDemoSession, DEMO_SESSION_EVENT, readDemoSession } from '@/lib/demo-session';
 
@@ -16,7 +16,6 @@ export function useAdmin() {
 /** Staff access is based exclusively on the locally selected demo role. */
 export function AdminProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [user, setUser] = useState<AdminUser | null>(null);
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(DEMO_SESSION_EVENT, applyDemoRole);
       window.removeEventListener('storage', applyDemoRole);
     };
-  }, [router, pathname]);
+  }, [router]);
 
   if (!user) return <div className="grid min-h-dvh place-items-center text-sm text-muted">Opening your local workspace…</div>;
   const signOut = async () => {
