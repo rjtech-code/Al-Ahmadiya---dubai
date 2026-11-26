@@ -1,7 +1,7 @@
 'use client';
 
 import { USE_BACKEND } from './demo-session';
-import { demoApiFetch } from './demo-api';
+import { demoApiFetch, demoUploadWithProgress } from './demo-api';
 
 export interface ApiErrorBody { code: string; message: string; details?: unknown }
 export class ApiError extends Error {
@@ -26,7 +26,8 @@ export async function apiFetch<R = unknown>(path: string, init: RequestInit & { 
   return body as R;
 }
 export async function restoreSession() { return USE_BACKEND ? Boolean(accessToken) : true; }
-export function uploadWithProgress<R = unknown>(_path: string, _form: FormData, _onProgress: (pct: number) => void): Promise<R> {
+export function uploadWithProgress<R = unknown>(path: string, form: FormData, onProgress: (pct: number) => void): Promise<R> {
+  if (!USE_BACKEND) return demoUploadWithProgress<R>(path, form, onProgress);
   return Promise.reject(new ApiError(0, { code: 'OFFLINE_DEMO', message: 'File uploads are disabled in local demo mode.' }));
 }
 export const formatMoney = (fils: number, currency = 'AED', locale = 'en') =>
