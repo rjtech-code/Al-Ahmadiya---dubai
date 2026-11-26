@@ -30,7 +30,7 @@ export default function MyCourses() {
       </div>
       <ErrorBox message={mine.error || wish.error} />
       {tab === 'mine' && (!mine.data ? <Loading /> : mine.data.filter(match).length ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
           {mine.data.filter(match).map((c) => (
             <Link key={c.id} href={`/portal/courses/${c.slug}`} className="group overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5">
               {img(c.imagePath)}
