@@ -263,7 +263,7 @@ function TopicCard({ h, topic, index, count, move, lessons }: { h: Helpers; topi
     try { await apiFetch(`/admin/lms/topics/${topic.id}`, { method: 'PUT', json: { titleEn: en, titleAr: ar } }); await reload(); } catch (err) { fail(err); }
   };
   return (
-    <section className="rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
+    <section className="rounded-[1.25rem] border border-brand-900/[0.07] bg-white shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)]">
       <header className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3">
         <span className="grid size-8 place-items-center rounded-full bg-gold-400 text-sm font-bold text-brand-950">{topic ? index + 1 : '–'}</span>
         <div className="min-w-0 flex-1"><p className="font-semibold text-brand-900">{topic ? topic.titleEn : 'Lectures without a topic'}</p>{topic && <p className="text-xs text-muted" dir="rtl">{topic.titleAr}</p>}</div>

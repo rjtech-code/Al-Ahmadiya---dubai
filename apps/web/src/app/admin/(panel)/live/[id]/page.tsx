@@ -221,7 +221,7 @@ export default function LiveConsole() {
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            <section className="rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
+            <section className="rounded-[1.25rem] border border-brand-900/[0.07] bg-white shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)]">
               <div className="flex gap-1 border-b border-line p-2">
                 <button onClick={() => setTab('joined')} className={cn('flex-1 rounded-full py-1.5 text-xs font-semibold', tab === 'joined' ? 'bg-brand-900 text-white' : 'text-brand-900')}><Users className="me-1 inline size-3.5" />In class ({participants.length})</button>
                 <button onClick={() => setTab('attendance')} className={cn('flex-1 rounded-full py-1.5 text-xs font-semibold', tab === 'attendance' ? 'bg-brand-900 text-white' : 'text-brand-900')}>Attendance</button>
@@ -287,7 +287,7 @@ function AttendanceMini({ att }: { att: { rows: Att[]; meta: AttMeta } | null })
     <div className="p-3 text-sm">
       <p className="mb-2 text-xs text-muted">Present ≥ {att.meta.presentPercent}% of the class · late after {att.meta.lateAfterMin} min · updates every 10 s</p>
       <div className="mb-2 grid grid-cols-4 gap-1 text-center text-xs">
-        {(['present', 'late', 'partial', 'absent'] as const).map((k) => <div key={k} className="rounded-xl bg-cream-200 py-1"><p className="font-display text-xl font-semibold text-brand-900">{att.meta[k]}</p><p className="capitalize text-muted">{k}</p></div>)}
+        {(['present', 'late', 'partial', 'absent'] as const).map((k) => <div key={k} className="rounded-xl bg-cream-200 py-1"><p className="font-[family-name:var(--font-cormorant)] text-xl font-semibold text-brand-900">{att.meta[k]}</p><p className="capitalize text-muted">{k}</p></div>)}
       </div>
       <ul className="max-h-48 overflow-y-auto">{att.rows.map((r) => <li key={r.userId} className="flex items-center justify-between border-b border-line py-1 last:border-0"><span>{r.onlineNow && <span className="me-1 inline-block size-2 rounded-full bg-success" />}{r.name}</span><span className={cn('rounded-full px-2 text-[11px] font-semibold', TONE[r.status])}>{r.status} · {r.minutes}m</span></li>)}</ul>
     </div>

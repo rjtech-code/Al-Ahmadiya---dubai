@@ -8,46 +8,33 @@ import type * as T from './types';
  */
 export class ApiUnavailableError extends Error {}
 
-const colleges: T.CollegeSummary[] = [
-  { id: 'demo-college-01', slug: 'computing', nameEn: 'Demo College of Computing', nameAr: 'كلية الحوسبة التجريبية', summaryEn: 'Sample content for computing and digital technology programmes.', summaryAr: 'محتوى تجريبي لبرامج الحوسبة والتقنية الرقمية.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ id: 'demo-dept-01', slug: 'computer-science', nameEn: 'Demo Computer Science', nameAr: 'علوم الحاسوب التجريبية' }] },
-  { id: 'demo-college-02', slug: 'business', nameEn: 'Demo College of Business', nameAr: 'كلية الأعمال التجريبية', summaryEn: 'Sample content for business and management programmes.', summaryAr: 'محتوى تجريبي لبرامج الأعمال والإدارة.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ id: 'demo-dept-02', slug: 'business-administration', nameEn: 'Demo Business Administration', nameAr: 'إدارة الأعمال التجريبية' }] },
-];
-const departments: T.DepartmentSummary[] = [
-  { id: 'demo-dept-01', slug: 'computer-science', nameEn: 'Demo Computer Science', nameAr: 'علوم الحاسوب التجريبية' },
-  { id: 'demo-dept-02', slug: 'business-administration', nameEn: 'Demo Business Administration', nameAr: 'إدارة الأعمال التجريبية' },
-];
-const programs: T.ProgramSummary[] = [
-  { id: 'demo-program-01', slug: 'computer-science', degreeLevel: 'BACHELOR', nameEn: 'Demo Bachelor of Computer Science', nameAr: 'بكالوريوس علوم الحاسوب التجريبي', summaryEn: 'A sample programme record for local preview only.', summaryAr: 'سجل برنامج تجريبي للمعاينة المحلية فقط.', durationYears: '4', totalCredits: 120, category: 'Computing', imagePath: '/images/campus/academic.jpg', isFeatured: true, confirmation: 'CLIENT_CONFIRMATION_REQUIRED', department: { nameEn: departments[0].nameEn, nameAr: departments[0].nameAr, college: { slug: colleges[0].slug, nameEn: colleges[0].nameEn, nameAr: colleges[0].nameAr } } },
-  { id: 'demo-program-02', slug: 'business-administration', degreeLevel: 'BACHELOR', nameEn: 'Demo Bachelor of Business Administration', nameAr: 'بكالوريوس إدارة الأعمال التجريبي', summaryEn: 'A sample business programme for local preview only.', summaryAr: 'برنامج أعمال تجريبي للمعاينة المحلية فقط.', durationYears: '4', totalCredits: 120, category: 'Business', imagePath: '/images/campus/academic.jpg', isFeatured: false, confirmation: 'CLIENT_CONFIRMATION_REQUIRED', department: { nameEn: departments[1].nameEn, nameAr: departments[1].nameAr, college: { slug: colleges[1].slug, nameEn: colleges[1].nameEn, nameAr: colleges[1].nameAr } } },
-];
-const courses: T.CourseSummary[] = [
-  { id: 'demo-course-01', slug: 'intro-to-computing', code: 'DEMO-CS101', titleEn: 'Demo: Introduction to Computing', titleAr: 'تجريبي: مقدمة في الحوسبة', descriptionEn: 'Synthetic course record for local preview.', descriptionAr: 'سجل مقرر تجريبي للمعاينة المحلية.', creditHours: 3, courseType: 'CORE', imagePath: '/images/campus/academic.jpg', onlineEnabled: true, confirmation: 'CLIENT_CONFIRMATION_REQUIRED' },
-  { id: 'demo-course-02', slug: 'business-foundations', code: 'DEMO-BUS101', titleEn: 'Demo: Business Foundations', titleAr: 'تجريبي: أساسيات الأعمال', descriptionEn: 'Synthetic course record for local preview.', descriptionAr: 'سجل مقرر تجريبي للمعاينة المحلية.', creditHours: 3, courseType: 'CORE', imagePath: '/images/campus/academic.jpg', onlineEnabled: true, confirmation: 'CLIENT_CONFIRMATION_REQUIRED' },
-];
-const faculty: T.FacultySummary[] = [
-  { id: 'demo-faculty-01', slug: 'demo-faculty-member', fullNameEn: 'Demo Faculty Member', fullNameAr: 'عضو هيئة تدريس تجريبي', titleEn: 'Sample Lecturer', titleAr: 'محاضر تجريبي', photoPath: null, specializationEn: 'Computing', specializationAr: 'الحوسبة', email: 'faculty.demo@example.test', departments: [{ slug: departments[0].slug, nameEn: departments[0].nameEn, nameAr: departments[0].nameAr }] },
-];
-const news: T.NewsSummary[] = [
-  { id: 'demo-news-01', slug: 'local-demo-announcement', category: 'announcement', titleEn: 'Local demo announcement', titleAr: 'إعلان تجريبي محلي', excerptEn: 'Sample announcement content for preview only.', excerptAr: 'محتوى إعلان تجريبي للمعاينة فقط.', imagePath: null, isFeatured: true, isAnnouncement: true, publishedAt: '2026-11-20T09:00:00.000Z' },
-  { id: 'demo-news-02', slug: 'local-demo-campus-update', category: 'university', titleEn: 'Local demo campus update', titleAr: 'تحديث تجريبي للحرم الجامعي', excerptEn: 'Synthetic campus news for local preview.', excerptAr: 'خبر جامعي اصطناعي للمعاينة المحلية.', imagePath: null, isFeatured: false, isAnnouncement: false, publishedAt: '2026-11-18T09:00:00.000Z' },
-];
-const events: T.EventSummary[] = [
-  { id: 'demo-event-01', slug: 'demo-open-day', category: 'academic', titleEn: 'Demo open day', titleAr: 'اليوم المفتوح التجريبي', summaryEn: 'Sample event entry for local preview only.', summaryAr: 'إدخال فعالية تجريبية للمعاينة المحلية فقط.', startsAt: '2026-12-10T09:00:00.000Z', endsAt: '2026-12-10T13:00:00.000Z', venueEn: 'Demo campus venue', venueAr: 'موقع الحرم التجريبي', imagePath: null, registrationUrl: null, isFeatured: true },
-  { id: 'demo-event-02', slug: 'demo-academic-workshop', category: 'workshop', titleEn: 'Demo academic workshop', titleAr: 'ورشة أكاديمية تجريبية', summaryEn: 'Synthetic event for local preview.', summaryAr: 'فعالية اصطناعية للمعاينة المحلية.', startsAt: '2026-12-18T09:00:00.000Z', endsAt: '2026-12-18T11:00:00.000Z', venueEn: 'Demo learning centre', venueAr: 'مركز التعلم التجريبي', imagePath: null, registrationUrl: null, isFeatured: false },
-];
-const publications: T.PublicationSummary[] = [
-  { id: 'demo-publication-01', slug: 'sample-research-record', type: 'report', titleEn: 'Sample research record', titleAr: 'سجل بحثي تجريبي', abstractEn: 'Synthetic research entry for local preview only.', abstractAr: 'مدخل بحثي اصطناعي للمعاينة المحلية فقط.', keywords: ['demo', 'sample'], journal: null, doi: null, coverPath: null, publishedOn: '2026-10-01', isFeatured: true, authors: [{ name: 'Demo Author', affiliation: 'Demo Department', position: 1 }] },
-];
-const faqs: T.Faq[] = [
-  { id: 'demo-faq-01', questionEn: 'Is this a live university service?', questionAr: 'هل هذه خدمة جامعية مباشرة؟', answerEn: 'No. This is a frontend-only local demonstration.', answerAr: 'لا. هذه معاينة محلية للواجهة الأمامية فقط.' },
-  { id: 'demo-faq-02', questionEn: 'Are the programme details verified?', questionAr: 'هل تفاصيل البرامج موثقة؟', answerEn: 'No. Sample content must be replaced with client-approved information.', answerAr: 'لا. يجب استبدال المحتوى التجريبي بمعلومات معتمدة من العميل.' },
-];
+import { CONTENT } from './public-content';
+import { QUALIFICATIONS, rulesFor } from './eligibility';
+
+type C = typeof CONTENT;
+const DAY = 86_400_000;
+const at = (days: number, hour = 9) => { const d = new Date(Date.now() + days * DAY); d.setUTCHours(hour - 4, 0, 0, 0); return d.toISOString(); };
+const deptOf = (slug: string) => CONTENT.departments.find((d) => d.slug === slug)!;
+const facultyBySlug = (slug: string | null | undefined) => (slug ? faculty.find((f) => f.slug === slug) ?? null : null);
+
+const colleges: T.CollegeSummary[] = CONTENT.colleges.map((c) => ({ id: c.id, slug: c.slug, nameEn: c.nameEn, nameAr: c.nameAr, summaryEn: c.summaryEn, summaryAr: c.summaryAr, imagePath: c.imagePath, confirmation: c.confirmation, departments: [...c.departments] }));
+const departments: T.DepartmentSummary[] = CONTENT.departments.map((d) => ({ id: d.id, slug: d.slug, nameEn: d.nameEn, nameAr: d.nameAr }));
+const programs: T.ProgramSummary[] = CONTENT.programs.map((p) => ({ id: p.id, slug: p.slug, degreeLevel: p.degreeLevel as T.DegreeLevel, nameEn: p.nameEn, nameAr: p.nameAr, summaryEn: p.summaryEn, summaryAr: p.summaryAr, durationYears: p.durationYears, totalCredits: p.totalCredits, category: p.category, imagePath: p.imagePath, isFeatured: p.isFeatured, confirmation: p.confirmation, department: p.department }));
+const courses: T.CourseSummary[] = CONTENT.courses.map((c) => ({ id: c.id, slug: c.slug, code: c.code, titleEn: c.titleEn, titleAr: c.titleAr, descriptionEn: c.descriptionEn, descriptionAr: c.descriptionAr, creditHours: c.creditHours, courseType: c.courseType, imagePath: c.imagePath, onlineEnabled: true, confirmation: c.confirmation }));
+const faculty: T.FacultySummary[] = CONTENT.faculty.map((f) => ({ ...f, departments: [...f.departments] }));
+const news: T.NewsSummary[] = CONTENT.news.map(({ daysAgo, ...n }) => ({ ...n, publishedAt: at(-daysAgo) }));
+const events: T.EventSummary[] = CONTENT.events.map(({ inDays, venueEn, venueAr, ...e }) => ({ ...e, startsAt: at(inDays, 10), endsAt: at(inDays, 13), venueEn: venueEn ?? 'Al Ahmadiya, Dubai', venueAr: venueAr ?? 'الأحمدية، دبي', registrationUrl: null }));
+// Research publications are not listed until real, citable work is supplied.
+const publications: T.PublicationSummary[] = [];
+const faqs: T.Faq[] = CONTENT.faqs.map((f) => ({ id: f.id, questionEn: f.questionEn, questionAr: f.questionAr, answerEn: f.answerEn, answerAr: f.answerAr }));
+/** Heritage timeline: facts with published sources only. */
 const milestones: T.Milestone[] = [
-  { id: 'demo-milestone-01', yearLabel: 'Demo', titleEn: 'Historical content awaiting verification', titleAr: 'محتوى تاريخي بانتظار التحقق', bodyEn: 'Placeholder only. No historical claim is made in this demo.', bodyAr: 'عنصر نائب فقط. لا يتضمن هذا العرض أي ادعاء تاريخي.', sourceUrls: [], caveatEn: 'Replace only with verified institutional history.', caveatAr: 'استبدله فقط بتاريخ مؤسسي موثق.', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' },
+  { id: 'm-1912', yearLabel: '1912', titleEn: 'Al Ahmadiya School is founded', titleAr: 'تأسيس المدرسة الأحمدية', bodyEn: 'Pearl merchant Sheikh Ahmed bin Dalmouk founds the school in Al Ras, Deira — remembered as Dubai’s first semi-formal school.', bodyAr: 'أسس تاجر اللؤلؤ الشيخ أحمد بن دلموك المدرسة في منطقة الراس بديرة، وتُعدّ أول مدرسة شبه نظامية في دبي.', sourceUrls: ['https://en.wikipedia.org/wiki/Al_Ahmadiya_School'], caveatEn: 'Some sources give a slightly different founding year.', caveatAr: 'تذكر بعض المصادر سنة تأسيس مختلفة قليلاً.', confirmation: 'CONFIRMED' },
+  { id: 'm-1963', yearLabel: '1963', titleEn: 'A larger building', titleAr: 'مبنى أكبر', bodyEn: 'After educating more than 3,500 pupils, the school moves to a larger building to serve a growing city.', bodyAr: 'بعد أن تعلّم فيها أكثر من 3500 طالب، انتقلت المدرسة إلى مبنى أكبر لتخدم مدينة تنمو.', sourceUrls: ['https://en.wikipedia.org/wiki/Al_Ahmadiya_School'], caveatEn: null, caveatAr: null, confirmation: 'CONFIRMED' },
+  { id: 'm-2000', yearLabel: '2000', titleEn: 'A museum of education', titleAr: 'متحف للتعليم', bodyEn: 'The restored 1912 building opens as a museum of education in the Al Ras heritage district.', bodyAr: 'افتُتح مبنى 1912 بعد ترميمه متحفاً للتعليم في منطقة الراس التراثية.', sourceUrls: ['https://en.wikipedia.org/wiki/Al_Ahmadiya_School'], caveatEn: null, caveatAr: null, confirmation: 'CONFIRMED' },
+  { id: 'm-next', yearLabel: 'Next', titleEn: 'Towards a university', titleAr: 'نحو جامعة', bodyEn: 'Al Ahmadiya is preparing its next chapter as a proposed university, subject to official approval.', bodyAr: 'تستعد الأحمدية لفصلها القادم بوصفها جامعة مقترحة، رهناً بالموافقة الرسمية.', sourceUrls: [], caveatEn: 'Proposal — subject to regulatory approval.', caveatAr: 'مقترح — رهن الموافقة التنظيمية.', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' },
 ];
-const tour: T.TourStop[] = [
-  { id: 'demo-tour-01', slug: 'demo-library', kind: 'library', titleEn: 'Demo library stop', titleAr: 'محطة المكتبة التجريبية', descriptionEn: 'Sample campus-tour stop for preview only.', descriptionAr: 'محطة جولة جامعية تجريبية للمعاينة فقط.', imagePath: '/images/campus/library.jpg', panoramaUrl: null, isHeritage: false },
-];
+const tour: T.TourStop[] = CONTENT.tour.map((s) => ({ ...s }));
 const pageOf = <X,>(rows: X[], q: Record<string, string | number | undefined> = {}): T.Paged<X> => {
   const page = Math.max(1, Number(q.page ?? 1) || 1);
   const pageSize = Math.max(1, Number(q.pageSize ?? 12) || 12);
@@ -55,54 +42,73 @@ const pageOf = <X,>(rows: X[], q: Record<string, string | number | undefined> = 
   return { data: rows.slice(start, start + pageSize), meta: { page, pageSize, total: rows.length, totalPages: Math.max(1, Math.ceil(rows.length / pageSize)) } };
 };
 const matches = (value: unknown, q: unknown) => !q || String(value ?? '').toLowerCase().includes(String(q).toLowerCase());
-const collegeDetail = (c: T.CollegeSummary): T.College => ({
-  ...c, overviewEn: 'Synthetic overview for local preview only.', overviewAr: 'نظرة عامة اصطناعية للمعاينة المحلية فقط.',
-  visionEn: null, visionAr: null, missionEn: null, missionAr: null, dean: null,
-  departments: departments.filter((d) => c.slug === 'computing' ? d.slug === 'computer-science' : d.slug === 'business-administration').map((d) => ({ ...d, programs: programs.filter((p) => p.department?.nameEn === d.nameEn), faculty: [] })),
-});
-const programDetail = (p: T.ProgramSummary): T.Program => ({
-  ...p, overviewEn: 'Synthetic programme overview for local preview only.', overviewAr: 'نظرة عامة اصطناعية للبرنامج للمعاينة المحلية فقط.',
-  outcomesEn: ['Sample learning outcome'], outcomesAr: ['نتيجة تعلم تجريبية'], requirementsEn: ['Client confirmation required'], requirementsAr: ['يتطلب تأكيد العميل'], careersEn: [], careersAr: [],
-  department: { slug: p.department?.college.slug === 'computing' ? departments[0].slug : departments[1].slug, nameEn: p.department?.nameEn ?? departments[0].nameEn, nameAr: p.department?.nameAr ?? departments[0].nameAr, college: p.department?.college ?? { slug: colleges[0].slug, nameEn: colleges[0].nameEn, nameAr: colleges[0].nameAr } },
-  curriculum: [{ year: 1, term: 1, course: { slug: courses[0].slug, code: courses[0].code, titleEn: courses[0].titleEn, titleAr: courses[0].titleAr, creditHours: 3 } }], related: programs.filter((x) => x.id !== p.id),
-});
-const courseDetail = (course: T.CourseSummary): T.Course => ({
-  ...course, outcomesEn: ['Sample course outcome'], outcomesAr: ['نتيجة مقرر تجريبية'], syllabus: [{ module: 'Demo module', moduleAr: 'وحدة تجريبية', topicsEn: ['Sample topic'], topicsAr: ['موضوع تجريبي'] }],
-  assessment: [{ labelEn: 'Sample assessment', labelAr: 'تقييم تجريبي', weight: 100 }], instructor: faculty[0],
-  department: { slug: departments[0].slug, nameEn: departments[0].nameEn, nameAr: departments[0].nameAr },
-  related: courses.filter((x) => x.id !== course.id), deliveryMode: 'RECORDED', priceFils: 0, currency: 'AED',
-  topics: [{ id: 'demo-topic-01', titleEn: 'Sample topic', titleAr: 'موضوع تجريبي' }],
-  lessons: [{ id: 'demo-lesson-01', titleEn: 'Sample lesson', titleAr: 'درس تجريبي', durationSec: 600 }],
-  _count: { notes: 1, quizzes: 1, liveSessions: 0 },
-});
+const courseExtra = (slug: string) => CONTENT.courses.find((c) => c.slug === slug)!;
+const collegeDetail = (c: T.CollegeSummary): T.College => {
+  const x = CONTENT.colleges.find((k) => k.slug === c.slug)!;
+  return {
+    ...c, overviewEn: x.overviewEn ?? null, overviewAr: x.overviewAr ?? null, visionEn: x.visionEn ?? null, visionAr: x.visionAr ?? null, missionEn: x.missionEn ?? null, missionAr: x.missionAr ?? null, dean: facultyBySlug(x.dean),
+    departments: c.departments.map((d) => ({ ...d, programs: programs.filter((p) => CONTENT.programs.find((k) => k.slug === p.slug)?.deptSlug === d.slug), faculty: faculty.filter((f) => f.departments?.some((x2) => x2.slug === d.slug)) })),
+  } as T.College;
+};
+const programDetail = (p: T.ProgramSummary): T.Program => {
+  const x = CONTENT.programs.find((k) => k.slug === p.slug)!;
+  const d = deptOf(x.deptSlug);
+  return {
+    ...p,
+    overviewEn: `The ${p.nameEn} is offered by the Department of ${d.nameEn}. ${p.summaryEn} Teaching mixes lectures, workshops and supervised projects, and students graduate with a portfolio of work that shows what they can do.`,
+    overviewAr: `يقدّم قسم ${d.nameAr} برنامج ${p.nameAr}. ${p.summaryAr} ويجمع التدريس بين المحاضرات وورش العمل والمشاريع تحت الإشراف.`,
+    outcomesEn: ['Apply core knowledge of the discipline to real problems', 'Communicate ideas clearly in English and Arabic', 'Work effectively in teams and lead projects', 'Act with integrity and professional responsibility'],
+    outcomesAr: ['تطبيق المعرفة الأساسية في التخصص على مشكلات حقيقية', 'عرض الأفكار بوضوح باللغتين', 'العمل بفاعلية ضمن فرق وقيادة المشاريع', 'التصرف بنزاهة ومسؤولية مهنية'],
+    requirementsEn: p.degreeLevel === 'MASTER' ? ['A recognised bachelor’s degree in a related field', 'English language proficiency', 'Statement of purpose and CV'] : ['UAE secondary school certificate or equivalent', 'English language proficiency', 'Passport and Emirates ID copies'],
+    requirementsAr: p.degreeLevel === 'MASTER' ? ['درجة بكالوريوس معترف بها في مجال ذي صلة', 'إتقان اللغة الإنجليزية', 'خطاب الغرض والسيرة الذاتية'] : ['شهادة الثانوية العامة الإماراتية أو ما يعادلها', 'إتقان اللغة الإنجليزية', 'نسخة من جواز السفر والهوية'],
+    careersEn: [...x.careersEn], careersAr: [...x.careersAr],
+    department: { slug: d.slug, nameEn: d.nameEn, nameAr: d.nameAr, college: d.college },
+    curriculum: x.curriculum.map(([code, year]) => { const c = courses.find((k) => k.code === code)!; return { year: year as number, term: 1, course: { slug: c.slug, code: c.code, titleEn: c.titleEn, titleAr: c.titleAr, creditHours: c.creditHours } }; }),
+    related: programs.filter((r) => r.id !== p.id && (r.category === p.category || r.degreeLevel === p.degreeLevel)).slice(0, 3),
+  } as T.Program;
+};
+const courseDetail = (course: T.CourseSummary): T.Course => {
+  const x = courseExtra(course.slug);
+  const d = deptOf(x.dept);
+  return {
+    ...course, outcomesEn: [...x.outcomesEn], outcomesAr: [...x.outcomesAr], syllabus: x.syllabus.map((m) => ({ ...m, topicsEn: [...m.topicsEn], topicsAr: [...m.topicsAr] })),
+    assessment: [{ labelEn: 'Coursework', labelAr: 'الأعمال الفصلية', weight: 40 }, { labelEn: 'Project', labelAr: 'المشروع', weight: 30 }, { labelEn: 'Final quiz', labelAr: 'الاختبار النهائي', weight: 30 }],
+    instructor: facultyBySlug(x.instr), department: { slug: d.slug, nameEn: d.nameEn, nameAr: d.nameAr },
+    related: courses.filter((r) => r.id !== course.id && courseExtra(r.slug).dept === x.dept).slice(0, 3),
+    deliveryMode: x.live ? 'LIVE' : 'RECORDED', priceFils: x.priceFils, currency: 'AED',
+    topics: x.syllabus.map((m, i) => ({ id: `${course.slug}-t${i + 1}`, titleEn: m.module, titleAr: m.moduleAr })),
+    lessons: x.syllabus.flatMap((m, i) => m.topicsEn.map((t, j) => ({ id: `${course.slug}-l${i + 1}-${j + 1}`, titleEn: t, titleAr: m.topicsAr[j] ?? t, durationSec: (18 + ((i + j) * 4) % 12) * 60 }))),
+    _count: { notes: x.syllabus.length, quizzes: x.syllabus.length, liveSessions: x.live ? 2 : 0 },
+  } as T.Course;
+};
 const facultyDetail = (f: T.FacultySummary): T.Faculty => ({
-  ...f, phone: null, bioEn: 'Synthetic faculty profile for local preview only.', bioAr: 'ملف تعريفي اصطناعي لعضو هيئة تدريس للمعاينة فقط.',
-  linkedinUrl: null, orcid: null, education: [], researchInterestsEn: [], researchInterestsAr: [], awards: [],
-  courses: courses.map((c) => ({ slug: c.slug, code: c.code, titleEn: c.titleEn, titleAr: c.titleAr })), publications: [],
-});
+  ...f, phone: null,
+  bioEn: `${f.fullNameEn} teaches and researches in ${String(f.specializationEn ?? '').toLowerCase()}, linking theory to practice through case studies and projects. Profile shown for illustration; faculty appointments will be confirmed by Al Ahmadiya.`,
+  bioAr: `يعمل ${f.fullNameAr} في التدريس والبحث في مجال ${f.specializationAr ?? ''}. ملف توضيحي؛ ستؤكد الأحمدية تعيينات أعضاء هيئة التدريس.`,
+  linkedinUrl: null, orcid: null, education: [], researchInterestsEn: [f.specializationEn ?? ''], researchInterestsAr: [f.specializationAr ?? ''], awards: [],
+  courses: CONTENT.courses.filter((c) => c.instr === f.slug).map((c) => ({ slug: c.slug, code: c.code, titleEn: c.titleEn, titleAr: c.titleAr })), publications: [],
+} as T.Faculty);
 const articleDetail = (n: T.NewsSummary): T.Article => ({
-  ...n, bodyEn: 'This is synthetic demonstration content. Replace it with an approved news article before publication.',
-  bodyAr: 'هذا محتوى تجريبي اصطناعي. استبدله بمقال إخباري معتمد قبل النشر.',
-  quoteEn: null, quoteAr: null, quoteByEn: null, quoteByAr: null, sourceUrl: null, related: news.filter((x) => x.id !== n.id),
-});
+  ...n, bodyEn: `${n.excerptEn}\n\nFull story to be published by the Al Ahmadiya communications team.`, bodyAr: `${n.excerptAr}\n\nسينشر فريق الاتصال في الأحمدية الخبر كاملاً.`,
+  quoteEn: null, quoteAr: null, quoteByEn: null, quoteByAr: null, sourceUrl: null, related: news.filter((x) => x.id !== n.id).slice(0, 3),
+} as T.Article);
 const eventDetail = (e: T.EventSummary): T.EventDetail => ({
-  ...e, overviewEn: 'Synthetic event details for local preview only.', overviewAr: 'تفاصيل فعالية اصطناعية للمعاينة المحلية فقط.',
-  mapUrl: null, agenda: [], speakers: [], faqs, related: events.filter((x) => x.id !== e.id),
-});
-const publicationDetail = (p: T.PublicationSummary): T.Publication => ({
-  ...p, findingsEn: ['Sample finding'], findingsAr: ['نتيجة تجريبية'], fullTextUrl: null, related: publications.filter((x) => x.id !== p.id),
-});
+  ...e, overviewEn: e.summaryEn, overviewAr: e.summaryAr, mapUrl: null, agenda: [], speakers: [], faqs, related: events.filter((x) => x.id !== e.id).slice(0, 3),
+} as T.EventDetail);
+const publicationDetail = (p: T.PublicationSummary): T.Publication => ({ ...p, findingsEn: [], findingsAr: [], fullTextUrl: null, related: [] } as T.Publication);
+export type PublicCourseExtra = C['courses'][number];
+export const courseMeta = (slug: string) => { const x = CONTENT.courses.find((c) => c.slug === slug); return x ? { priceFils: x.priceFils, live: x.live, featured: x.featured, instructor: facultyBySlug(x.instr) } : null; };
 
 export const api = {
-  settings: async () => ({ 'institution.name': { en: 'Al Ahmadiya — Demo', ar: 'الأحمدية — تجريبي', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', sourceUrl: null } } as T.Settings),
+  settings: async () => ({ 'institution.name': { en: 'Al Ahmadiya', ar: 'الأحمدية', confirmation: 'CONFIRMED', sourceUrl: null } } as T.Settings),
   stats: async () => ({ colleges: colleges.length, programs: programs.length, courses: courses.length, faculty: faculty.length, publications: publications.length } as T.Stats),
   heritage: async () => ({ milestones, media: [] as T.Media[] }),
   colleges: async () => colleges,
   college: async (slug: string) => { const c = colleges.find((x) => x.slug === slug); return c ? collegeDetail(c) : null; },
   department: async (slug: string) => { const d = departments.find((x) => x.slug === slug); if (!d) return null; return { ...d, overviewEn: 'Synthetic department overview for local preview.', overviewAr: 'نظرة عامة اصطناعية للقسم للمعاينة.', objectivesEn: ['Sample objective'], objectivesAr: ['هدف تجريبي'], researchAreasEn: [], researchAreasAr: [], imagePath: null, contactEmail: null, confirmation: 'CLIENT_CONFIRMATION_REQUIRED' as const, college: { slug: colleges[0].slug, nameEn: colleges[0].nameEn, nameAr: colleges[0].nameAr }, head: faculty[0], programs, courses, faculty }; },
-  programs: async (q: Record<string, string | number | undefined> = {}) => pageOf(programs.filter((p) => matches(p.nameEn, q.q) || matches(p.nameAr, q.q)).filter((p) => !q.degreeLevel || p.degreeLevel === q.degreeLevel), q),
+  programs: async (q: Record<string, string | number | undefined> = {}) => pageOf(programs.filter((p) => matches(p.nameEn, q.q) || matches(p.nameAr, q.q)).filter((p) => !q.degreeLevel || p.degreeLevel === q.degreeLevel).filter((p) => !q.featured || p.isFeatured), q),
   program: async (slug: string) => { const p = programs.find((x) => x.slug === slug); return p ? programDetail(p) : null; },
-  courses: async (q: Record<string, string | number | undefined> = {}) => pageOf(courses.filter((p) => matches(p.titleEn, q.q) || matches(p.code, q.q)).filter((p) => !q.department || p.courseType === q.department), q),
+  courses: async (q: Record<string, string | number | undefined> = {}) => pageOf(courses.filter((p) => matches(p.titleEn, q.q) || matches(p.code, q.q)).filter((p) => !q.department || p.courseType === q.department).filter((p) => !q.featured || CONTENT.courses.find((c) => c.slug === p.slug)?.featured), q),
   course: async (slug: string) => { const p = courses.find((x) => x.slug === slug); return p ? courseDetail(p) : null; },
   faculty: async (q: Record<string, string | number | undefined> = {}) => pageOf(faculty.filter((p) => matches(p.fullNameEn, q.q) || matches(p.specializationEn, q.q)), q),
   facultyMember: async (slug: string) => { const p = faculty.find((x) => x.slug === slug); return p ? facultyDetail(p) : null; },
@@ -125,6 +131,6 @@ export interface AdmissionsConfig {
 export const admissionsConfig = async (): Promise<AdmissionsConfig> => ({
   open: true,
   statusConfirmation: 'DEMO_ONLY',
-  programs: programs.map((p) => ({ slug: p.slug, nameEn: p.nameEn, nameAr: p.nameAr, degreeLevel: p.degreeLevel, eligibilityRules: [{ qualification: 'HIGH_SCHOOL', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }] })),
-  qualifications: ['High school', 'Diploma', 'Bachelor degree'],
+  programs: programs.map((p) => ({ slug: p.slug, nameEn: p.nameEn, nameAr: p.nameAr, degreeLevel: p.degreeLevel, eligibilityRules: Object.keys(rulesFor(p.degreeLevel)).map((qualification) => ({ qualification, confirmation: 'CLIENT_CONFIRMATION_REQUIRED' })) })),
+  qualifications: [...QUALIFICATIONS],
 });

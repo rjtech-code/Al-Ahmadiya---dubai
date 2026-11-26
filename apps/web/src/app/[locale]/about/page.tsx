@@ -5,6 +5,7 @@ import { CtaBand } from '@/components/site/CtaBand';
 import { PageHero } from '@/components/site/PageHero';
 import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { DubaiLearningArt } from '@/components/motion/Illustrations';
 import { Reveal } from '@/components/ui/Reveal';
 import { Section, SectionHeading } from '@/components/ui/Section';
 import { ProposedNotice, TbaBadge, TbaPanel } from '@/components/ui/Tba';
@@ -44,7 +45,7 @@ export default async function AboutPage({ params }: LocaleParams) {
       {/* Overview with arch-framed courtyard */}
       <Section labelledBy="ov-h">
         <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
-          {courtyard && (
+          {courtyard ? (
             <Reveal>
               <figure>
                 <div className="arch relative aspect-[4/5] overflow-hidden border-[10px] border-cream-50 shadow-[0_30px_70px_-40px_rgb(60_40_10/0.6)]">
@@ -53,7 +54,7 @@ export default async function AboutPage({ params }: LocaleParams) {
                 <figcaption className="mt-3 text-center text-xs text-muted">{locale === 'ar' ? courtyard.captionAr : courtyard.captionEn} {credit(courtyard)} · <a href={courtyard.sourceUrl ?? '#'} target="_blank" rel="noopener noreferrer license" className="underline">{th('viewSource')}</a></figcaption>
               </figure>
             </Reveal>
-          )}
+          ) : <DubaiLearningArt className="h-[26rem] w-full" />}
           <Reveal delay={0.1}>
             <SectionHeading id="ov-h" title={t('overviewTitle')} />
             <div className="space-y-4 text-lg leading-relaxed text-ink/80">

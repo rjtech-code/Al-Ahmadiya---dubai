@@ -1,5 +1,7 @@
 'use client';
 
+import * as studentDemo from './demo-student';
+import { checkAll, checkEligibility } from './eligibility';
 import { readDemoSession, saveDemoSession } from './demo-session';
 
 type RequestOptions = RequestInit & { json?: unknown; auth?: boolean };
@@ -526,34 +528,58 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (row) Object.assign(row, payload); store['hr.leave'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
 
-  if (clean === '/me/portal/dashboard') return wrap({
-    cgpa: 3.42, attendance: 91, upcomingCount: 2,
-    courses: [{ id: 'course-01' }, { id: 'course-02' }],
-    today: [{ kind: 'class', id: 'live-01', at: new Date(Date.now() + 3600000).toISOString(), endsAt: new Date(Date.now() + 5400000).toISOString(), titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', code: 'CS101', status: 'SCHEDULED' }],
-    nextClass: { id: 'live-01', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', imagePath: '/images/courses/cs101.jpg', teacher: { fullName: 'Demo Faculty' } } },
-    pendingAssignments: [{ id: 'assignment-01', titleEn: 'Programming exercise', titleAr: 'تمرين برمجي', dueAt: new Date(Date.now() + 3 * 86400000).toISOString(), course: { code: 'CS101' } }],
-    recentLectures: [{ id: 'lesson-01', titleEn: 'Variables and data types', titleAr: 'المتغيرات وأنواع البيانات', durationSec: 1200, createdAt: now(), course: { slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', imagePath: '/images/courses/cs101.jpg' } }],
-  }) as R;
+  if (clean === '/me/portal/dashboard') {
+    const start = new Date(); start.setUTCHours(-4, 0, 0, 0); if (Date.now() - +start >= 86400000) start.setUTCDate(start.getUTCDate() + 1);
+    const today = studentDemo.schedule(start.toISOString(), new Date(+start + 86400000).toISOString());
+    const nextLive = studentDemo.live().find((s) => s.status === 'SCHEDULED');
+    return wrap({
+      cgpa: studentDemo.results().cgpa, attendance: studentDemo.attendance().overall, upcomingCount: studentDemo.live().filter((s) => s.status === 'SCHEDULED').length,
+      courses: studentDemo.COURSES.map((c) => ({ id: c.id })), today,
+      nextClass: nextLive ? { id: nextLive.id, scheduledAt: nextLive.scheduledAt, durationMin: nextLive.durationMin, status: nextLive.status, course: { code: nextLive.course.code, titleEn: nextLive.course.titleEn, titleAr: nextLive.course.titleAr, imagePath: studentDemo.COURSES.find((c) => c.code === nextLive.course.code)?.imagePath ?? null, teacher: nextLive.course.teacher } } : null,
+      pendingAssignments: [], recentLectures: [],
+    }) as R;
+  }
+  if (clean === '/me/portal/updates') {
+    // Academic updates (not personal notifications): exams, timetables, new courses, announcements.
+    const day = 86400000;
+    const ago = (d: number) => new Date(Date.now() - d * day).toISOString();
+    const nextMonday = new Date(); nextMonday.setDate(nextMonday.getDate() + ((8 - nextMonday.getDay()) % 7 || 7)); nextMonday.setHours(9, 0, 0, 0);
+    const examDate = nextMonday.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    const examDateAr = nextMonday.toLocaleDateString('ar-AE', { weekday: 'long', day: 'numeric', month: 'long' });
+    return wrap([
+      { id: 'upd-01', category: 'EXAM', isNew: true, pinned: true, publishedAt: ago(0), link: '/portal/schedule',
+        titleEn: 'End-of-term exams start next week', titleAr: 'الامتحانات النهائية تبدأ الأسبوع القادم',
+        bodyEn: `Term 1 final exams begin on ${examDate}. Arrive 20 minutes early with your student ID.`, bodyAr: `تبدأ الامتحانات النهائية للفصل الأول يوم ${examDateAr}. احضر قبل الموعد بعشرين دقيقة ومعك بطاقة الطالب.` },
+      { id: 'upd-02', category: 'TIMETABLE', isNew: true, pinned: false, publishedAt: ago(1), link: '/portal/schedule',
+        titleEn: 'Exam timetable published', titleAr: 'نشر جدول الامتحانات',
+        bodyEn: 'The exam timetable for all your courses is now available, with dates, times and exam halls.', bodyAr: 'جدول امتحانات جميع مقرراتك متاح الآن، مع التواريخ والأوقات وقاعات الامتحان.' },
+      { id: 'upd-03', category: 'COURSE', isNew: true, pinned: false, publishedAt: ago(2), link: '/portal/courses',
+        titleEn: 'New course launched: Data Analytics with Python', titleAr: 'إطلاق مقرر جديد: تحليل البيانات باستخدام بايثون',
+        bodyEn: 'Enrolment is now open. Live classes run twice a week and every session is recorded.', bodyAr: 'التسجيل مفتوح الآن. تُعقد الحصص المباشرة مرتين أسبوعياً وتُسجَّل كل حصة.' },
+      { id: 'upd-04', category: 'ACADEMIC', isNew: false, pinned: false, publishedAt: ago(4), link: '/portal/courses/intro-to-computing',
+        titleEn: 'CS101 assignment deadline extended', titleAr: 'تمديد موعد تسليم واجب CS101',
+        bodyEn: 'The programming exercise can now be submitted up to 48 hours later than before.', bodyAr: 'يمكن الآن تسليم التمرين البرمجي بعد الموعد السابق بثمانٍ وأربعين ساعة.' },
+      { id: 'upd-05', category: 'CAMPUS', isNew: false, pinned: false, publishedAt: ago(6), link: '/portal/library',
+        titleEn: 'Library open until 10 pm during exam weeks', titleAr: 'المكتبة مفتوحة حتى العاشرة مساءً خلال أسابيع الامتحانات',
+        bodyEn: 'Quiet study rooms can be booked at the library desk.', bodyAr: 'يمكن حجز غرف الدراسة الهادئة من مكتب المكتبة.' },
+    ]) as R;
+  }
   if (clean === '/me/portal/assignments') return wrap([{ id: 'assignment-01', titleEn: 'Programming exercise', titleAr: 'تمرين برمجي', dueAt: new Date(Date.now() + 3 * 86400000).toISOString(), maxMarks: 20, state: 'PENDING', marks: null, submittedAt: null, course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' } }]) as R;
   if (clean.startsWith('/me/portal/assignments/')) return wrap({
     id: clean.split('/').pop(), titleEn: 'Programming exercise', titleAr: 'تمرين برمجي', instructionsEn: 'Write a short program using variables, conditions and loops.', instructionsAr: 'اكتب برنامجاً قصيراً باستخدام المتغيرات والشروط والحلقات.', dueAt: new Date(Date.now() + 3 * 86400000).toISOString(), maxMarks: 20, allowResubmit: true,
     course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, submission: null,
   }) as R;
-  if (clean === '/me/portal/attendance') return wrap({
-    overall: 91,
-    byCourse: [{ course: { id: 'course-01', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, held: 12, attended: 11, late: 1, absent: 0, percent: 92 }, { course: { id: 'course-02', code: 'BUS101', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال' }, held: 10, attended: 9, late: 0, absent: 1, percent: 90 }],
-    history: [{ id: 'attendance-01', date: now(), course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, status: 'PRESENT', minutes: 88, joinedAt: now(), leftAt: now() }],
-  }) as R;
+  if (clean === '/me/portal/analytics') return wrap(studentDemo.analytics()) as R;
+  if (clean === '/me/portal/attendance') return wrap(studentDemo.attendance()) as R;
   if (clean === '/me/portal/courses') return wrap([
-    { id: 'course-01', slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', imagePath: '/images/courses/cs101.jpg', instructor: 'Demo Faculty', progress: 62, lecturesDone: 5, lecturesTotal: 8, pendingAssignments: 1, pendingQuizzes: 0, nextClass: { scheduledAt: new Date(Date.now() + 3600000).toISOString(), status: 'SCHEDULED' } },
-    { id: 'course-02', slug: 'business-foundations', code: 'BUS101', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال', imagePath: '/images/courses/business.jpg', instructor: 'Demo Faculty', progress: 38, lecturesDone: 2, lecturesTotal: 5, pendingAssignments: 0, pendingQuizzes: 1, nextClass: null },
+    { id: 'course-01', slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', imagePath: '/images/courses/cs101.jpg', instructor: 'Dr. Maryam Khalil', progress: 62, lecturesDone: 5, lecturesTotal: 8, pendingAssignments: 1, pendingQuizzes: 0, nextClass: { scheduledAt: new Date(Date.now() + 3600000).toISOString(), status: 'SCHEDULED' } },
+    { id: 'course-02', slug: 'business-foundations', code: 'BUS101', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال', imagePath: '/images/courses/ba101.jpg', instructor: 'Prof. Omar Farouk', progress: 38, lecturesDone: 2, lecturesTotal: 5, pendingAssignments: 0, pendingQuizzes: 1, nextClass: null },
+    { id: 'course-03', slug: 'data-science-foundations', code: 'DS210', titleEn: 'Foundations of Data Science', titleAr: 'أسس علم البيانات', imagePath: '/images/courses/ds210.jpg', instructor: 'Dr. Karim Nasser', progress: 75, lecturesDone: 6, lecturesTotal: 8, pendingAssignments: 0, pendingQuizzes: 0, nextClass: null },
+    { id: 'course-04', slug: 'financial-accounting', code: 'AF110', titleEn: 'Financial Accounting', titleAr: 'المحاسبة المالية', imagePath: '/images/courses/af110.jpg', instructor: 'Dr. Noura Saeed', progress: 20, lecturesDone: 1, lecturesTotal: 5, pendingAssignments: 0, pendingQuizzes: 0, nextClass: null },
   ]) as R;
   if (clean === '/me/portal/wishlist') return wrap([]) as R;
-  if (clean === '/me/portal/documents') return wrap([{ id: 'doc-demo-01', docType: 'IDENTITY', originalName: 'demo-identity-document.pdf', sizeBytes: 128000, status: 'VERIFIED', createdAt: now(), application: { id: 'app-demo-01', reference: 'AAU-DEMO-001' } }]) as R;
-  if (clean === '/me/portal/lectures') {
-    const lectures = [{ id: 'lesson-01', titleEn: 'Variables and data types', titleAr: 'المتغيرات وأنواع البيانات', durationSec: 1200, positionSec: 600, completed: false, watchedAt: now(), course: { slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, topic: { titleEn: 'Programming basics', titleAr: 'أساسيات البرمجة' } }];
-    return wrap({ lectures, continueWatching: lectures, upNext: lectures }) as R;
-  }
+  if (clean === '/me/portal/documents') return wrap(studentDemo.documents()) as R;
+  if (clean === '/me/portal/lectures') return wrap(studentDemo.lectures()) as R;
   if (clean === '/me/library/catalogue') {
     const rows = getList(store, 'library.items', initialItems).filter((i) => i.isPublic);
     const q = (query.get('q') || '').toLowerCase();
@@ -565,8 +591,8 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (loan) { loan.dueAt = new Date(new Date(loan.dueAt).getTime() + 14 * 86400000).toISOString(); loan.renewals += 1; }
     store['library.loans'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
-  if (clean === '/me/portal/live') return wrap([{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', course: { id: 'course-01', code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', teacher: { fullName: 'Demo Faculty' } }, lesson: null, attendedMinutes: null }]) as R;
-  if (clean === '/me/notifications') return wrap(getList(store, 'student.notifications', [{ id: 'notice-01', type: 'ACADEMIC', titleEn: 'Welcome to your student portal', titleAr: 'مرحباً بك في بوابة الطالب', bodyEn: 'Your local demo student workspace is ready.', bodyAr: 'مساحة الطالب التجريبية المحلية جاهزة.', link: '/portal/courses', readAt: null, createdAt: now() }])) as R;
+  if (clean === '/me/portal/live') return wrap(studentDemo.live()) as R;
+  if (clean === '/me/notifications') return wrap(getList(store, 'student.notifications', studentDemo.notifications())) as R;
   if (clean.startsWith('/me/notifications/') && clean.endsWith('/read')) {
     const rows = getList(store, 'student.notifications', []); const n = rows.find((x) => clean.includes(x.id)); if (n) n.readAt = now(); store['student.notifications'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
@@ -605,14 +631,14 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     payer: { fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example' }, applicationReference: null,
     course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' },
   }) as R;
-  if (clean === '/me/payments') return wrap([{ id: 'payment-demo-01', purpose: 'course', description: 'Introduction to Computing course fee', amountFils: 250000, vatFils: 0, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now() }]) as R;
+  if (clean === '/me/payments') return wrap(studentDemo.payments()) as R;
   if (clean === '/me/portal/profile') return wrap({
-    id: user?.id ?? 'demo-student', studentId: 'DEMO-2026-001', fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example', phone: null, locale: 'en', createdAt: now(),
-    application: { reference: 'AAU-DEMO-001', status: 'APPROVED', personal: {}, contact: {}, academic: {}, program: { nameEn: 'Bachelor of Computer Science', nameAr: 'بكالوريوس علوم الحاسوب', degreeLevel: 'BACHELOR', department: { nameEn: 'Computer Science', nameAr: 'علوم الحاسوب' } } },
+    id: user?.id ?? 'demo-student', studentId: 'AHM-2026-0142', enrolment: { rollNumber: '0142', batch: '2026', section: 'A', semester: 'Semester 2', status: 'ACTIVE' }, fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example', phone: null, locale: 'en', createdAt: now(),
+    application: { reference: 'AHM-2026-7QK2MZXA', status: 'APPROVED', personal: { dateOfBirth: '2007-03-14', gender: 'female', nationality: 'United Arab Emirates', fatherName: 'Rashid Rahman' }, contact: { phone: '+971 50 412 7789', addressLine: 'Al Barsha 1', city: 'Dubai', country: 'United Arab Emirates' }, academic: { qualification: 'UAE Secondary (Advanced)', institution: 'Latifa School for Girls', graduationYear: 2026, overallPercent: 92 }, program: { nameEn: 'Bachelor of Computer Science', nameAr: 'بكالوريوس علوم الحاسوب', degreeLevel: 'BACHELOR', department: { nameEn: 'Computer Science', nameAr: 'علوم الحاسوب' } } },
   }) as R;
   if (clean === '/me/portal/quizzes') return wrap([{ id: 'quiz-01', titleEn: 'Programming basics quiz', titleAr: 'اختبار أساسيات البرمجة', passPercent: 60, questionCount: 10, attempts: 1, best: { score: 8, total: 10 }, passed: true, lastAt: now(), course: { slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' } }]) as R;
-  if (clean === '/me/portal/results') return wrap({ cgpa: 3.42, creditsEarned: 24, terms: [{ term: '2026 Fall', gpa: 3.42, credits: 12, courses: [{ id: 'result-01', marks: 88, grade: 'A', gradePoints: 4, creditHours: 3, course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' } }] }] }) as R;
-  if (clean === '/me/portal/schedule') return wrap([{ kind: 'class', id: 'live-01', at: new Date(Date.now() + 3600000).toISOString(), endsAt: new Date(Date.now() + 5400000).toISOString(), titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', code: 'CS101', status: 'SCHEDULED', teacher: 'Demo Faculty' }, { kind: 'deadline', id: 'assignment-01', at: new Date(Date.now() + 3 * 86400000).toISOString(), endsAt: new Date(Date.now() + 3 * 86400000).toISOString(), titleEn: 'Programming exercise deadline', titleAr: 'موعد تسليم التمرين البرمجي', code: 'CS101', status: 'PENDING', teacher: null }]) as R;
+  if (clean === '/me/portal/results') return wrap(studentDemo.results()) as R;
+  if (clean === '/me/portal/schedule') return wrap(studentDemo.schedule(query.get('from'), query.get('to'))) as R;
   const applicationRows = getList(store, 'admissions.applications', []);
   if (clean === '/applications/mine' && method === 'GET') {
     const mine = applicationRows.filter((a) => a.userId === user?.id || a.applicant?.email === user?.email);
@@ -665,13 +691,13 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (!app) return wrap({ reference: payload.reference, status: 'DRAFT', submittedAt: null, program: null, timeline: [], pendingDocuments: ['identity'] }) as R;
     return wrap({ reference: app.reference, status: app.status, submittedAt: app.submittedAt, program: app.program, timeline: (app.statusHistory ?? []).map((h: any) => ({ toStatus: h.toStatus, createdAt: h.createdAt })), pendingDocuments: [] }) as R;
   }
+  if (clean === '/public/admissions/eligibility/all' && method === 'POST') {
+    const r = checkAll(String(payload.qualification ?? ''), Number(payload.overallPercent || 0), (payload.subjects ?? []) as { subject: string; percent: number }[]);
+    return wrap(r.rows, r.meta) as R;
+  }
   if (clean === '/public/admissions/eligibility' && method === 'POST') {
-    const program = (cmsSeeds.programs ?? []).find((p) => p.slug === payload.programSlug);
-    if (!program) return wrap({ status: 'NO_RULE', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
-    const actual = Number(payload.overallPercent || 0);
-    return wrap(actual >= 60
-      ? { status: 'ELIGIBLE', unmet: [], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }
-      : { status: 'NOT_ELIGIBLE', unmet: [{ requirement: 'overall', required: 60, actual }], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
+    const r = checkEligibility(String(payload.programSlug ?? ''), String(payload.qualification ?? ''), Number(payload.overallPercent || 0), (payload.subjects ?? []) as { subject: string; percent: number }[]);
+    return wrap(r ?? { status: 'NO_RULE', unmet: [], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
   }
   if (clean === '/public/contact' && method === 'POST') {
     const key = 'collection:/admin/contact-messages';

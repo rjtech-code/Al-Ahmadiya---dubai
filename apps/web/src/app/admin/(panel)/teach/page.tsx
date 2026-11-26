@@ -135,7 +135,7 @@ export default function TeachHome() {
 
           <div id="courses" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {d.courses.map((c) => (
-              <article key={c.id} className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
+              <article key={c.id} className="overflow-hidden rounded-[1.25rem] border border-brand-900/[0.07] bg-white shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)]">
                 {c.imagePath ? <img src={apiUrl(c.imagePath)} alt="" className="aspect-[16/8] w-full object-cover" /> : <div className="pattern-girih aspect-[16/8] bg-brand-900" />}
                 <div className="p-5">
                   <p className="text-xs font-semibold text-gold-700">{c.code}{c.publishStatus !== 'PUBLISHED' && ' · draft'}</p>

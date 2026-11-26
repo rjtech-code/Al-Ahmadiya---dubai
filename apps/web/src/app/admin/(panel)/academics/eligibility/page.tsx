@@ -45,7 +45,7 @@ export default function EligibilityChecker() {
           {res && (
             <ul className="space-y-2">
               {res.map((r) => (
-                <li key={r.program.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[1.5rem] border border-white/80 bg-cream-50 p-4 shadow-[var(--shadow-card)]">
+                <li key={r.program.id} className="flex flex-wrap items-start justify-between gap-3 rounded-[1.25rem] border border-brand-900/[0.07] bg-white p-4 shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)]">
                   <div>
                     <Link href={`/admin/academics/${r.program.id}`} className="font-semibold text-brand-900 hover:underline">{r.program.nameEn}</Link>
                     <p className="text-xs text-muted">{r.program.degreeLevel} · {r.program.college.nameEn} · {r.program.publishStatus}{r.ruleConfirmation === 'CLIENT_CONFIRMATION_REQUIRED' ? ' · provisional rule' : ''}</p>

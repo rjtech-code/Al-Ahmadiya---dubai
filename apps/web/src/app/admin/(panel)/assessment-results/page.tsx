@@ -42,9 +42,9 @@ export default function AssessmentResultsPage() {
     <>
       <PageHeader title="Graded assignment results" crumbs={[{ label: 'Assessment results' }]} description="Course-wise and student-wise graded assignment performance. Demo records are stored locally for this frontend preview." />
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
-        <Panel title="Submissions"><p className="font-display text-3xl font-semibold text-brand-900">{records.length}</p></Panel>
-        <Panel title="Evaluated"><p className="font-display text-3xl font-semibold text-success">{graded.length}</p></Panel>
-        <Panel title="Average score"><p className="font-display text-3xl font-semibold text-brand-900">{average}%</p></Panel>
+        <Panel title="Submissions"><p className="font-[family-name:var(--font-cormorant)] text-3xl font-semibold text-brand-900">{records.length}</p></Panel>
+        <Panel title="Evaluated"><p className="font-[family-name:var(--font-cormorant)] text-3xl font-semibold text-success">{graded.length}</p></Panel>
+        <Panel title="Average score"><p className="font-[family-name:var(--font-cormorant)] text-3xl font-semibold text-brand-900">{average}%</p></Panel>
       </div>
       <Panel title="Assignment performance" actions={<BarChart3 className="size-5 text-gold-600" />}>
         <div className="mb-4 flex flex-wrap gap-2">

@@ -2,9 +2,8 @@
 
 import {
   BarChart3, Bell, LibraryBig, BookOpen, CalendarDays, ChevronDown, FileText, Globe, Home, LayoutGrid, Loader2, LogOut, Menu,
-  PlayCircle, Radio, Search, User, UserCheck, Wallet, X,
+  PlayCircle, Radio, Search, User, UserCheck, Wallet, X, type LucideIcon,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -14,20 +13,28 @@ import { LogoMark } from '../site/Logo';
 import { NotificationBell } from '../site/NotificationBell';
 import { cn } from '../ui/cn';
 
-const NAV = [
-  { href: '/portal', key: 'dashboard', icon: LayoutGrid },
-  { href: '/portal/courses', key: 'courses', icon: BookOpen },
-  { href: '/portal/live', key: 'live', icon: Radio },
-  { href: '/portal/schedule', key: 'schedule', icon: CalendarDays },
-  { href: '/portal/attendance', key: 'attendance', icon: UserCheck },
-  { href: '/portal/lectures', key: 'lectures', icon: PlayCircle },
-  { href: '/portal/results', key: 'results', icon: BarChart3 },
-  { href: '/portal/payments', key: 'payments', icon: Wallet },
-  { href: '/portal/documents', key: 'documents', icon: FileText },
-  { href: '/portal/library', key: 'library', icon: LibraryBig },
-  { href: '/portal/notifications', key: 'notifications', icon: Bell },
-  { href: '/portal/profile', key: 'profile', icon: User },
-] as const;
+type NavItem = { href: string; key: string; icon: LucideIcon };
+const GROUPS: { key: string; items: NavItem[] }[] = [
+  { key: 'groupLearn', items: [
+    { href: '/portal', key: 'dashboard', icon: LayoutGrid },
+    { href: '/portal/courses', key: 'courses', icon: BookOpen },
+    { href: '/portal/live', key: 'live', icon: Radio },
+    { href: '/portal/lectures', key: 'lectures', icon: PlayCircle },
+    { href: '/portal/schedule', key: 'schedule', icon: CalendarDays },
+  ] },
+  { key: 'groupProgress', items: [
+    { href: '/portal/attendance', key: 'attendance', icon: UserCheck },
+    { href: '/portal/results', key: 'results', icon: BarChart3 },
+  ] },
+  { key: 'groupAccount', items: [
+    { href: '/portal/payments', key: 'payments', icon: Wallet },
+    { href: '/portal/documents', key: 'documents', icon: FileText },
+    { href: '/portal/library', key: 'library', icon: LibraryBig },
+    { href: '/portal/notifications', key: 'notifications', icon: Bell },
+    { href: '/portal/profile', key: 'profile', icon: User },
+  ] },
+];
+const NAV: NavItem[] = GROUPS.flatMap((g) => g.items);
 const BOTTOM = [
   { href: '/portal', key: 'home', icon: Home },
   { href: '/portal/courses', key: 'courses', icon: BookOpen },
@@ -73,53 +80,66 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const search = (e: FormEvent) => { e.preventDefault(); if (q.trim()) router.push(`/portal/lectures?q=${encodeURIComponent(q.trim())}`); };
   const exit = () => void signOut().then(() => router.replace('/'));
 
+  const current = [...NAV].reverse().find((n) => active(n.href));
   const sidebar = (onClick?: () => void) => (
     <nav aria-label={tp('appName')} className="flex h-full flex-col">
-      <Link href="/portal" onClick={onClick} className="flex items-center gap-3 px-6 pb-5 pt-6 text-white">
-        <LogoMark className="size-11 text-gold-400" />
-        <span className="leading-tight"><span className="block font-display text-xl font-semibold">{tp('university')}</span><span className="text-[10px] uppercase tracking-[0.3em] text-white/60">{tp('city')}</span></span>
+      <Link href="/portal" onClick={onClick} className="flex h-16 shrink-0 items-center gap-3 border-b border-brand-900/[0.06] px-6">
+        <span className="grid size-10 place-items-center rounded-xl bg-brand-900 shadow-md"><LogoMark className="size-7 text-gold-400" /></span>
+        <span className="leading-tight"><span className="block font-display text-xl font-semibold text-brand-900">{tp('university')}</span><span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold-600">{tp('appName')}</span></span>
       </Link>
-      <ul className="flex-1 space-y-0.5 overflow-y-auto px-3">
-        {NAV.map((n) => (
-          <li key={n.href}>
-            <Link href={n.href} onClick={onClick} aria-current={active(n.href) ? 'page' : undefined}
-              className={cn('flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition-colors', active(n.href) ? 'bg-gold-400 font-semibold text-brand-950 shadow' : 'text-white/80 hover:bg-white/10 hover:text-white')}>
-              <n.icon className="size-[18px]" aria-hidden /><span className="flex-1">{t(n.key)}</span>
-              {n.key === 'notifications' && unread > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">{unread}</span>}
-            </Link>
-          </li>
+      <div className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
+        {GROUPS.map((g) => (
+          <div key={g.key}>
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-muted/80">{t(g.key)}</p>
+            <ul className="space-y-0.5">
+              {g.items.map((n) => {
+                const on = active(n.href) && current?.href === n.href;
+                return (
+                  <li key={n.href}>
+                    <Link href={n.href} onClick={onClick} aria-current={on ? 'page' : undefined}
+                      className={cn('group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors', on ? 'bg-brand-900 text-white shadow-[0_8px_20px_-10px_rgb(5_40_42/0.8)]' : 'text-ink/75 hover:bg-cream-100 hover:text-brand-900')}>
+                      <n.icon className={cn('size-[18px]', on ? 'text-gold-300' : 'text-brand-700/70 group-hover:text-brand-900')} aria-hidden /><span className="flex-1">{t(n.key)}</span>
+                      {n.key === 'notifications' && unread > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-gold-500 px-1.5 text-[11px] font-bold text-brand-950">{unread}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         ))}
-      </ul>
-      <div className="m-3 overflow-hidden rounded-[1.5rem] bg-brand-950/60">
-        <div className="relative h-24"><Image src="/images/campus/academic.jpg" alt="" fill sizes="240px" className="object-cover opacity-70" /><div className="absolute inset-0 bg-gradient-to-t from-brand-950 to-transparent" /></div>
-        <p className="px-4 pb-4 font-display text-lg font-semibold leading-tight text-white">{tp('promo1')}<br /><span className="text-gold-300">{tp('promo2')}</span></p>
+      </div>
+      <div className="m-4 flex items-center gap-3 rounded-2xl border border-brand-900/[0.06] bg-cream-50 p-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold-400 text-sm font-bold text-brand-950">{initials}</span>
+        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-brand-900">{user.fullName}</span><span className="block truncate text-[11px] text-muted">{user.email}</span></span>
+        <button type="button" onClick={exit} aria-label={t('signOut')} className="grid size-9 place-items-center rounded-lg text-muted hover:bg-red-50 hover:text-danger"><LogOut className="size-4" /></button>
       </div>
     </nav>
   );
 
   return (
-    <div className="flex min-h-dvh bg-cream-100">
-      {(!isCourseDetail || !courseLectureMode) && <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>}
+    <div className="flex min-h-dvh bg-[#f5f2ec]">
+      {(!isCourseDetail || !courseLectureMode) && <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-e border-brand-900/[0.06] bg-white lg:block">{sidebar()}</aside>}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label={t('close')} className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <aside className="pattern-girih absolute inset-y-0 start-0 w-72 bg-brand-900">{sidebar(() => setOpen(false))}</aside>
+          <aside className="absolute inset-y-0 start-0 w-72 bg-white shadow-2xl">{sidebar(() => setOpen(false))}</aside>
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-line/70 bg-cream-50/90 px-4 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-brand-900/[0.06] bg-white/85 px-4 backdrop-blur-xl sm:px-8">
           <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>
           <Link href="/portal" className="flex items-center gap-2 lg:hidden"><LogoMark className="size-8 text-brand-900" /><span className="font-display text-base font-semibold leading-none text-brand-900">{tp('university')}</span></Link>
-          <form onSubmit={search} role="search" className="relative hidden max-w-md flex-1 md:block">
+          {current && <p className="hidden min-w-0 shrink-0 items-center gap-2 text-sm text-muted lg:flex"><span>{tp('university')}</span><span aria-hidden>/</span><span className="font-semibold text-brand-900">{t(current.key)}</span></p>}
+          <form onSubmit={search} role="search" className="relative hidden max-w-sm flex-1 md:ms-6 md:block">
             <Search className="absolute start-4 top-3 size-4 text-muted" aria-hidden />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tp('searchPlaceholder')} aria-label={tp('searchPlaceholder')} className="h-10 w-full rounded-full border border-line bg-white ps-11 pe-4 text-sm outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-200" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tp('searchPlaceholder')} aria-label={tp('searchPlaceholder')} className="h-10 w-full rounded-xl border border-transparent bg-[#f5f2ec] ps-11 pe-4 text-sm outline-none focus:border-gold-500 focus:bg-white focus:ring-2 focus:ring-gold-200" />
           </form>
           <div className="ms-auto flex items-center gap-1 sm:gap-2">
             <button type="button" onClick={() => router.replace(pathname, { locale: locale === 'ar' ? 'en' : 'ar' })} className="hidden rounded-full px-3 py-2 text-xs font-semibold text-brand-900 hover:bg-cream-200 sm:block" lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'EN' : 'العربية'}</button>
             <NotificationBell />
             <div className="relative">
               <button onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-haspopup="menu" className="flex items-center gap-2 rounded-full p-1 pe-2 hover:bg-cream-200">
-                <span className="grid size-9 place-items-center rounded-full bg-brand-900 text-sm font-semibold text-gold-300">{initials}</span>
+                <span className="grid size-9 place-items-center rounded-xl bg-brand-900 text-sm font-semibold text-gold-300">{initials}</span>
                 <span className="hidden text-sm font-semibold text-brand-900 sm:block">{user.fullName}</span>
                 <ChevronDown className="hidden size-4 text-muted sm:block" />
               </button>
@@ -138,7 +158,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile app-style bottom navigation */}
-      {!isCourseDetail && <nav aria-label={tp('appName')} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-cream-50/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur lg:hidden">
+      {!isCourseDetail && <nav aria-label={tp('appName')} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-brand-900/[0.06] bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur lg:hidden">
         {BOTTOM.map((n) => (
           <Link key={n.href} href={n.href} aria-current={active(n.href) ? 'page' : undefined} className={cn('flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold', active(n.href) ? 'text-brand-900' : 'text-muted')}>
             <n.icon className={cn('size-5', active(n.href) && 'text-gold-600')} />{t(n.key)}

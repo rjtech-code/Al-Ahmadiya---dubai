@@ -131,7 +131,7 @@ export function CmsEditor({ resource }: { resource: string }) {
         <PageHeader title={editing === 'new' ? `New — ${def.title}` : `Edit — ${def.title}`} crumbs={[{ label: 'Content', href: '/admin/cms' }, { label: def.title }, { label: editing === 'new' ? 'New' : 'Edit' }]} />
         <ErrorNote message={error} />
         {!can('cms.publish') && hasStatus && <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-warning">You can save drafts. A user with publishing rights must publish them.</p>}
-        <form onSubmit={save} className="grid gap-4 rounded-[1.5rem] border border-white/80 bg-cream-50 p-6 shadow-[var(--shadow-card)] sm:grid-cols-2">
+        <form onSubmit={save} className="grid gap-4 rounded-[1.25rem] border border-brand-900/[0.07] bg-white p-6 shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)] sm:grid-cols-2">
           {def.fields.map((f) => {
             const id = `f-${f.name}`;
             const val = form[f.name];

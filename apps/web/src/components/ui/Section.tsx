@@ -2,12 +2,15 @@ import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
 import { cn } from './cn';
+import { FadeUp } from '../motion';
+import { SectionArt } from '../motion/Illustrations';
 
 export function Section({ children, className, tone = 'plain', id, labelledBy }: { children: ReactNode; className?: string; tone?: 'plain' | 'white' | 'cream' | 'brand'; id?: string; labelledBy?: string }) {
   const tones = { plain: '', white: 'bg-cream-50/70', cream: 'pattern-cream', brand: 'pattern-girih text-white' };
   return (
-    <section id={id} aria-labelledby={labelledBy} className={cn('py-12 sm:py-16', tones[tone], className)}>
-      <div className="container-site">{children}</div>
+    <section id={id} aria-labelledby={labelledBy} className={cn('relative isolate py-12 sm:py-16', tones[tone], className)}>
+      <SectionArt variant={[...(id ?? labelledBy ?? '')].reduce((h, ch) => h + ch.charCodeAt(0), 0)} dark={tone === 'brand'} />
+      <FadeUp className="container-site relative z-10" y={36}>{children}</FadeUp>
     </section>
   );
 }

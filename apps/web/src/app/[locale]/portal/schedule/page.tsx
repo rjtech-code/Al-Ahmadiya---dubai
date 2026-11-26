@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, ClipboardCheck, Radio } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { Card, Empty, ErrorBox, Loading, PageTitle, Pill, Segmented, useApi, useFmt } from '@/components/portal/ui';
+import { Card, Empty, ErrorBox, Loading, PageTitle, Pill, Segmented, surface, useApi, useFmt } from '@/components/portal/ui';
 import { cn } from '@/components/ui/cn';
 import { Link } from '@/i18n/navigation';
 
@@ -46,13 +46,14 @@ export default function Schedule() {
   const item = (e: E) => {
     const body = (
       <>
-        <span className="w-24 shrink-0 text-xs font-semibold text-gold-700">{f.time(e.at)}{e.kind === 'class' && <><br />{f.time(e.endsAt)}</>}</span>
+        <span className={cn('flex w-20 shrink-0 flex-col items-center justify-center self-stretch rounded-xl py-2 text-xs font-semibold', e.kind === 'class' ? 'bg-brand-900 text-white' : 'bg-gold-100 text-gold-700')}><span className="text-sm">{f.time(e.at)}</span>{e.kind === 'class' && <span className="opacity-70">{f.time(e.endsAt)}</span>}</span>
         <span className="min-w-0 flex-1"><span className="flex items-center gap-2 font-semibold text-brand-900">{e.kind === 'class' ? <Radio className="size-4 shrink-0" /> : <ClipboardCheck className="size-4 shrink-0" />}<span className="truncate">{f.L(e)}</span></span><span className="text-xs text-muted">{e.code}{e.kind === 'class' ? (e.teacher ? ` · ${e.teacher}` : '') : ` · ${t('deadline')}`}</span></span>
         <Pill status={e.status} />
       </>
     );
-    const href = e.kind === 'deadline' ? `/portal/assignments/${e.id}` : e.status === 'LIVE' ? `/portal/live/${e.id}` : null;
-    return <li key={`${e.kind}${e.id}`}>{href ? <Link href={href} className="flex items-center gap-3 rounded-2xl bg-white p-3 hover:bg-cream-200">{body}</Link> : <div className="flex items-center gap-3 rounded-2xl bg-white p-3">{body}</div>}</li>;
+    const href = e.kind === 'deadline' ? '/portal/courses' : e.status === 'LIVE' ? `/portal/live/${e.id}` : null;
+    const cls = 'flex items-center gap-4 rounded-2xl border border-line/70 bg-cream-50/40 p-2.5 pe-4 transition';
+    return <li key={`${e.kind}${e.id}`}>{href ? <Link href={href} className={cn(cls, 'hover:border-gold-400 hover:bg-white')}>{body}</Link> : <div className={cls}>{body}</div>}</li>;
   };
 
   const title = view === 'month' ? new Date(anchor).toLocaleDateString(f.locale === 'ar' ? 'ar-AE' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'Asia/Dubai' })
@@ -60,7 +61,7 @@ export default function Schedule() {
 
   return (
     <>
-      <PageTitle title={t('title')} subtitle={t('subtitle')} />
+      <PageTitle eyebrow={t('eyebrow')} title={t('title')} subtitle={t('subtitle')} actions={<span className="flex items-center gap-4 text-xs text-muted"><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-brand-900" />{t('liveClass')}</span><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-gold-500" />{t('deadline')}</span></span>} />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Segmented value={view} onChange={(v) => { setView(v); setSelected(null); }} options={[{ value: 'day', label: t('day') }, { value: 'week', label: t('week') }, { value: 'month', label: t('month') }]} />
         <div className="flex items-center gap-2">
@@ -73,14 +74,14 @@ export default function Schedule() {
       <ErrorBox message={error} />
       {!data ? <Loading /> : view === 'month' ? (
         <>
-          <div className="grid grid-cols-7 gap-1 rounded-[1.5rem] bg-cream-50 p-2 text-center shadow-[var(--shadow-card)]">
+          <div className={cn(surface, 'grid grid-cols-7 gap-1 p-3 text-center')}>
             {days.slice(0, 7).map((d) => <p key={d} className="py-1 text-[11px] font-semibold uppercase text-muted">{new Date(d).toLocaleDateString(f.locale === 'ar' ? 'ar-AE' : 'en-GB', { weekday: 'short', timeZone: 'Asia/Dubai' })}</p>)}
             {days.map((d) => {
               const ev = on(d);
               return (
                 <button key={d} onClick={() => setSelected(d)} className={cn('flex min-h-16 flex-col items-center rounded-xl p-1 text-sm', new Date(d + OFFSET).getUTCMonth() !== month && 'opacity-40', key(d) === today && 'ring-2 ring-gold-400', selected === d ? 'bg-brand-900 text-white' : 'hover:bg-cream-200')}>
                   <span className="font-semibold">{new Date(d + OFFSET).getUTCDate()}</span>
-                  <span className="mt-1 flex flex-wrap justify-center gap-0.5">{ev.slice(0, 4).map((e) => <span key={e.id} className={cn('size-1.5 rounded-full', e.kind === 'class' ? 'bg-danger' : 'bg-gold-500')} />)}</span>
+                  <span className="mt-1 flex flex-wrap justify-center gap-0.5">{ev.slice(0, 4).map((e) => <span key={e.id} className={cn('size-1.5 rounded-full', e.kind === 'class' ? 'bg-brand-700' : 'bg-gold-500')} />)}</span>
                 </button>
               );
             })}

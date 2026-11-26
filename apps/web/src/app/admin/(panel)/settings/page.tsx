@@ -47,7 +47,7 @@ export default function SettingsPage() {
     <>
       <PageHeader title="Site settings" crumbs={[{ label: 'Settings' }]} description="Institutional facts used across the website. Values are only shown publicly when marked Confirmed. Setting admissions.status to OPEN + Confirmed enables registration and online applications." />
       <ErrorNote message={error} />
-      <div className="overflow-x-auto rounded-[1.5rem] border border-white/80 bg-cream-50 shadow-[var(--shadow-card)]">
+      <div className="overflow-x-auto rounded-[1.25rem] border border-brand-900/[0.07] bg-white shadow-[0_1px_2px_rgb(11_58_60/0.04),0_10px_30px_-18px_rgb(11_58_60/0.25)]">
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="border-b border-line bg-cream-200/60 text-xs uppercase text-muted"><tr><th className="px-4 py-2.5">Key</th><th className="px-4 py-2.5">English</th><th className="px-4 py-2.5">Arabic</th><th className="px-4 py-2.5">Confirmation</th><th className="px-4 py-2.5" /></tr></thead>
           <tbody className="divide-y divide-line">{rows.map((s) => <Row key={s.key} s={s} canEdit={can('settings.write')} onSaved={(n) => setRows((r) => r.map((x) => (x.key === n.key ? n : x)))} />)}</tbody>

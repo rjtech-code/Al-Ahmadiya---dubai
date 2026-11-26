@@ -37,8 +37,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const settings = await api.settings().catch(() => ({}));
 
   return (
-    <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={`${cormorant.variable} ${inter.variable} ${amiri.variable} ${plexArabic.variable}`}>
-      <body className="flex min-h-dvh flex-col antialiased">
+    <html data-scroll-behavior="smooth" lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'} className={`${cormorant.variable} ${inter.variable} ${amiri.variable} ${plexArabic.variable}`}>
+      <body className="flex min-h-dvh flex-col overflow-x-clip antialiased">
         <NextIntlClientProvider>
           <a href="#main" className="sr-only z-50 rounded bg-gold-500 px-4 py-2 font-semibold text-brand-950 focus:not-sr-only focus:fixed focus:start-4 focus:top-4">{t('skipToContent')}</a>
           <HideOnPortal><Header /></HideOnPortal>

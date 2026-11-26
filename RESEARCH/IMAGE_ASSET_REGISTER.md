@@ -27,3 +27,9 @@ Conditions of use:
 
 - Logo (vector), brand guidelines.
 - Campus, faculty, leadership and event photography with written usage rights.
+
+## Course images (website)
+
+| File | Licence | Author | Source |
+|---|---|---|---|
+| apps/web/public/images/courses/cs101.jpg | CC0 1.0 (public domain dedication) | rawpixel | https://commons.wikimedia.org/wiki/File:Macbook_Pro_On_Desk_(28217827677).jpg |
