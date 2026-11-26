@@ -93,7 +93,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh bg-cream-100">
       {!isCourseDetail && <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>}
-      {open && !isCourseDetail && (
+      {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label={t('close')} className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <aside className="pattern-girih absolute inset-y-0 start-0 w-72 bg-brand-900">{sidebar(() => setOpen(false))}</aside>
@@ -101,7 +101,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-line/70 bg-cream-50/90 px-4 backdrop-blur sm:px-8">
-          {isCourseDetail ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('course-outline-toggle'))} className="grid size-10 place-items-center rounded-full text-brand-900 hover:bg-cream-200 lg:hidden" aria-label="Open course outline"><Menu className="size-5" /></button> : <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>}
+          <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>
           <Link href="/portal" className="flex items-center gap-2 lg:hidden"><LogoMark className="size-8 text-brand-900" /><span className="font-display text-base font-semibold leading-none text-brand-900">{tp('university')}</span></Link>
           <form onSubmit={search} role="search" className="relative hidden max-w-md flex-1 md:block">
             <Search className="absolute start-4 top-3 size-4 text-muted" aria-hidden />
@@ -138,7 +138,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </Link>
         ))}
       </nav>}
-      {open && !isCourseDetail && <button className="fixed end-4 top-4 z-[60] grid size-10 place-items-center rounded-full bg-white lg:hidden" aria-label={t('close')} onClick={() => setOpen(false)}><X className="size-5" /></button>}
+      {open && <button className="fixed end-4 top-4 z-[60] grid size-10 place-items-center rounded-full bg-white lg:hidden" aria-label={t('close')} onClick={() => setOpen(false)}><X className="size-5" /></button>}
     </div>
   );
 }
