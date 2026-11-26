@@ -1,28 +1,26 @@
 import type { MetadataRoute } from 'next';
-import { API_BASE_URL } from '@/lib/api-origin';
+import { api } from '@/lib/api';
 import { SITE_URL } from '@/lib/seo';
-const STATIC = ['', '/about', '/colleges', '/programs', '/faculty', '/news', '/events', '/research', '/campus-tour', '/contact', '/admissions', '/admissions/eligibility'];
 
-async function slugs(path: string): Promise<string[]> {
-  try {
-    const r = await fetch(`${API_BASE_URL}${path}`, { next: { revalidate: 3600 } });
-    if (!r.ok) return [];
-    const j = (await r.json()) as { data: { slug: string; departments?: { slug: string }[] }[] };
-    return j.data.map((x) => x.slug);
-  } catch {
-    return [];
-  }
-}
+const STATIC = ['', '/about', '/colleges', '/programs', '/faculty', '/news', '/events', '/research', '/campus-tour', '/contact', '/admissions', '/admissions/eligibility'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [colleges, programs, faculty, news, events, research] = await Promise.all([
-    slugs('/public/colleges'), slugs('/public/programs?pageSize=100'), slugs('/public/faculty?pageSize=100'),
-    slugs('/public/news?pageSize=100'), slugs('/public/events?limit=100'), slugs('/public/research?pageSize=100'),
+    api.colleges(),
+    api.programs({ pageSize: 100 }),
+    api.faculty({ pageSize: 100 }),
+    api.news({ pageSize: 100 }),
+    api.events({ limit: 100 }),
+    api.research({ pageSize: 100 }),
   ]);
   const paths = [
     ...STATIC,
-    ...colleges.map((s) => `/colleges/${s}`), ...programs.map((s) => `/programs/${s}`), ...faculty.map((s) => `/faculty/${s}`),
-    ...news.map((s) => `/news/${s}`), ...events.map((s) => `/events/${s}`), ...research.map((s) => `/research/${s}`),
+    ...colleges.map((x) => `/colleges/${x.slug}`),
+    ...programs.data.map((x) => `/programs/${x.slug}`),
+    ...faculty.data.map((x) => `/faculty/${x.slug}`),
+    ...news.data.map((x) => `/news/${x.slug}`),
+    ...events.map((x) => `/events/${x.slug}`),
+    ...research.data.map((x) => `/research/${x.slug}`),
   ];
   return paths.map((p) => ({
     url: `${SITE_URL}/en${p}`,
