@@ -140,7 +140,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     const facilities = getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled equipment maintenance', updatedAt: now() }]);
     return wrap({ totals: { requests: requests.length, approved: requests.filter((x) => x.status === 'APPROVED').length, orders: requests.filter((x) => x.status === 'ORDERED' || x.status === 'RECEIVED').length, pending: requests.filter((x) => x.status === 'SUBMITTED').length }, budget: { usedFils: 1200000, totalFils: 5000000 }, pending: requests.filter((x) => x.status === 'SUBMITTED'), recent: requests.slice(0, 5), facilities }) as R;
   }
-  if (clean === '/admin/procurement/requests') return wrap(getList(store, 'procurement.requests', [])) as R;
+  if (clean === '/admin/procurement/requests') return wrap(getList(store, 'procurement.requests', [{ id: 'pr-001', number: 'PR-2026-001', title: 'Library reference books', category: 'Books', vendor: 'Demo Books Supplier', amountFils: 420000, priority: 'MEDIUM', status: 'SUBMITTED', createdAt: now(), updatedAt: now(), requestedBy: { fullName: 'Demo Staff 01' } }, { id: 'pr-002', number: 'PR-2026-002', title: 'Computer lab accessories', category: 'IT equipment', vendor: null, amountFils: 780000, priority: 'HIGH', status: 'APPROVED', createdAt: now(), updatedAt: now(), requestedBy: { fullName: 'Demo Staff 02' }, approvedBy: { fullName: 'Demo Admin' } }])) as R;
   if (clean === '/admin/facilities') return wrap(getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled equipment maintenance', updatedAt: now() }])) as R;
   if (clean.startsWith('/admin/procurement/requests/') && clean.endsWith('/status') && method === 'POST') {
     const rows = getList(store, 'procurement.requests', []); const row = rows.find((x) => clean.includes(x.id)); if (row) row.status = payload.to; store['procurement.requests'] = rows; writeStore(store); return wrap({ success: true }) as R;
@@ -343,12 +343,13 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     recent: [{ id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: '2026-11-24T10:00:00Z', applicant: { fullName: 'Demo Applicant 01' }, program: { nameEn: 'Bachelor of Business Administration' } }, { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: '2026-11-23T10:00:00Z', applicant: { fullName: 'Demo Applicant 02' }, program: { nameEn: 'Computer Science' } }],
   }) as R;
   if (clean === '/admin/applications') {
-    const rows = [
-      { id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: '2026-11-24T10:00:00Z', applicant: { fullName: 'Demo Applicant 01', email: 'applicant01@example.test' }, program: { nameEn: 'Bachelor of Business Administration' } },
-      { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: '2026-11-23T10:00:00Z', applicant: { fullName: 'Demo Applicant 02', email: 'applicant02@example.test' }, program: { nameEn: 'Computer Science' } },
-      { id: 'app-003', reference: 'AAU-2026-003', status: 'DOCUMENTS_PENDING', submittedAt: '2026-11-21T10:00:00Z', applicant: { fullName: 'Demo Applicant 03', email: 'applicant03@example.test' }, program: { nameEn: 'Accounting' } },
-    ];
-    const status = query.get('status'); const filtered = status ? rows.filter((r) => r.status === status) : rows;
+    const rows = getList(store, 'admissions.applications', [
+      { id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: now(), applicant: { fullName: 'Demo Applicant 01', email: 'applicant01@example.test' }, program: { nameEn: 'Bachelor of Business Administration' } },
+      { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: now(), applicant: { fullName: 'Demo Applicant 02', email: 'applicant02@example.test' }, program: { nameEn: 'Computer Science' } },
+      { id: 'app-003', reference: 'AAU-2026-003', status: 'DOCUMENTS_PENDING', submittedAt: now(), applicant: { fullName: 'Demo Applicant 03', email: 'applicant03@example.test' }, program: { nameEn: 'Accounting' } },
+    ]);
+    const status = query.get('status'); const term = (query.get('q') || '').toLowerCase();
+    const filtered = rows.filter((r) => (!status || r.status === status) && (!term || `${r.reference} ${r.applicant.fullName} ${r.applicant.email}`.toLowerCase().includes(term)));
     return wrap(filtered, listMeta(filtered)) as R;
   }
   if (clean === '/admin/records/overview') return wrap({
@@ -358,7 +359,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     audit: [{ name: 'Demo Student 01', programme: 'Computer Science', earned: 72, required: 120 }, { name: 'Demo Student 02', programme: 'Business', earned: 64, required: 120 }],
     prerequisiteIssues: [], prerequisiteIssueCount: 0, activity: [{ at: now(), text: 'Demo transcript record reviewed' }],
   }) as R;
-  if (clean === '/admin/records/students') return wrap([{ id: 'student-demo-01', fullName: 'Demo Student 01', email: 'student01@example.test', _count: { enrollments: 4, results: 12 } }, { id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', _count: { enrollments: 3, results: 9 } }]) as R;
+  if (clean === '/admin/records/students') { const rows = [{ id: 'student-demo-01', fullName: 'Demo Student 01', email: 'student01@example.test', _count: { enrollments: 4, results: 12 } }, { id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', _count: { enrollments: 3, results: 9 } }]; const q = (query.get('q') || '').toLowerCase(); const filtered = q ? rows.filter((x) => `${x.fullName} ${x.email}`.toLowerCase().includes(q)) : rows; return wrap(filtered, listMeta(filtered)) as R; }
   if (clean === '/admin/finance/summary') return wrap({
     collectedFils: 125000000, payments: 148, thisMonthFils: 18200000, dueFils: 16400000, dueCount: 16, payingStudents: 132,
     monthly: [{ month: '2026-06', collectedFils: 14800000 }, { month: '2026-07', collectedFils: 17200000 }, { month: '2026-08', collectedFils: 19100000 }, { month: '2026-09', collectedFils: 16400000 }, { month: '2026-10', collectedFils: 21800000 }, { month: '2026-11', collectedFils: 18200000 }],
@@ -366,7 +367,7 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     recent: [{ id: 'pay-01', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now(), purpose: 'course', user: { id: 'student-demo-01', fullName: 'Demo Student 01' } }],
     dueStudents: [{ id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', course: 'Computer Science', fils: 1200000, since: '2026-11-01T00:00:00Z' }],
   }) as R;
-  if (clean === '/admin/finance/students') return wrap([{ id: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', courses: [{ code: 'CS101', title: 'Computer Science', status: 'ACTIVE' }], paidFils: 250000, dueFils: 0, lastPaidAt: now() }, { id: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', courses: [{ code: 'BUS101', title: 'Business', status: 'PENDING_PAYMENT' }], paidFils: 0, dueFils: 1200000, lastPaidAt: null }], listMeta([])) as R;
+  if (clean === '/admin/finance/students') { const rows = [{ id: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', courses: [{ code: 'CS101', title: 'Computer Science', status: 'ACTIVE' }], paidFils: 250000, dueFils: 0, lastPaidAt: now() }, { id: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', courses: [{ code: 'BUS101', title: 'Business', status: 'PENDING_PAYMENT' }], paidFils: 0, dueFils: 1200000, lastPaidAt: null }]; const q = (query.get('q') || '').toLowerCase(); const filtered = q ? rows.filter((x) => `${x.name} ${x.email}`.toLowerCase().includes(q)) : rows; return wrap(filtered, listMeta(filtered)) as R; }
   if (clean.startsWith('/admin/finance/students/')) {
     const studentId = clean.split('/').pop();
     const isSecond = studentId === 'student-demo-02';
