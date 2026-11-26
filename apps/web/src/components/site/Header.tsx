@@ -85,6 +85,7 @@ export function Header() {
   const [menu, setMenu] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const { state } = useSession();
   const authed = state.status === 'authed';
@@ -98,6 +99,10 @@ export function Header() {
     { key: 'studentLife', label: t('studentLife'), items: [{ href: '/news', label: t('news') }, { href: '/events', label: t('events') }, { href: '/campus-tour', label: t('tour') }] },
     { key: 'about', label: t('aboutUs'), items: [{ href: '/about', label: t('about') }, { href: '/contact', label: t('contact') }] },
   ];
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -207,7 +212,7 @@ export function Header() {
 
       {/* Render the mobile drawer at the document root so sticky-header blur/stacking
           contexts cannot place it underneath page content after scrolling. */}
-      {typeof document !== 'undefined' && createPortal(
+      {portalReady && createPortal(
         <AnimatePresence>
           {open && (
             <motion.div id="mobile-nav" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-[9999] overflow-y-auto bg-cream-50 xl:hidden">
