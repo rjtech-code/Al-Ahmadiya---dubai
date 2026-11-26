@@ -2,15 +2,11 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { apiFetch, restoreSession, tokenStore } from './client-api';
-import { clearDemoSession, readDemoSession, USE_BACKEND } from './demo-session';
+import { clearDemoSession, DEMO_SESSION_EVENT, readDemoSession, USE_BACKEND } from './demo-session';
 
 export interface SessionUser { id: string; email: string; fullName: string; locale: string; roles: string[]; permissions: string[] }
 export type SessionState = { status: 'loading' } | { status: 'anon' } | { status: 'authed'; user: SessionUser };
 
-/**
- * One shared session for the whole page (header, account, forms…), so signing in or out
- * updates every component immediately. Restored once from the httpOnly refresh cookie.
- */
 let state: SessionState = { status: 'loading' };
 let inflight: Promise<void> | null = null;
 const listeners = new Set<() => void>();
@@ -39,7 +35,17 @@ function ensureLoaded() {
 
 export function useSession() {
   const current = useSyncExternalStore(subscribe, () => state, () => LOADING);
-  useEffect(() => { ensureLoaded(); }, []);
+  useEffect(() => {
+    ensureLoaded();
+    if (USE_BACKEND) return;
+    const syncDemoSession = () => { void fetchSession(); };
+    window.addEventListener(DEMO_SESSION_EVENT, syncDemoSession);
+    window.addEventListener('storage', syncDemoSession);
+    return () => {
+      window.removeEventListener(DEMO_SESSION_EVENT, syncDemoSession);
+      window.removeEventListener('storage', syncDemoSession);
+    };
+  }, []);
 
   const signIn = useCallback((accessToken: string, user: SessionUser) => {
     tokenStore.set(accessToken);
@@ -61,7 +67,6 @@ export function useSession() {
   return { state: current, signIn, signOut, reload };
 }
 
-/** For flows that obtain a token outside useSession (e.g. registration). */
 export function setSessionFromToken(accessToken: string) {
   tokenStore.set(accessToken);
   return fetchSession();
