@@ -2,7 +2,7 @@ import Image from 'next/image';
 import {
   ArrowRight, BookOpen, BookOpenCheck, BriefcaseBusiness, Building2, CalendarDays,
   CheckCircle2, ClipboardCheck, CreditCard, FileCheck2, GraduationCap, LibraryBig,
-  LockKeyhole, MessageSquareText, MonitorCog, Radio, ScrollText, Settings2,
+  LockKeyhole, MessageSquareText, MonitorCog, ScrollText, Settings2,
   ShieldCheck, ShoppingCart, Users, Wallet, Globe2, ChartNoAxesCombined
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
