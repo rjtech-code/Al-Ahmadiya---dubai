@@ -101,7 +101,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-line/70 bg-cream-50/90 px-4 backdrop-blur sm:px-8">
-          {!isCourseDetail && <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>}{isCourseDetail && <span className="grid size-10 place-items-center text-brand-900 lg:hidden"><BookOpen className="size-5" /></span>}
+          {!isCourseDetail && <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>}{isCourseDetail && <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('course-outline-toggle'))} className="grid size-10 place-items-center rounded-full text-brand-900 hover:bg-cream-200 lg:hidden" aria-label="Open course navigation"><Menu className="size-5" /></button>}
           <Link href="/portal" className="flex items-center gap-2 lg:hidden"><LogoMark className="size-8 text-brand-900" /><span className="font-display text-base font-semibold leading-none text-brand-900">{tp('university')}</span></Link>
           <form onSubmit={search} role="search" className="relative hidden max-w-md flex-1 md:block">
             <Search className="absolute start-4 top-3 size-4 text-muted" aria-hidden />
@@ -127,7 +127,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="flex-1 px-4 pb-28 pt-6 sm:px-8 lg:pb-10">{children}</main>
+        <main className={cn("flex-1 px-4 pt-6 sm:px-8 lg:pb-10", isCourseDetail ? "pb-10" : "pb-28")}>{children}</main>
       </div>
 
       {/* Mobile app-style bottom navigation */}
