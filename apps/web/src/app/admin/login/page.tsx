@@ -9,7 +9,17 @@ import { apiFetch, ApiError, tokenStore } from '@/lib/client-api';
 
 function LoginInner() {
   const router = useRouter();
-  const next = useSearchParams().get('next');
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next');
+  const selectedRole = searchParams.get('role');
+  const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin', UNIVERSITY_ADMIN: 'University Administrator', ADMISSIONS_OFFICER: 'Admissions Officer',
+    ADMISSIONS_REVIEWER: 'Admissions Reviewer', REGISTRAR: 'Registrar', LIBRARIAN: 'Librarian',
+    PROCUREMENT_OFFICER: 'Procurement & Operations', ACADEMIC_ADMIN: 'Academic Administrator',
+    FINANCE_MANAGER: 'Finance Manager', FINANCE_OFFICER: 'Finance Officer', HR_MANAGER: 'HR Manager',
+    HEAD_OF_DEPARTMENT: 'Head of Department', CONTENT_EDITOR: 'Content Editor', FACULTY: 'Teacher'
+  };
+  const selectedRoleLabel = selectedRole ? roleLabels[selectedRole] : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +40,7 @@ function LoginInner() {
   return (
     <div className="pattern-girih grid min-h-dvh place-items-center p-4">
       <form onSubmit={submit} className="arch w-full max-w-sm bg-cream-50 px-8 pb-8 pt-16 shadow-2xl">
-        <div className="mb-6 flex flex-col items-center text-center"><LogoMark className="size-14 text-gold-600" /><p className="mt-2 font-[family-name:var(--font-cormorant)] text-3xl font-semibold uppercase text-brand-900">Al Ahmadiya</p><p className="text-xs uppercase tracking-[0.2em] text-muted">Staff administration</p></div>
+        <div className="mb-6 flex flex-col items-center text-center"><LogoMark className="size-14 text-gold-600" /><p className="mt-2 font-[family-name:var(--font-cormorant)] text-3xl font-semibold uppercase text-brand-900">Al Ahmadiya</p><p className="text-xs uppercase tracking-[0.2em] text-muted">Staff administration</p>{selectedRoleLabel && <p className="mt-3 rounded-full border border-gold-300 bg-white px-4 py-2 text-xs font-semibold text-brand-900">Signing in as: {selectedRoleLabel}</p>}</div>
         <ErrorNote message={error} />
         <label className="mb-1 block text-sm font-medium" htmlFor="ae">Email</label>
         <input id="ae" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} className={`${adminInput} mb-3`} />
