@@ -147,9 +147,9 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const navButton = (key: typeof section, label: string, icon: ReactNode) => <button onClick={() => { setSection(key); setCurrent(null); setOutlineOpen(false); }} className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-sm font-semibold transition', section === key ? 'bg-gold-400 text-brand-950' : 'text-white/75 hover:bg-white/10 hover:text-white')}>{icon}<span>{label}</span></button>;
 
   return (
-    <div className="space-y-6">
-      <div className="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] self-start rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-16 lg:block lg:overflow-x-hidden lg:overflow-y-auto overscroll-contain">
+    <div className="min-h-dvh">
+      <div className="grid min-h-dvh items-stretch gap-0 lg:grid-cols-[19rem_minmax(0,1fr)]">
+        <aside className="pattern-girih hidden h-dvh max-h-dvh self-start border-e border-white/10 bg-brand-950 p-4 text-white lg:sticky lg:top-0 lg:block lg:overflow-x-hidden lg:overflow-y-auto overscroll-contain">
 
           <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
@@ -192,7 +192,8 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
           </div>
         </aside><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-white text-brand-950"><X className="size-5" /></button></div>}
 
-        <main className="min-w-0 space-y-5">
+        <main className="min-w-0 space-y-5 p-4 sm:p-8 lg:p-10">
+          <div className="flex items-center gap-3 lg:hidden"><button type="button" onClick={() => setOutlineOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-900 text-white" aria-label="Open course outline"><ChevronRight className="size-5" /></button><span className="text-sm font-semibold text-brand-900">Course outline</span></div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
             {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
