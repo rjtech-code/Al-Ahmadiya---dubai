@@ -88,7 +88,6 @@ export function Header() {
   const { state } = useSession();
   const authed = state.status === 'authed';
   const isHomePage = pathname === '/';
-  const studentDemoHref = USE_BACKEND ? '/login?audience=student' : '/portal';
   const startStudentDemo = () => { if (!USE_BACKEND) saveDemoSession('STUDENT'); };
 
   const groups: Group[] = [
