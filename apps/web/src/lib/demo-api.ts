@@ -564,6 +564,38 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean === '/me/notifications/read-all' && method === 'POST') {
     const rows = getList(store, 'student.notifications', []); rows.forEach((n) => { n.readAt = now(); }); store['student.notifications'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
+  if (clean === '/me/overview') return wrap({ applications: 1, activeCourses: 2, pendingPayments: 0, unreadNotifications: 1, liveNow: 0 }) as R;
+  if (clean === '/me/courses') return wrap([
+    { id: 'enrol-demo-01', course: { slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', deliveryMode: 'RECORDED', _count: { lessons: 8, notes: 2, quizzes: 2 } } },
+    { id: 'enrol-demo-02', course: { slug: 'business-foundations', code: 'BUS101', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال', deliveryMode: 'LIVE', _count: { lessons: 5, notes: 1, quizzes: 1 } } },
+  ]) as R;
+  if (clean === '/me/live') return wrap([{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', course: { slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, lesson: { id: 'lesson-01' }, attendance: [] }]) as R;
+  if (clean.startsWith('/me/courses/')) return wrap({
+    topics: [{ id: 'topic-01', titleEn: 'Programming basics', titleAr: 'أساسيات البرمجة' }],
+    slug: clean.split('/').pop(), code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', deliveryMode: 'RECORDED',
+    lessons: [{ id: 'lesson-01', titleEn: 'Variables and data types', titleAr: 'المتغيرات وأنواع البيانات', descriptionEn: 'A sample lesson for local preview.', descriptionAr: 'درس تجريبي للمعاينة المحلية.', durationSec: 1200, hasVideo: false, topicId: 'topic-01', completed: false, positionSec: 0 }],
+    notes: [{ id: 'note-01', titleEn: 'Course outline', titleAr: 'مخطط المقرر', bodyEn: 'Synthetic notes for local preview only.', bodyAr: 'ملاحظات تجريبية للمعاينة المحلية فقط.', fileName: null, hasFile: false }],
+    quizzes: [{ id: 'quiz-01', titleEn: 'Programming basics quiz', titleAr: 'اختبار أساسيات البرمجة', passPercent: 60, questions: [{ textEn: 'What does CPU stand for?', textAr: 'ماذا تعني CPU؟', options: [{ en: 'Central Processing Unit', ar: 'وحدة المعالجة المركزية' }, { en: 'Computer Personal Unit', ar: 'وحدة الحاسوب الشخصية' }] }], lastAttempt: { score: 8, total: 10, passed: true } }],
+    liveSessions: [{ id: 'live-01', titleEn: 'Weekly class', titleAr: 'الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), status: 'SCHEDULED' }],
+  }) as R;
+  if (clean.startsWith('/me/lessons/') && clean.endsWith('/url')) return wrap({ url: '' }) as R;
+  if (clean.startsWith('/me/lessons/') && clean.endsWith('/progress') && method === 'POST') {
+    const progress = getList(store, 'student.lesson-progress', []);
+    const lessonId = clean.split('/')[3];
+    const existing = progress.find((x) => x.lessonId === lessonId);
+    if (existing) Object.assign(existing, payload, { updatedAt: now() }); else progress.push({ lessonId, ...payload, updatedAt: now() });
+    store['student.lesson-progress'] = progress; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/me/notes/') && clean.endsWith('/url')) return wrap({ url: '' }) as R;
+  if (clean.startsWith('/me/quizzes/') && clean.endsWith('/attempts') && method === 'POST') {
+    const result = { score: 8, total: 10, passed: true, correct: Array.isArray(payload.answers) ? payload.answers.map((_: unknown, index: number) => index) : [] };
+    const attempts = getList(store, 'student.quiz-attempts', []); attempts.push({ id: id(), quizId: clean.split('/')[3], answers: payload.answers ?? [], result, createdAt: now() }); store['student.quiz-attempts'] = attempts; writeStore(store); return wrap(result) as R;
+  }
+  if (clean.startsWith('/me/payments/') && clean.endsWith('/receipt')) return wrap({
+    receiptNumber: 'DEMO-001', paidAt: now(), description: 'Introduction to Computing course fee', amountFils: 250000, vatFils: 0, currency: 'AED', provider: 'Local demo', providerRef: 'LOCAL-DEMO-001',
+    payer: { fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example' }, applicationReference: null,
+    course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' },
+  }) as R;
   if (clean === '/me/payments') return wrap([{ id: 'payment-demo-01', purpose: 'course', description: 'Introduction to Computing course fee', amountFils: 250000, vatFils: 0, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now() }]) as R;
   if (clean === '/me/portal/profile') return wrap({
     id: user?.id ?? 'demo-student', studentId: 'DEMO-2026-001', fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example', phone: null, locale: 'en', createdAt: now(),
