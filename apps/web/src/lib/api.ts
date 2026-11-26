@@ -9,8 +9,8 @@ import type * as T from './types';
 export class ApiUnavailableError extends Error {}
 
 const colleges: T.CollegeSummary[] = [
-  { id: 'demo-college-01', slug: 'computing', nameEn: 'Demo College of Computing', nameAr: 'كلية الحوسبة التجريبية', summaryEn: 'Sample content for computing and digital technology programmes.', summaryAr: 'محتوى تجريبي لبرامج الحوسبة والتقنية الرقمية.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ slug: 'computer-science', nameEn: 'Demo Computer Science', nameAr: 'علوم الحاسوب التجريبية' }] },
-  { id: 'demo-college-02', slug: 'business', nameEn: 'Demo College of Business', nameAr: 'كلية الأعمال التجريبية', summaryEn: 'Sample content for business and management programmes.', summaryAr: 'محتوى تجريبي لبرامج الأعمال والإدارة.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ slug: 'business-administration', nameEn: 'Demo Business Administration', nameAr: 'إدارة الأعمال التجريبية' }] },
+  { id: 'demo-college-01', slug: 'computing', nameEn: 'Demo College of Computing', nameAr: 'كلية الحوسبة التجريبية', summaryEn: 'Sample content for computing and digital technology programmes.', summaryAr: 'محتوى تجريبي لبرامج الحوسبة والتقنية الرقمية.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ id: 'demo-dept-01', slug: 'computer-science', nameEn: 'Demo Computer Science', nameAr: 'علوم الحاسوب التجريبية' }] },
+  { id: 'demo-college-02', slug: 'business', nameEn: 'Demo College of Business', nameAr: 'كلية الأعمال التجريبية', summaryEn: 'Sample content for business and management programmes.', summaryAr: 'محتوى تجريبي لبرامج الأعمال والإدارة.', imagePath: '/images/campus/academic.jpg', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', departments: [{ id: 'demo-dept-02', slug: 'business-administration', nameEn: 'Demo Business Administration', nameAr: 'إدارة الأعمال التجريبية' }] },
 ];
 const departments: T.DepartmentSummary[] = [
   { id: 'demo-dept-01', slug: 'computer-science', nameEn: 'Demo Computer Science', nameAr: 'علوم الحاسوب التجريبية' },
