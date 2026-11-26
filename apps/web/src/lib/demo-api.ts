@@ -673,6 +673,22 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
       ? { status: 'ELIGIBLE', unmet: [], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }
       : { status: 'NOT_ELIGIBLE', unmet: [{ requirement: 'overall', required: 60, actual }], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
   }
+  if (clean === '/public/contact' && method === 'POST') {
+    const key = 'collection:/admin/contact-messages';
+    const rows = getList(store, key, [
+      { id: 'message-01', fullName: 'Demo Enquirer 01', email: 'enquirer01@example.test', phone: null, subject: 'Programme information', message: 'Please share the sample programme details.', locale: 'en', createdAt: now() },
+      { id: 'message-02', fullName: 'Demo Enquirer 02', email: 'enquirer02@example.test', phone: null, subject: 'Campus visit', message: 'I would like information about a campus visit.', locale: 'en', createdAt: now() },
+    ]);
+    rows.unshift({ id: id(), fullName: payload.fullName, email: payload.email, phone: payload.phone ?? null, subject: payload.subject ?? 'General enquiry', message: payload.message ?? '', locale: payload.locale ?? 'en', createdAt: now() });
+    store[key] = rows; writeStore(store); return wrap({ success: true, storedLocally: true }) as R;
+  }
+  if (clean === '/public/newsletter' && method === 'POST') {
+    const key = 'collection:/admin/newsletter-subscribers';
+    const rows = getList(store, key, [{ id: 'subscriber-01', email: 'subscriber01@example.test', locale: 'en', createdAt: now() }]);
+    const email = String(payload.email ?? '').trim().toLowerCase();
+    if (!rows.some((x) => String(x.email).toLowerCase() === email)) rows.unshift({ id: id(), email, locale: payload.locale ?? 'en', createdAt: now() });
+    store[key] = rows; writeStore(store); return wrap({ success: true, storedLocally: true }) as R;
+  }
   const listPaths = ['/admin/applications', '/admin/users', '/admin/roles', '/admin/cms', '/admin/contact-messages', '/admin/newsletter-subscribers', '/admin/leave', '/admin/live/sessions', '/admin/lms/courses', '/admin/records/students', '/admin/payments', '/me/notifications', '/me/courses', '/me/live'];
   if (listPaths.includes(clean)) {
     const seeds: Record<string, any[]> = {
