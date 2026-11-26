@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  BarChart3, Bell, LibraryBig, BookOpen, CalendarDays, ChevronDown, ClipboardCheck, FileText, Globe, HelpCircle, Home, LayoutGrid, Loader2, LogOut, Menu,
+  BarChart3, Bell, LibraryBig, BookOpen, CalendarDays, ChevronDown, FileText, Globe, Home, LayoutGrid, Loader2, LogOut, Menu,
   PlayCircle, Radio, Search, User, UserCheck, Wallet, X,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -21,8 +21,6 @@ const NAV = [
   { href: '/portal/schedule', key: 'schedule', icon: CalendarDays },
   { href: '/portal/attendance', key: 'attendance', icon: UserCheck },
   { href: '/portal/lectures', key: 'lectures', icon: PlayCircle },
-  { href: '/portal/assignments', key: 'assignments', icon: ClipboardCheck },
-  { href: '/portal/quizzes', key: 'quizzes', icon: HelpCircle },
   { href: '/portal/results', key: 'results', icon: BarChart3 },
   { href: '/portal/payments', key: 'payments', icon: Wallet },
   { href: '/portal/documents', key: 'documents', icon: FileText },
