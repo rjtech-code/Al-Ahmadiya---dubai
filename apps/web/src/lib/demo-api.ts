@@ -1,6 +1,6 @@
 'use client';
 
-import { readDemoSession } from './demo-session';
+import { readDemoSession, saveDemoSession } from './demo-session';
 
 type RequestOptions = RequestInit & { json?: unknown; auth?: boolean };
 const STORAGE = 'al-ahmadiya-local-erp-data';
@@ -54,6 +54,14 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   const role = user?.role ?? 'GUEST';
   const listMeta = (rows: any[]) => ({ page: Number(query.get('page') || 1), pageSize: Number(query.get('pageSize') || 20), total: rows.length, totalPages: Math.max(1, Math.ceil(rows.length / Number(query.get('pageSize') || 20))) });
 
+  if (clean === '/auth/register' && method === 'POST') {
+    const session = saveDemoSession('STUDENT', { fullName: String(payload.fullName ?? 'Demo Student'), email: String(payload.email ?? 'student.demo@example.test').toLowerCase() });
+    return wrap({ accessToken: 'local-demo-token', user: { id: session.id, email: session.email, fullName: session.fullName, locale: session.locale, roles: session.roles, permissions: session.permissions } }) as R;
+  }
+  if (clean === '/auth/login' && method === 'POST') {
+    const session = saveDemoSession('STUDENT', { fullName: String(payload.fullName ?? 'Demo Student'), email: String(payload.email ?? 'student.demo@example.test').toLowerCase() });
+    return wrap({ accessToken: 'local-demo-token', user: { id: session.id, email: session.email, fullName: session.fullName, locale: session.locale, roles: session.roles, permissions: session.permissions } }) as R;
+  }
   if (clean === '/auth/me') return wrap({ id: user?.id ?? 'demo-user', email: user?.email ?? 'demo@example.test', fullName: user?.fullName ?? 'Demo User', roles: user?.roles ?? [], permissions: user?.permissions ?? [] }) as R;
 
   if (clean === '/admin/library/overview') {
