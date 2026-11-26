@@ -26,14 +26,14 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   FACULTY: [...COMMON, 'teach.own'],
 };
 
-export function saveDemoSession(role: string) {
+export function saveDemoSession(role: string, profile?: { fullName?: string; email?: string }) {
   const normalizedRole = role.trim().toUpperCase();
   const isStudent = normalizedRole === 'STUDENT';
   const session: DemoSession = {
     role: normalizedRole,
     id: `demo-${normalizedRole.toLowerCase()}`,
-    email: isStudent ? 'student.demo@al-ahmadiya.example' : `${normalizedRole.toLowerCase()}.demo@al-ahmadiya.example`,
-    fullName: isStudent ? 'Demo Student' : `Demo ${normalizedRole.replaceAll('_', ' ')}`,
+    email: profile?.email?.trim() || (isStudent ? 'student.demo@al-ahmadiya.example' : `${normalizedRole.toLowerCase()}.demo@al-ahmadiya.example`),
+    fullName: profile?.fullName?.trim() || (isStudent ? 'Demo Student' : `Demo ${normalizedRole.replaceAll('_', ' ')}`),
     locale: 'en',
     roles: [normalizedRole],
     permissions: isStudent ? [] : (ROLE_PERMISSIONS[normalizedRole] ?? [...COMMON]),
