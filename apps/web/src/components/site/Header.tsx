@@ -182,20 +182,23 @@ export function Header() {
       <div
         aria-label="Quick login access"
         className={cn(
-          'border-t border-gold-200/70 bg-cream-50/95 transition-all duration-300',
+          'relative left-1/2 w-screen -translate-x-1/2 border-t border-gold-200/70 bg-cream-50/95 transition-all duration-300',
           !isHomePage && scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
         )}
       >
-        <div className="container-site flex items-center gap-2 overflow-x-auto py-2.5 [scrollbar-width:thin]">
-          <Link href={authed ? '/portal' : '/login?audience=student'} className="inline-flex h-9 shrink-0 items-center rounded-full bg-brand-900 px-4 text-xs font-semibold text-white shadow-sm hover:bg-brand-800">
-            Student Login
-          </Link>
-          <span className="mx-1 h-6 w-px shrink-0 bg-gold-300" aria-hidden />
-          {staffRoles.map((role) => (
-            <a key={role.key} href={`/admin/login?role=${role.key}`} className="inline-flex h-9 shrink-0 items-center rounded-full border border-gold-300 bg-white px-3.5 text-xs font-medium text-brand-900 transition-colors hover:border-brand-900 hover:bg-brand-900 hover:text-white">
-              {role.label}
-            </a>
-          ))}
+        <div className="px-3 pt-1.5 sm:px-5">
+          <p className="mb-1 text-[9px] font-bold uppercase leading-none tracking-[0.16em] text-gold-700 sm:text-[10px]">Demo Logins</p>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 [scrollbar-width:thin]">
+            <Link href={authed ? '/portal' : '/login?audience=student'} className="inline-flex h-7 shrink-0 items-center rounded-full bg-brand-900 px-2.5 text-[10px] font-semibold text-white shadow-sm hover:bg-brand-800">
+              Student Login
+            </Link>
+            <span className="mx-0.5 h-4 w-px shrink-0 bg-gold-300" aria-hidden />
+            {staffRoles.map((role) => (
+              <a key={role.key} href={`/admin/login?role=${role.key}`} className="inline-flex h-7 shrink-0 items-center rounded-full border border-gold-300 bg-white px-2.5 text-[10px] font-medium text-brand-900 transition-colors hover:border-brand-900 hover:bg-brand-900 hover:text-white">
+                {role.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
