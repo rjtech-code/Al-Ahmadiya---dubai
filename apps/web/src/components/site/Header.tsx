@@ -183,7 +183,7 @@ export function Header() {
         aria-label="Quick login access"
         className={cn(
           'relative left-1/2 w-screen -translate-x-1/2 border-t border-gold-200/70 bg-cream-50/95 transition-all duration-300',
-          !isHomePage && scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
+          isHomePage || scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
         )}
       >
         <div className="px-3 pt-1.5 sm:px-5">
