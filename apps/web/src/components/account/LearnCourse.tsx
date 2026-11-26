@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Menu, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -59,6 +59,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [practice, setPractice] = useState<PracticeState>({});
   const [answer, setAnswer] = useState('');
+  const [outlineOpen, setOutlineOpen] = useState(false);
 
   useEffect(() => {
     try { setPractice(JSON.parse(localStorage.getItem(`lms.practice.${slug}`) || '{}') as PracticeState); } catch { setPractice({}); }
@@ -103,6 +104,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   };
 
   const play = async (lesson: Lesson) => {
+    setOutlineOpen(false);
     setCurrent(lesson);
     setActiveWeek(lesson.topicId ?? activeWeek);
     setSection('lecture');
@@ -141,12 +143,13 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
+        <div className="flex items-start gap-3"><button onClick={() => setOutlineOpen(true)} aria-label="Open course navigation" className="mt-2 grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-white text-brand-900 shadow-sm lg:hidden"><Menu className="size-5" /></button><div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div></div>
         {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] xl:sticky xl:top-24">
+        <aside className="hidden rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-24 lg:block lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+
           <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
             {navButton('practice', 'Course practice', <ClipboardCheck className="size-4" />)}
@@ -165,7 +168,28 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
               </div>
             ))}
           </div>
+        
         </aside>
+        {outlineOpen && <div className="fixed inset-0 z-[70] lg:hidden"><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute inset-0 bg-brand-950/60" /><aside className="absolute inset-y-0 start-0 w-[min(21rem,88vw)] overflow-y-auto bg-brand-950 p-4 pt-16 text-white shadow-2xl">
+          <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {navButton('practice', 'Course practice', <ClipboardCheck className="size-4" />)}
+            {navButton('graded', 'Graded work', <Trophy className="size-4" />)}
+          </div>
+          <div className="space-y-2">
+            {weeks.map((week, index) => (
+              <div key={week.id} className="overflow-hidden rounded-xl bg-white/5">
+                <button onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); setSection('overview'); setCurrent(null); setOutlineOpen(false); }} aria-expanded={!!expanded[week.id]} className={cn('flex w-full items-center gap-2 px-3 py-3 text-start text-sm font-semibold', activeWeek === week.id && 'text-gold-300')}>
+                  {expanded[week.id] ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}<span className="flex-1">{week.titleEn || `Week ${index + 1}`}</span><span className="text-xs text-white/50">{week.lessons.length}</span>
+                </button>
+                {expanded[week.id] && <div className="space-y-1 px-2 pb-2">
+                  {week.lessons.map((lesson, i) => <button key={lesson.id} onClick={() => void play(lesson)} className={cn('flex w-full items-center gap-2 rounded-lg px-2 py-2 text-start text-xs', current?.id === lesson.id ? 'bg-gold-400 font-semibold text-brand-950' : 'text-white/75 hover:bg-white/10')}><PlayCircle className="size-4 shrink-0" /><span className="flex-1">{`Lecture ${String(i + 1).padStart(2, '0')}`}</span>{(lesson.completed || practice[`lecture:${lesson.id}`]?.done) && <CheckCircle2 className="size-4 text-emerald-400" />}</button>)}
+                  <button onClick={() => { setSection('overview'); setCurrent(null); setOutlineOpen(false); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs text-gold-300 hover:bg-white/10"><ClipboardCheck className="size-4" />Week practice & quiz</button>
+                </div>}
+              </div>
+            ))}
+          </div>
+        </aside><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-white text-brand-950"><X className="size-5" /></button></div>}
 
         <main className="min-w-0 space-y-5">
           {section === 'lecture' && current ? (
