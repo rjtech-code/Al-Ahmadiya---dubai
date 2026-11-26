@@ -45,12 +45,19 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { state, signOut } = useAuthed();
   const [open, setOpen] = useState(false);
+  const [courseLectureMode, setCourseLectureMode] = useState(false);
   const isCourseDetail = /^\/portal\/courses\/[^/]+/.test(pathname);
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState('');
   const [unread, setUnread] = useState(0);
   const authed = state.status === 'authed';
   const active = (h: string) => (h === '/portal' ? pathname === '/portal' : pathname.startsWith(h));
+
+  useEffect(() => {
+    const handleCourseMode = (event: Event) => setCourseLectureMode(Boolean((event as CustomEvent<{ lecture?: boolean }>).detail?.lecture));
+    window.addEventListener('lms-course-view-mode', handleCourseMode);
+    return () => window.removeEventListener('lms-course-view-mode', handleCourseMode);
+  }, []);
 
   useEffect(() => {
     if (!authed) return;
@@ -92,7 +99,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh bg-cream-100">
-      {!isCourseDetail && <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>}
+      {(!isCourseDetail || !courseLectureMode) && <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label={t('close')} className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
