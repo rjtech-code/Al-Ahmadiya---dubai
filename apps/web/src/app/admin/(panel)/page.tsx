@@ -71,12 +71,14 @@ export default function Dashboard() {
   useEffect(() => {
     if (!can('dashboard.read')) return;
     let c = false;
+    if (!USE_BACKEND) { setD(DEMO_SUMMARY); setError(''); return () => { c = true; }; }
     apiFetch<{ data: Summary }>('/admin/dashboard').then((r) => { if (!c) setD(r.data); }).catch((e: unknown) => { if (!c) setError(e instanceof ApiError ? e.message : 'Failed to load'); });
     return () => { c = true; };
   }, [can]);
 
   if (!can('dashboard.read')) return <p className="text-sm text-muted">Opening your workspace…</p>;
-  const o = d?.overview;\n  const roleTitle = ROLE_TITLES[user.roles[0]] ?? user.roles[0]?.replace(/_/g, ' ') ?? 'Staff';
+  const o = d?.overview;
+  const roleTitle = ROLE_TITLES[user.roles[0]] ?? user.roles[0]?.replace(/_/g, ' ') ?? 'Staff';
   const alerts = d ? [
     d.admissions.pendingReview > 0 && { text: `${d.admissions.pendingReview} application${d.admissions.pendingReview === 1 ? '' : 's'} waiting for review`, href: '/admin/admissions', tone: 'bg-warning' },
     d.learning.liveNow > 0 && { text: `${d.learning.liveNow} live class${d.learning.liveNow === 1 ? '' : 'es'} in progress`, href: '/admin/live', tone: 'bg-danger' },
