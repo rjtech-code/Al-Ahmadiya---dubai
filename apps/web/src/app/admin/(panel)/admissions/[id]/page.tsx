@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAdmin } from '@/components/admin/AdminContext';
 import { adminBtn, adminBtnOutline, adminInput, ErrorNote, PageHeader, Panel, StatusPill } from '@/components/admin/ui';
-import { apiFetch, ApiError, tokenStore } from '@/lib/client-api';
+import { apiFetch, ApiError } from '@/lib/client-api';
 
 interface Detail {
   id: string; reference: string; status: string; submittedAt: string | null; decisionNote: string | null;
@@ -45,10 +45,16 @@ export default function ApplicationDetail() {
     catch (e) { setError(e instanceof ApiError ? e.message : 'Failed'); }
   };
   const download = async (docId: string, name: string) => {
-    const res = await fetch(`/api/v1/admin/applications/${id}/documents/${docId}`, { headers: { Authorization: `Bearer ${tokenStore.get()}` } });
-    if (!res.ok) { setError('Download failed'); return; }
-    const url = URL.createObjectURL(await res.blob());
-    const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
+    const body = [
+      'AL AHMADIYA — LOCAL DEMO DOCUMENT',
+      'This is a synthetic placeholder file for the frontend-only ERP preview.',
+      `Application: ${d?.reference ?? id}`,
+      `Document ID: ${docId}`,
+      `Original file label: ${name}`,
+      'No real applicant document is stored or downloaded in local demo mode.',
+    ].join('\\n');
+    const url = URL.createObjectURL(new Blob([body], { type: 'text/plain;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = `${name}.demo.txt`; a.click(); URL.revokeObjectURL(url);
   };
 
   if (!d) return <><ErrorNote message={error} /><p className="text-sm text-muted">Loading…</p></>;
