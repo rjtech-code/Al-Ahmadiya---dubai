@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, FileText, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -56,6 +56,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const [section, setSection] = useState<'overview' | 'lecture' | 'practice' | 'graded'>('overview');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [reader, setReader] = useState<Note | null>(null);
+  const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [practice, setPractice] = useState<PracticeState>({});
   const [answer, setAnswer] = useState('');
 
@@ -89,6 +90,17 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
     localStorage.setItem(`lms.practice.${slug}`, JSON.stringify(next));
     return next;
   });
+
+  const openNote = async (note: Note) => {
+    setReader(note);
+    setReaderUrl(null);
+    if (note.hasFile) {
+      try { setReaderUrl(apiUrl((await apiFetch<{ data: { url: string } }>('/me/notes/' + note.id + '/url')).data.url)); } catch { setReaderUrl(null); }
+    }
+  };
+  const downloadNote = async (note: Note) => {
+    try { window.location.href = apiUrl((await apiFetch<{ data: { url: string } }>('/me/notes/' + note.id + '/url?download=1')).data.url); } catch { setError('The PDF is not available in this local demo yet.'); }
+  };
 
   const play = async (lesson: Lesson) => {
     setCurrent(lesson);
@@ -164,7 +176,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
               </div>
               <section className="rounded-2xl border border-line bg-white p-5">
                 <h3 className="flex items-center gap-2 font-semibold text-brand-900"><FileText className="size-5 text-gold-600" />PDF Notes</h3>
-                {notesForLecture.length || courseNotes.length ? <ul className="mt-3 space-y-2">{[...notesForLecture, ...courseNotes].map((note) => <li key={note.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 p-3"><span className="text-sm font-semibold text-brand-900">{L(note)} {note.fileName && <span className="text-xs text-muted">· {note.fileName}</span>}</span><button onClick={() => setReader(note)} className="rounded-full border border-gold-400 px-3 py-1.5 text-xs font-semibold">Open notes</button></li>)}</ul> : <p className="mt-2 text-sm text-muted">No PDF notes have been added to this lecture yet.</p>}
+                {notesForLecture.length || courseNotes.length ? <ul className="mt-3 space-y-2">{[...notesForLecture, ...courseNotes].map((note) => <li key={note.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-cream-50 p-3"><span className="text-sm font-semibold text-brand-900">{L(note)} {note.fileName && <span className="text-xs text-muted">· {note.fileName}</span>}</span><div className="flex gap-2"><button onClick={() => void openNote(note)} className="rounded-full border border-gold-400 px-3 py-1.5 text-xs font-semibold">Open notes</button>{note.hasFile && <button onClick={() => void downloadNote(note)} className="inline-flex items-center gap-1 rounded-full bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white"><Download className="size-3.5" />Download</button>}</div></li>)}</ul> : <p className="mt-2 text-sm text-muted">No PDF notes have been added to this lecture yet.</p>}
               </section>
               <section className="rounded-2xl border border-line bg-white p-5">
                 <h3 className="font-semibold text-brand-900">Lecture practice assignment</h3><p className="mt-1 text-xs text-muted">For practice only — this does not affect your graded results.</p>
@@ -189,7 +201,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
         </main>
       </div>
 
-      {reader && <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-brand-950/60 p-4" onClick={() => setReader(null)}><div onClick={(event) => event.stopPropagation()} className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-cream-50"><div className="flex items-center justify-between border-b border-line p-4"><h2 className="font-display text-xl font-semibold text-brand-900">{L(reader)}</h2><button onClick={() => setReader(null)} className="rounded-full px-3 py-1 hover:bg-cream-200">Close</button></div><div className="flex-1 overflow-y-auto p-5">{reader.bodyEn || reader.bodyAr ? <Markdown source={locale === 'ar' ? reader.bodyAr ?? reader.bodyEn ?? '' : reader.bodyEn ?? reader.bodyAr ?? ''} /> : <p className="text-sm text-muted">PDF preview placeholder{reader.fileName ? ` — ${reader.fileName}` : ''}. Add a PDF file in Course Builder to display it here.</p>}</div></div></div>}
+      {reader && <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-brand-950/60 p-4" onClick={() => setReader(null)}><div onClick={(event) => event.stopPropagation()} className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-cream-50"><div className="flex items-center justify-between border-b border-line p-4"><h2 className="font-display text-xl font-semibold text-brand-900">{L(reader)}</h2><button onClick={() => setReader(null)} className="rounded-full px-3 py-1 hover:bg-cream-200">Close</button></div><div className="flex-1 overflow-y-auto p-5">{readerUrl ? <iframe title={L(reader)} src={readerUrl} className="h-full min-h-[65vh] w-full rounded-xl border border-line" /> : reader.bodyEn || reader.bodyAr ? <Markdown source={locale === "ar" ? reader.bodyAr ?? reader.bodyEn ?? "" : reader.bodyEn ?? reader.bodyAr ?? ""} /> : <p className="text-sm text-muted">PDF preview is not available for this demo note.</p>}</div></div></div></div>}
     </div>
   );
 }
