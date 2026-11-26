@@ -498,6 +498,66 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean === '/me/portal/quizzes') return wrap([{ id: 'quiz-01', titleEn: 'Programming basics quiz', titleAr: 'اختبار أساسيات البرمجة', passPercent: 60, questionCount: 10, attempts: 1, best: { score: 8, total: 10 }, passed: true, lastAt: now(), course: { slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' } }]) as R;
   if (clean === '/me/portal/results') return wrap({ cgpa: 3.42, creditsEarned: 24, terms: [{ term: '2026 Fall', gpa: 3.42, credits: 12, courses: [{ id: 'result-01', marks: 88, grade: 'A', gradePoints: 4, creditHours: 3, course: { code: 'CS101', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' } }] }] }) as R;
   if (clean === '/me/portal/schedule') return wrap([{ kind: 'class', id: 'live-01', at: new Date(Date.now() + 3600000).toISOString(), endsAt: new Date(Date.now() + 5400000).toISOString(), titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', code: 'CS101', status: 'SCHEDULED', teacher: 'Demo Faculty' }, { kind: 'deadline', id: 'assignment-01', at: new Date(Date.now() + 3 * 86400000).toISOString(), endsAt: new Date(Date.now() + 3 * 86400000).toISOString(), titleEn: 'Programming exercise deadline', titleAr: 'موعد تسليم التمرين البرمجي', code: 'CS101', status: 'PENDING', teacher: null }]) as R;
+  const applicationRows = getList(store, 'admissions.applications', []);
+  if (clean === '/applications/mine' && method === 'GET') {
+    const mine = applicationRows.filter((a) => a.userId === user?.id || a.applicant?.email === user?.email);
+    return wrap(mine, { page: 1, pageSize: 20, total: mine.length, totalPages: 1, applicationFeeFils: 0 }) as R;
+  }
+  if (clean === '/applications' && method === 'POST') {
+    const suffix = 'DEMO2345';
+    const created = {
+      id: id(), reference: `AHM-2026-${suffix}`, status: 'DRAFT', currentStep: 1, programId: null, program: null,
+      personal: null, contact: null, academic: null, documents: [], statusHistory: [], decisionNote: null, submittedAt: null,
+      userId: user?.id ?? 'demo-student', applicant: { fullName: user?.fullName ?? 'Demo Student', email: user?.email ?? 'student.demo@al-ahmadiya.example' },
+      createdAt: now(), updatedAt: now(),
+    };
+    applicationRows.push(created); store['admissions.applications'] = applicationRows; writeStore(store); return wrap(created) as R;
+  }
+  if (clean.startsWith('/applications/') && clean.includes('/steps/') && method === 'PUT') {
+    const parts = clean.split('/'); const appId = parts[2]; const step = Number(parts[4]);
+    const app = applicationRows.find((a) => a.id === appId && (a.userId === user?.id || a.applicant?.email === user?.email));
+    if (!app) return wrap({ success: false, message: 'Demo application not found' }) as R;
+    const key = ({ 1: 'personal', 2: 'contact', 3: 'academic', 4: 'program' } as Record<number, string>)[step] ?? `step${step}`;
+    if (step === 4) {
+      const selected = (cmsSeeds.programs ?? []).find((p) => p.slug === payload.programSlug);
+      app.program = selected ? { slug: selected.slug, nameEn: selected.nameEn, nameAr: selected.nameAr } : null;
+      app.programId = selected?.id ?? null;
+    } else app[key] = payload;
+    app.currentStep = Math.max(Number(app.currentStep || 1), step + 1); app.updatedAt = now();
+    store['admissions.applications'] = applicationRows; writeStore(store); return wrap(app) as R;
+  }
+  if (clean.startsWith('/applications/') && clean.endsWith('/documents') && method === 'POST') {
+    const appId = clean.split('/')[2]; const app = applicationRows.find((a) => a.id === appId && (a.userId === user?.id || a.applicant?.email === user?.email));
+    if (!app) return wrap({ success: false }) as R;
+    const form = init.body instanceof FormData ? init.body : null;
+    const file = form?.get('file');
+    const doc = { id: id(), docType: String(form?.get('docType') ?? 'other'), originalName: file instanceof File ? file.name : 'demo-upload.txt', mimeType: file instanceof File ? file.type : 'text/plain', sizeBytes: file instanceof File ? file.size : 0, status: 'UPLOADED' };
+    app.documents = [...(app.documents ?? []), doc]; store['admissions.applications'] = applicationRows; writeStore(store); return wrap(doc) as R;
+  }
+  if (clean.startsWith('/applications/') && clean.includes('/documents/') && method === 'DELETE') {
+    const parts = clean.split('/'); const appId = parts[2]; const docId = parts[4];
+    const app = applicationRows.find((a) => a.id === appId && (a.userId === user?.id || a.applicant?.email === user?.email));
+    if (app) app.documents = (app.documents ?? []).filter((d) => d.id !== docId);
+    store['admissions.applications'] = applicationRows; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/payments/application/') && method === 'POST') {
+    const appId = clean.split('/')[3]; const app = applicationRows.find((a) => a.id === appId && (a.userId === user?.id || a.applicant?.email === user?.email));
+    if (app) { app.status = 'SUBMITTED'; app.submittedAt = now(); app.currentStep = 8; app.statusHistory = [...(app.statusHistory ?? []), { id: id(), fromStatus: 'DRAFT', toStatus: 'SUBMITTED', note: 'Submitted in local demo mode; no payment was processed.', createdAt: now() }]; }
+    store['admissions.applications'] = applicationRows; writeStore(store); return wrap({ completed: true }) as R;
+  }
+  if (clean === '/public/admissions/status' && method === 'POST') {
+    const app = applicationRows.find((a) => a.reference === payload.reference && a.applicant?.email?.toLowerCase() === String(payload.email || '').toLowerCase());
+    if (!app) return wrap({ reference: payload.reference, status: 'DRAFT', submittedAt: null, program: null, timeline: [], pendingDocuments: ['identity'] }) as R;
+    return wrap({ reference: app.reference, status: app.status, submittedAt: app.submittedAt, program: app.program, timeline: (app.statusHistory ?? []).map((h) => ({ toStatus: h.toStatus, createdAt: h.createdAt })), pendingDocuments: [] }) as R;
+  }
+  if (clean === '/public/admissions/eligibility' && method === 'POST') {
+    const program = (cmsSeeds.programs ?? []).find((p) => p.slug === payload.programSlug);
+    if (!program) return wrap({ status: 'NO_RULE', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
+    const actual = Number(payload.overallPercent || 0);
+    return wrap(actual >= 60
+      ? { status: 'ELIGIBLE', unmet: [], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }
+      : { status: 'NOT_ELIGIBLE', unmet: [{ requirement: 'overall', required: 60, actual }], confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }) as R;
+  }
   const listPaths = ['/admin/applications', '/admin/users', '/admin/roles', '/admin/cms', '/admin/contact-messages', '/admin/newsletter-subscribers', '/admin/leave', '/admin/live/sessions', '/admin/lms/courses', '/admin/records/students', '/admin/payments', '/me/notifications', '/me/courses', '/me/live'];
   if (listPaths.includes(clean)) {
     const seeds: Record<string, any[]> = {
