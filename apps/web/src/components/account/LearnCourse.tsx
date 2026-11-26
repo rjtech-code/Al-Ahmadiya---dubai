@@ -100,6 +100,17 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
     catch { setError('This demo lecture does not have a video file yet.'); }
   };
 
+  const submitGraded = () => {
+    const submittedAt = new Date().toISOString();
+    const localKey = 'lms.graded.submissions';
+    const session = JSON.parse(localStorage.getItem('al-ahmadiya-demo-session') || '{}') as { fullName?: string; email?: string };
+    const rows = JSON.parse(localStorage.getItem(localKey) || '[]') as Record<string, unknown>[];
+    rows.unshift({ id: `local-submission-${Date.now()}`, student: session.fullName || 'Demo Student', email: session.email || 'student.demo@example.test', course: `${course?.code ?? ''} · ${course?.titleEn ?? ''}`, assignment: 'Course Assessment 01', week: 'Whole course', submittedAt: submittedAt.slice(0, 10), marks: null, maxMarks: 100, feedback: '', status: 'PENDING', answer });
+    localStorage.setItem(localKey, JSON.stringify(rows));
+    setPracticeItem('graded:course-01', { done: true, submittedAt, answer });
+    setAnswer('');
+  };
+
   const submitQuiz = async (quiz: Quiz) => {
     try {
       const result = await apiFetch<{ data: { score: number; total: number; passed: boolean } }>(`/me/quizzes/${quiz.id}/attempts`, { method: 'POST', json: { answers: [0] } });
@@ -164,7 +175,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
           ) : section === 'practice' ? (
             <section className="rounded-[1.5rem] border border-line bg-white p-5"><h2 className="font-display text-3xl font-semibold text-brand-900">Complete course practice</h2><p className="mt-1 text-sm text-muted">Revision activities covering all weeks. These are ungraded practice activities.</p><PracticeCard id="course:practice-1" title="Complete course revision assignment" state={practice['course:practice-1']} onDone={(value) => setPracticeItem('course:practice-1', value)} /></section>
           ) : section === 'graded' ? (
-            <section className="rounded-[1.5rem] border border-line bg-white p-5"><h2 className="font-display text-3xl font-semibold text-brand-900">Graded assignments</h2><p className="mt-1 text-sm text-muted">Submit assessed work here. Marks and feedback will appear in Results after faculty evaluation.</p><div className="mt-4 rounded-xl bg-cream-50 p-4"><p className="font-semibold text-brand-900">Course assessment — Assignment 01</p><p className="mt-1 text-xs text-muted">Covers lectures and topics from the complete course · 100 marks</p><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={4} placeholder="Write your submission for this local demo…" className="mt-3 w-full rounded-xl border border-line bg-white p-3 text-sm" /><button onClick={() => { setPracticeItem('graded:course-01', { done: true, submittedAt: new Date().toISOString(), answer }); setAnswer(''); }} disabled={!answer.trim()} className="mt-3 rounded-full bg-brand-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Submit graded assignment</button>{practice['graded:course-01']?.done && <p className="mt-2 text-sm font-semibold text-success">Submitted locally · {new Date(practice['graded:course-01'].submittedAt ?? '').toLocaleDateString()}</p>}</div></section>
+            <section className="rounded-[1.5rem] border border-line bg-white p-5"><h2 className="font-display text-3xl font-semibold text-brand-900">Graded assignments</h2><p className="mt-1 text-sm text-muted">Submit assessed work here. Marks and feedback will appear in Results after faculty evaluation.</p><div className="mt-4 rounded-xl bg-cream-50 p-4"><p className="font-semibold text-brand-900">Course assessment — Assignment 01</p><p className="mt-1 text-xs text-muted">Covers lectures and topics from the complete course · 100 marks</p><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={4} placeholder="Write your submission for this local demo…" className="mt-3 w-full rounded-xl border border-line bg-white p-3 text-sm" /><button onClick={submitGraded} disabled={!answer.trim()} className="mt-3 rounded-full bg-brand-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Submit graded assignment</button>{practice['graded:course-01']?.done && <p className="mt-2 text-sm font-semibold text-success">Submitted locally · {new Date(practice['graded:course-01'].submittedAt ?? '').toLocaleDateString()}</p>}</div></section>
           ) : (
             <section className="space-y-4">
               <div className="rounded-[1.5rem] bg-brand-900 p-6 text-white"><p className="text-xs font-bold uppercase tracking-wider text-gold-300">{active?.titleEn ?? 'Course outline'}</p><h2 className="mt-1 font-display text-3xl font-semibold">Week learning plan</h2><p className="mt-2 text-sm text-white/70">{active?.lessons.length ?? 0} lectures · weekly practice assignment · quiz</p></div>
