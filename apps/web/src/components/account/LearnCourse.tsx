@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Menu, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -193,7 +193,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
         </aside><button aria-label="Close course menu" onClick={() => setOutlineOpen(false)} className="absolute end-4 top-4 grid size-10 place-items-center rounded-full bg-white text-brand-950"><X className="size-5" /></button></div>}
 
         <main className="min-w-0 space-y-5 p-4 sm:p-8 lg:p-10">
-          <div className="flex items-center gap-3 lg:hidden"><button type="button" onClick={() => setOutlineOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-900 text-white" aria-label="Open course outline"><ChevronRight className="size-5" /></button><span className="text-sm font-semibold text-brand-900">Course outline</span></div>
+          <div className="flex items-center gap-3 lg:hidden"><button type="button" onClick={() => setOutlineOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-900 text-white" aria-label="Open course outline"><Menu className="size-5" /></button><span className="text-sm font-semibold text-brand-900">Course outline</span></div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
             {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
