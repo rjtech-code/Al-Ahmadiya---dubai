@@ -163,12 +163,12 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     const key = decodeURIComponent(clean.split('/').pop() || '');
     const rows = getList(store, 'site.settings', []); const item = rows.find((x) => x.key === key);
     if (item) Object.assign(item, payload, { updatedAt: now() }); else rows.push({ key, ...payload, updatedAt: now() });
-    store['site.settings'] = rows; writeStore(store); return wrap({ data: rows.find((x) => x.key === key) }) as R;
+    store['site.settings'] = rows; writeStore(store); return wrap(rows.find((x) => x.key === key)) as R;
   }
   if (clean === '/admin/staff-logins') return wrap([], { page: Number(query.get('page') || 1), totalPages: 1, total: 0, last30Days: { success: 0, failed: 0 } }) as R;
   if (clean === '/admin/users-departments') return wrap([{ id: 'dept-01', nameEn: 'Computer Science' }, { id: 'dept-02', nameEn: 'Business Administration' }]) as R;
-  if (clean === '/admin/users') return wrap(getList(store, 'admin.users', [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }]), listMeta([])) as R;
-  if (clean === '/admin/live/sessions') return wrap([{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', course: { code: 'CS101', titleEn: 'Introduction to Computing' }, host: { fullName: 'Demo Faculty' } }]) as R;
+  if (clean === '/admin/users') { const rows = getList(store, 'admin.users', [{ id: 'staff-demo-01', email: 'librarian.demo@example.test', fullName: 'Demo Librarian', isActive: true, lastLoginAt: null, departmentId: null, department: null, roles: [{ role: { key: 'LIBRARIAN', nameEn: 'Librarian' } }] }]); return wrap(rows, listMeta(rows)) as R; }
+  if (clean === '/admin/live/sessions') return wrap(getList(store, 'admin.live.sessions', [{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', course: { code: 'CS101', titleEn: 'Introduction to Computing' }, host: { fullName: 'Demo Faculty' } }])) as R;
   if (clean === '/teach/overview') return wrap({
     courses: [{ id: 'course-01', code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', imagePath: '/images/courses/cs101.jpg', publishStatus: 'PUBLISHED', students: 42, lectures: 8, quizzes: 2 }],
     classes: [{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', scheduledAt: new Date(Date.now() + 3600000).toISOString(), durationMin: 90, status: 'SCHEDULED', course: { id: 'course-01', code: 'CS101', titleEn: 'Introduction to Computing' } }],
