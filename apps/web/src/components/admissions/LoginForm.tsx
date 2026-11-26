@@ -25,7 +25,7 @@ export function LoginForm() {
   );
 }
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm(_props: { token?: string }) {
   return (
     <div className="space-y-4">
       <p className="rounded-2xl border border-line bg-cream-100 p-4 text-sm text-muted">Password reset is not available in the frontend-only demo because no real accounts or passwords are used.</p>
