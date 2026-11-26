@@ -145,6 +145,60 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   if (clean.startsWith('/admin/procurement/requests/') && clean.endsWith('/status') && method === 'POST') {
     const rows = getList(store, 'procurement.requests', []); const row = rows.find((x) => clean.includes(x.id)); if (row) row.status = payload.to; store['procurement.requests'] = rows; writeStore(store); return wrap({ success: true }) as R;
   }
+  const recordStudents = getList(store, 'records.students', [
+    { id: 'student-demo-01', fullName: 'Demo Student 01', email: 'student01@example.test', _count: { enrollments: 3, results: 9 } },
+    { id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', _count: { enrollments: 2, results: 6 } },
+    { id: 'student-demo-03', fullName: 'Demo Student 03', email: 'student03@example.test', _count: { enrollments: 4, results: 12 } },
+  ]);
+  if (clean === '/admin/records/overview') return wrap({
+    totals: { students: recordStudents.length, registrations: 9, thisMonth: 3, onTrackPercent: 88 },
+    registrations: { active: 7, pending: 2, cancelled: 0 },
+    events: [{ id: 'event-demo-01', titleEn: 'Demo semester registration', startsAt: new Date(Date.now() + 86400000 * 5).toISOString(), category: 'ACADEMIC' }],
+    audit: [{ name: 'Demo Student 01', programme: 'Demo Computer Science', earned: 24, required: 120 }, { name: 'Demo Student 02', programme: 'Demo Business', earned: 18, required: 120 }],
+    prerequisiteIssues: [{ student: 'Demo Student 03', course: 'CS202', missing: 'CS101' }], prerequisiteIssueCount: 1,
+    activity: [{ at: now(), text: 'Demo student record reviewed' }, { at: now(), text: 'Demo registration updated' }],
+  }) as R;
+  if (clean === '/admin/records/students' && method === 'GET') {
+    const q = (query.get('q') || '').toLowerCase();
+    const rows = q ? recordStudents.filter((x) => `${x.fullName} ${x.email}`.toLowerCase().includes(q)) : recordStudents;
+    return wrap(rows, listMeta(rows)) as R;
+  }
+  const financeStudents = getList(store, 'finance.students', [
+    { id: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', courses: [{ code: 'CS101', title: 'Introduction to Computing', status: 'ACTIVE' }, { code: 'BUS101', title: 'Business Foundations', status: 'PENDING_PAYMENT' }], paidFils: 250000, dueFils: 150000, lastPaidAt: now() },
+    { id: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', courses: [{ code: 'CS101', title: 'Introduction to Computing', status: 'ACTIVE' }], paidFils: 250000, dueFils: 0, lastPaidAt: now() },
+    { id: 'student-demo-03', name: 'Demo Student 03', email: 'student03@example.test', courses: [{ code: 'BUS101', title: 'Business Foundations', status: 'PENDING_PAYMENT' }], paidFils: 0, dueFils: 250000, lastPaidAt: null },
+  ]);
+  if (clean === '/admin/finance/students' && method === 'GET') {
+    const q = (query.get('q') || '').toLowerCase();
+    const rows = q ? financeStudents.filter((x) => `${x.name} ${x.email}`.toLowerCase().includes(q)) : financeStudents;
+    const page = Number(query.get('page') || 1), pageSize = Number(query.get('pageSize') || 20), start = (page - 1) * pageSize;
+    return wrap(rows.slice(start, start + pageSize), { page, totalPages: Math.max(1, Math.ceil(rows.length / pageSize)), total: rows.length }) as R;
+  }
+  if (clean.startsWith('/admin/finance/students/')) {
+    const studentId = clean.split('/')[4]; const student = financeStudents.find((x) => x.id === studentId) ?? financeStudents[0];
+    return wrap({ fullName: student.name, email: student.email, paidFils: student.paidFils, dueFils: student.dueFils,
+      enrollments: student.courses.map((course, index) => ({ id: `${student.id}-enrol-${index}`, status: course.status, activatedAt: course.status === 'ACTIVE' ? now() : null, createdAt: now(), course: { code: course.code, titleEn: course.title, priceFils: 250000, currency: 'AED' } })),
+      payments: student.paidFils ? [{ id: `${student.id}-payment`, purpose: 'course', description: 'Demo course payment', amountFils: student.paidFils, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-RECEIPT', paidAt: now(), createdAt: now() }] : [],
+    }) as R;
+  }
+  if (clean === '/admin/live/sessions' && method === 'GET') {
+    const rows = getList(store, 'admin.live.sessions', [
+      { id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), startedAt: null, durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, lesson: null, host: { fullName: 'Demo Faculty' } },
+      { id: 'live-02', titleEn: 'Business Foundations — Seminar', titleAr: 'أساسيات الأعمال — ندوة', scheduledAt: new Date(Date.now() + 86400000).toISOString(), startedAt: null, durationMin: 60, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'BUS101', slug: 'business-foundations', titleEn: 'Business Foundations', titleAr: 'أساسيات الأعمال' }, lesson: null, host: { fullName: 'Demo Faculty' } },
+    ]);
+    return wrap(rows) as R;
+  }
+  if (clean === '/admin/facilities' && method === 'PUT') {
+    const rows = getList(store, 'procurement.facilities', [{ id: 'facility-01', name: 'Main Library', status: 'OPERATIONAL', note: null, updatedAt: now() }, { id: 'facility-02', name: 'Computer Lab 1', status: 'MAINTENANCE', note: 'Scheduled equipment maintenance', updatedAt: now() }]);
+    const existing = rows.find((x) => x.name === payload.name);
+    if (existing) Object.assign(existing, payload, { updatedAt: now() }); else rows.push({ id: id(), ...payload, updatedAt: now() });
+    store['procurement.facilities'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
+  if (clean.startsWith('/admin/facilities/') && method === 'DELETE') {
+    const facilityId = clean.split('/').pop();
+    store['procurement.facilities'] = getList(store, 'procurement.facilities', []).filter((x) => x.id !== facilityId);
+    writeStore(store); return wrap({ success: true }) as R;
+  }
   if (clean === '/admin/payments') {
     const rows = [{ id: 'pay-01', purpose: 'course', description: 'Introduction to Computing course fee', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', provider: 'local-demo', providerRef: 'LOCAL-001', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now(), user: { fullName: 'Demo Student 01', email: 'student01@example.test' } }];
     return wrap(rows, { page: Number(query.get('page') || 1), totalPages: 1, totals: [{ purpose: 'course', count: 1, amountFils: 250000 }, { purpose: 'application-fee', count: 0, amountFils: 0 }], provider: 'local-demo' }) as R;
