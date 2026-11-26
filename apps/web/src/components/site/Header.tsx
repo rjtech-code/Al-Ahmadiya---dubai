@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, ChevronDown, Menu, Search, X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useSession } from '@/lib/session';
 import { saveDemoSession, USE_BACKEND } from '@/lib/demo-session';
@@ -204,33 +205,37 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {open && (
-          <motion.div id="mobile-nav" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-[70] overflow-y-auto bg-cream-50 xl:hidden">
-            <nav aria-label={t('primary')} className="container-site space-y-5 py-5">
-              {groups.map((g) => (
-                <div key={g.key}>
-                  {g.href ? (
-                    <Link href={g.href} onClick={close} className="block rounded-2xl bg-white px-4 py-3 font-semibold text-brand-900 shadow-sm">{g.label}</Link>
-                  ) : (
-                    <>
-                      <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-gold-700">{g.label}</p>
-                      <ul className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                        {g.items!.map((i) => <li key={i.href} className="border-b border-line last:border-0"><Link href={i.href} onClick={close} aria-current={pathname === i.href ? 'page' : undefined} className={cn('flex items-center justify-between px-4 py-3', pathname === i.href ? 'font-semibold text-gold-700' : 'text-brand-900')}>{i.label}<ArrowRight className="flip-rtl size-4 text-gold-600" aria-hidden /></Link></li>)}
-                      </ul>
-                    </>
-                  )}
+      {/* Render the mobile drawer at the document root so sticky-header blur/stacking
+          contexts cannot place it underneath page content after scrolling. */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div id="mobile-nav" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-[9999] overflow-y-auto bg-cream-50 xl:hidden">
+              <nav aria-label={t('primary')} className="container-site space-y-5 py-5">
+                {groups.map((g) => (
+                  <div key={g.key}>
+                    {g.href ? (
+                      <Link href={g.href} onClick={close} className="block rounded-2xl bg-white px-4 py-3 font-semibold text-brand-900 shadow-sm">{g.label}</Link>
+                    ) : (
+                      <>
+                        <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-gold-700">{g.label}</p>
+                        <ul className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                          {g.items!.map((i) => <li key={i.href} className="border-b border-line last:border-0"><Link href={i.href} onClick={close} aria-current={pathname === i.href ? 'page' : undefined} className={cn('flex items-center justify-between px-4 py-3', pathname === i.href ? 'font-semibold text-gold-700' : 'text-brand-900')}>{i.label}<ArrowRight className="flip-rtl size-4 text-gold-600" aria-hidden /></Link></li>)}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                ))}
+                <div className="flex items-center gap-3">
+                  <Link href={USE_BACKEND ? (authed ? '/portal' : '/login?audience=student') : '/portal'} onClick={() => { close(); startStudentDemo(); }} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
+                  <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
                 </div>
-              ))}
-              <div className="flex items-center gap-3">
-                <Link href={USE_BACKEND ? (authed ? '/portal' : '/login?audience=student') : '/portal'} onClick={() => { close(); startStudentDemo(); }} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
-                <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
-              </div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
