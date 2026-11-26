@@ -86,7 +86,7 @@ export default function DepartmentOverview() {
           <DashPanel title="Quick actions">
             <QuickActions items={[
               ...(can('lms.manage') ? [{ href: '/admin/courses', label: 'Assign teachers', icon: UserCog }] : []),
-              { href: '/admin/teach', label: 'Review results', icon: ClipboardCheck },
+              { href: '/admin/assessment-results', label: 'Graded assignment results', icon: ClipboardCheck },
               ...(can('academics.manage') ? [{ href: '/admin/academics', label: 'Programmes', icon: BookOpen }] : []),
             ]} />
           </DashPanel>
