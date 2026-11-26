@@ -118,6 +118,18 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     dueStudents: [{ id: 'student-demo-02', fullName: 'Demo Student 02', email: 'student02@example.test', course: 'Computer Science', fils: 1200000, since: '2026-11-01T00:00:00Z' }],
   }) as R;
   if (clean === '/admin/finance/students') return wrap([{ id: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', courses: [{ code: 'CS101', title: 'Computer Science', status: 'ACTIVE' }], paidFils: 250000, dueFils: 0, lastPaidAt: now() }, { id: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', courses: [{ code: 'BUS101', title: 'Business', status: 'PENDING_PAYMENT' }], paidFils: 0, dueFils: 1200000, lastPaidAt: null }], listMeta([])) as R;
+  if (clean.startsWith('/admin/finance/students/')) {
+    const studentId = clean.split('/').pop();
+    const isSecond = studentId === 'student-demo-02';
+    return wrap({
+      fullName: isSecond ? 'Demo Student 02' : 'Demo Student 01',
+      email: isSecond ? 'student02@example.test' : 'student01@example.test',
+      paidFils: isSecond ? 0 : 250000,
+      dueFils: isSecond ? 1200000 : 0,
+      enrollments: [{ id: 'enrol-demo-01', status: isSecond ? 'PENDING_PAYMENT' : 'ACTIVE', activatedAt: isSecond ? null : now(), createdAt: now(), course: { code: isSecond ? 'BUS101' : 'CS101', titleEn: isSecond ? 'Business Administration' : 'Computer Science', priceFils: 1200000, currency: 'AED' } }],
+      payments: isSecond ? [] : [{ id: 'pay-01', purpose: 'course', description: 'Computer Science course fee', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now() }],
+    }) as R;
+  }
   if (clean === '/admin/overview/hr') return wrap({
     totals: { staff: 42, active: 39, inactive: 3, newStaff: 2, signedInToday: 18, onLeaveToday: 2, pendingLeave: 3 },
     byRole: [{ role: 'Faculty', count: 24 }, { role: 'Administration', count: 10 }, { role: 'Support', count: 8 }],
