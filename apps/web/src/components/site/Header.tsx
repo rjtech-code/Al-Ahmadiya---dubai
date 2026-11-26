@@ -11,6 +11,65 @@ import { NotificationBell } from './NotificationBell';
 import { Logo } from './Logo';
 
 type Item = { href: string; label: string };
+const staffRoles = [
+  {
+    "key": "SUPER_ADMIN",
+    "label": "Super Admin"
+  },
+  {
+    "key": "UNIVERSITY_ADMIN",
+    "label": "University Administrator"
+  },
+  {
+    "key": "ADMISSIONS_OFFICER",
+    "label": "Admissions Officer"
+  },
+  {
+    "key": "ADMISSIONS_REVIEWER",
+    "label": "Admissions Reviewer"
+  },
+  {
+    "key": "REGISTRAR",
+    "label": "Registrar"
+  },
+  {
+    "key": "LIBRARIAN",
+    "label": "Librarian"
+  },
+  {
+    "key": "PROCUREMENT_OFFICER",
+    "label": "Procurement & Operations"
+  },
+  {
+    "key": "ACADEMIC_ADMIN",
+    "label": "Academic Administrator"
+  },
+  {
+    "key": "FINANCE_MANAGER",
+    "label": "Finance Manager"
+  },
+  {
+    "key": "FINANCE_OFFICER",
+    "label": "Finance Officer"
+  },
+  {
+    "key": "HR_MANAGER",
+    "label": "HR Manager"
+  },
+  {
+    "key": "HEAD_OF_DEPARTMENT",
+    "label": "Head of Department"
+  },
+  {
+    "key": "CONTENT_EDITOR",
+    "label": "Content Editor"
+  },
+  {
+    "key": "FACULTY",
+    "label": "Teacher"
+  }
+];
+
 type Group = { key: string; label: string; href?: string; items?: Item[] };
 
 export function Header() {
@@ -102,6 +161,19 @@ export function Header() {
           </ul>
         </nav>
 
+        <div className="hidden xl:block">
+          <details className="group relative">
+            <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-gold-300 bg-white/70 px-4 text-sm font-semibold text-brand-900 shadow-sm hover:bg-white">
+              Staff Login <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="absolute end-0 top-12 z-50 max-h-[70vh] w-72 overflow-y-auto rounded-2xl border border-line bg-cream-50 p-2 shadow-xl">
+              {staffRoles.map((role) => (
+                <a key={role.key} href={`/admin/login?role=${role.key}`} className="block rounded-xl px-3 py-2.5 text-sm text-brand-900 hover:bg-cream-200">{role.label}</a>
+              ))}
+            </div>
+          </details>
+        </div>
+
         <div className="flex items-center gap-2 sm:gap-3">
           <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('search')} className="grid size-11 place-items-center rounded-full bg-white/70 text-brand-900 shadow-sm hover:bg-white"><Search className="size-5" /></button>
           <div className="hidden items-center gap-1.5 text-sm sm:flex" role="group" aria-label={tc('languageLabel')}>
@@ -110,8 +182,8 @@ export function Header() {
             <button type="button" lang="en" onClick={() => switchTo('en')} aria-pressed={locale === 'en'} className={cn('px-1', locale === 'en' ? 'font-bold text-brand-900' : 'text-muted hover:text-brand-900')}>EN</button>
           </div>
           {authed && <NotificationBell />}
-          <Link href={authed ? '/portal' : '/login'} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
-            {authed ? t('account') : t('portal')}<ArrowRight className="flip-rtl size-4" aria-hidden />
+          <Link href={authed ? '/portal' : '/login?audience=student'} className="hidden h-11 items-center gap-2 rounded-full bg-brand-900 px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-px hover:bg-brand-800 md:inline-flex">
+            {authed ? t('account') : 'Student Login'}<ArrowRight className="flip-rtl size-4" aria-hidden />
           </Link>
           <button type="button" className="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-white/70 xl:hidden" aria-expanded={open} aria-controls="mobile-nav" aria-label={t('openMenu')} onClick={() => setOpen((o) => !o)}>
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -138,8 +210,16 @@ export function Header() {
                   )}
                 </div>
               ))}
+              <section className="rounded-2xl border border-line bg-white p-4">
+                <h2 className="mb-3 text-sm font-semibold text-brand-900">Staff Login</h2>
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                  {staffRoles.map((role) => (
+                    <a key={role.key} href={`/admin/login?role=${role.key}`} onClick={close} className="rounded-lg px-2 py-2 text-xs text-brand-900 hover:bg-cream-200">{role.label}</a>
+                  ))}
+                </div>
+              </section>
               <div className="flex items-center gap-3">
-                <Link href={authed ? '/portal' : '/login'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : t('portal')}</Link>
+                <Link href={authed ? '/portal' : '/login?audience=student'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
                 <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
               </div>
             </nav>
