@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Search } from 'lucide-react';
 import { PageHeader, Panel, StatusPill, Table } from '@/components/admin/ui';
+import { useAdmin } from '@/components/admin/AdminContext';
 
 type Result = { id: string; student: string; email: string; course: string; assignment: string; week: string; submittedAt: string; marks: number | null; maxMarks: number; feedback: string; status: 'GRADED' | 'PENDING' };
 const seed: Result[] = [
@@ -14,17 +15,24 @@ const seed: Result[] = [
 ];
 
 export default function AssessmentResultsPage() {
+  const { can, user } = useAdmin();
+  const canGrade = can('teach.own') && !user.roles.includes('HEAD_OF_DEPARTMENT');
+  const [records, setRecords] = useState<Result[]>(seed);
+  const [gradeInputs, setGradeInputs] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try { const local = JSON.parse(localStorage.getItem('lms.graded.submissions') || '[]') as Result[]; if (Array.isArray(local)) setRecords([...local, ...seed]); } catch { setRecords(seed); }
+  }, []);
   const [query, setQuery] = useState('');
   const [course, setCourse] = useState('all');
   const [status, setStatus] = useState('all');
-  const rows = useMemo(() => seed.filter((row) => (course === 'all' || row.course.startsWith(course)) && (status === 'all' || row.status === status) && (!query || `${row.student} ${row.email} ${row.assignment}`.toLowerCase().includes(query.toLowerCase()))), [query, course, status]);
-  const graded = seed.filter((row) => row.status === 'GRADED');
+  const rows = useMemo(() => records.filter((row) => (course === 'all' || row.course.startsWith(course)) && (status === 'all' || row.status === status) && (!query || `${row.student} ${row.email} ${row.assignment}`.toLowerCase().includes(query.toLowerCase()))), [records, query, course, status]);
+  const graded = records.filter((row) => row.status === 'GRADED');
   const average = graded.length ? Math.round(graded.reduce((sum, row) => sum + (row.marks ?? 0) / row.maxMarks * 100, 0) / graded.length) : 0;
   return (
     <>
       <PageHeader title="Graded assignment results" crumbs={[{ label: 'Assessment results' }]} description="Course-wise and student-wise graded assignment performance. Demo records are stored locally for this frontend preview." />
       <div className="mb-5 grid gap-3 sm:grid-cols-3">
-        <Panel title="Submissions"><p className="font-display text-3xl font-semibold text-brand-900">{seed.length}</p></Panel>
+        <Panel title="Submissions"><p className="font-display text-3xl font-semibold text-brand-900">{records.length}</p></Panel>
         <Panel title="Evaluated"><p className="font-display text-3xl font-semibold text-success">{graded.length}</p></Panel>
         <Panel title="Average score"><p className="font-display text-3xl font-semibold text-brand-900">{average}%</p></Panel>
       </div>
