@@ -18,10 +18,20 @@ export default function AssessmentResultsPage() {
   const { can, user } = useAdmin();
   const canGrade = can('teach.own') && !user.roles.includes('HEAD_OF_DEPARTMENT');
   const [records, setRecords] = useState<Result[]>(seed);
-  const [gradeInputs, setGradeInputs] = useState<Record<string, string>>({});
   useEffect(() => {
     try { const local = JSON.parse(localStorage.getItem('lms.graded.submissions') || '[]') as Result[]; if (Array.isArray(local)) setRecords([...local, ...seed]); } catch { setRecords(seed); }
   }, []);
+  const grade = (row: Result) => {
+    const raw = window.prompt('Enter marks out of the maximum score', String(row.marks ?? ''));
+    if (raw === null) return;
+    const marks = Number(raw);
+    if (!Number.isFinite(marks) || marks < 0 || marks > row.maxMarks) { window.alert('Enter a valid mark within the maximum score.'); return; }
+    const updated: Result = { ...row, marks, status: 'GRADED' };
+    const stored = JSON.parse(localStorage.getItem('lms.graded.submissions') || '[]') as Result[];
+    const next = stored.some((item) => item.id === row.id) ? stored.map((item) => item.id === row.id ? updated : item) : [...stored, updated];
+    localStorage.setItem('lms.graded.submissions', JSON.stringify(next));
+    setRecords((current) => current.map((item) => item.id === row.id ? updated : item));
+  };
   const [query, setQuery] = useState('');
   const [course, setCourse] = useState('all');
   const [status, setStatus] = useState('all');
@@ -43,7 +53,7 @@ export default function AssessmentResultsPage() {
           <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-xl border border-line bg-white px-3 text-sm"><option value="all">All statuses</option><option value="GRADED">Graded</option><option value="PENDING">Pending evaluation</option></select>
         </div>
         <Table head={['Student', 'Course', 'Assignment', 'Week', 'Submitted', 'Marks', 'Status']} empty={!rows.length}>
-          {rows.map((row) => <tr key={row.id} className="hover:bg-cream-100"><td className="px-4 py-3"><span className="font-semibold text-brand-900">{row.student}</span><span className="block text-xs text-muted">{row.email}</span></td><td className="px-4 py-3 text-xs">{row.course}</td><td className="px-4 py-3 text-sm font-medium">{row.assignment}</td><td className="px-4 py-3 text-xs">{row.week}</td><td className="px-4 py-3 text-xs">{row.submittedAt}</td><td className="px-4 py-3 font-semibold">{row.marks === null ? '—' : `${row.marks}/${row.maxMarks}`}</td><td className="px-4 py-3"><StatusPill status={row.status} /></td></tr>)}
+          {rows.map((row) => <tr key={row.id} className="hover:bg-cream-100"><td className="px-4 py-3"><span className="font-semibold text-brand-900">{row.student}</span><span className="block text-xs text-muted">{row.email}</span></td><td className="px-4 py-3 text-xs">{row.course}</td><td className="px-4 py-3 text-sm font-medium">{row.assignment}</td><td className="px-4 py-3 text-xs">{row.week}</td><td className="px-4 py-3 text-xs">{row.submittedAt}</td><td className="px-4 py-3 font-semibold">{row.marks === null ? (canGrade ? <button onClick={() => grade(row)} className="rounded-full bg-brand-900 px-3 py-1 text-xs font-semibold text-white">Grade</button> : 'Pending') : `${row.marks}/${row.maxMarks}`}</td><td className="px-4 py-3"><StatusPill status={row.status} /></td></tr>)}
         </Table>
       </Panel>
     </>
