@@ -87,6 +87,33 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     store['library.loans'] = loans; writeStore(store); return wrap({ success: true }) as R;
   }
 
+  if (clean === '/admin/academics/programs') return wrap([
+    { id: 'program-01', slug: 'computer-science', nameEn: 'Bachelor of Computer Science', degreeLevel: 'BACHELOR', publishStatus: 'PUBLISHED', confirmation: 'CONFIRMED', isDemo: true, department: { nameEn: 'Computer Science', college: { nameEn: 'College of Computing' } }, _count: { curriculum: 24, applications: 32 }, eligibilityRules: [{ qualification: 'HIGH_SCHOOL', isActive: true, confirmation: 'CONFIRMED' }] },
+    { id: 'program-02', slug: 'business-administration', nameEn: 'Bachelor of Business Administration', degreeLevel: 'BACHELOR', publishStatus: 'PUBLISHED', confirmation: 'CONFIRMED', isDemo: true, department: { nameEn: 'Business Administration', college: { nameEn: 'College of Business' } }, _count: { curriculum: 22, applications: 41 }, eligibilityRules: [{ qualification: 'HIGH_SCHOOL', isActive: true, confirmation: 'CONFIRMED' }] },
+  ]) as R;
+  if (clean === '/admin/lms/courses') return wrap([
+    { id: 'course-01', slug: 'intro-to-computing', code: 'CS101', titleEn: 'Introduction to Computing', publishStatus: 'PUBLISHED', confirmation: 'CONFIRMED', isDemo: true, isFeatured: true, onlineEnabled: true, deliveryMode: 'RECORDED', priceFils: 250000, currency: 'AED', department: { nameEn: 'Computer Science' }, _count: { lessons: 8, notes: 3, quizzes: 2, liveSessions: 0 }, activeStudents: 42 },
+    { id: 'course-02', slug: 'business-foundations', code: 'BUS101', titleEn: 'Business Foundations', publishStatus: 'PUBLISHED', confirmation: 'CONFIRMED', isDemo: true, isFeatured: false, onlineEnabled: true, deliveryMode: 'LIVE', priceFils: null, currency: 'AED', department: { nameEn: 'Business Administration' }, _count: { lessons: 5, notes: 2, quizzes: 1, liveSessions: 2 }, activeStudents: 28 },
+  ]) as R;
+  if (clean === '/admin/colleges') return wrap(getList(store, 'catalog.colleges', [{ id: 'college-01', slug: 'computing', nameEn: 'College of Computing', nameAr: 'كلية الحوسبة', summaryEn: 'Computing and digital technologies', summaryAr: null, overviewEn: null, overviewAr: null, publishStatus: 'PUBLISHED', departmentCount: 2 }, { id: 'college-02', slug: 'business', nameEn: 'College of Business', nameAr: 'كلية الأعمال', summaryEn: 'Business and management studies', summaryAr: null, overviewEn: null, overviewAr: null, publishStatus: 'PUBLISHED', departmentCount: 2 }])) as R;
+  if (clean === '/admin/departments/colleges') return wrap([{ id: 'college-01', nameEn: 'College of Computing', nameAr: 'كلية الحوسبة' }, { id: 'college-02', nameEn: 'College of Business', nameAr: 'كلية الأعمال' }]) as R;
+  if (clean === '/admin/departments') return wrap(getList(store, 'catalog.departments', [{ id: 'dept-01', slug: 'computer-science', nameEn: 'Computer Science', nameAr: 'علوم الحاسوب', collegeName: 'College of Computing', staffCount: 8, courseCount: 18, programCount: 2 }, { id: 'dept-02', slug: 'business-admin', nameEn: 'Business Administration', nameAr: 'إدارة الأعمال', collegeName: 'College of Business', staffCount: 6, courseCount: 14, programCount: 2 }])) as R;
+  if (clean === '/admin/overview/departments') return wrap([{ id: 'dept-01', nameEn: 'Computer Science' }, { id: 'dept-02', nameEn: 'Business Administration' }], { own: role === 'HEAD_OF_DEPARTMENT' ? 'dept-01' : null }) as R;
+  if (clean.startsWith('/admin/overview/departments/')) return wrap({
+    department: { id: 'dept-01', nameEn: 'Computer Science', college: { nameEn: 'College of Computing' } },
+    totals: { faculty: 8, students: 126, courses: 18, avgMarks: 78 },
+    workload: [{ id: 'staff-01', name: 'Demo Faculty 01', courses: ['CS101', 'CS202'], students: 48, weeklyHours: 12 }, { id: 'staff-02', name: 'Demo Faculty 02', courses: ['CS105'], students: 28, weeklyHours: 8 }],
+    perCourse: [{ code: 'CS101', students: 48, avgMarks: 78 }, { code: 'CS202', students: 32, avgMarks: 82 }],
+    atRisk: [], atRiskCount: 0, conflicts: [], unassigned: [],
+  }) as R;
+  if (clean === '/me/leave') {
+    let rows = getList(store, 'hr.my-leave', [{ id: 'my-leave-01', type: 'ANNUAL', startDate: '2026-12-03T00:00:00Z', endDate: '2026-12-04T00:00:00Z', reason: 'Personal leave', status: 'PENDING', note: null }]);
+    if (method === 'POST') { const row = { id: id(), ...payload, status: 'PENDING', note: null }; rows = [...rows, row]; store['hr.my-leave'] = rows; writeStore(store); return wrap(row) as R; }
+    return wrap(rows) as R;
+  }
+  if (clean.startsWith('/me/leave/') && method === 'POST') {
+    const rows = getList(store, 'hr.my-leave', []); const row = rows.find((x) => clean.includes(x.id)); if (row) row.status = 'CANCELLED'; store['hr.my-leave'] = rows; writeStore(store); return wrap({ success: true }) as R;
+  }
   if (clean === '/admin/overview/admissions') return wrap({
     totals: { submitted: 18, inReview: 12, approved: 24, rejected: 4, drafts: 6, docsToVerify: 7 },
     pipeline: [{ stage: 'Submitted', count: 18 }, { stage: 'Under review', count: 12 }, { stage: 'Approved', count: 24 }, { stage: 'Rejected', count: 4 }],
