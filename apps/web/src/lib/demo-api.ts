@@ -179,6 +179,72 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     toGrade: [{ id: 'submission-01', submittedAt: now(), user: { fullName: 'Demo Student 01' }, assignment: { id: 'assignment-01', titleEn: 'Programming exercise', dueAt: new Date(Date.now() + 3 * 86400000).toISOString(), course: { id: 'course-01', code: 'CS101' } } }],
     notifications: [],
   }) as R;
+  const cmsSeeds: Record<string, any[]> = {
+    colleges: [{ id: 'college-01', slug: 'computing', nameEn: 'College of Computing', nameAr: 'كلية الحوسبة', summaryEn: 'Demo content for computing programmes', summaryAr: 'محتوى تجريبي لبرامج الحوسبة', overviewEn: '', overviewAr: '', visionEn: '', visionAr: '', missionEn: '', missionAr: '', imagePath: '/images/campus/academic.jpg', publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }, { id: 'college-02', slug: 'business', nameEn: 'College of Business', nameAr: 'كلية الأعمال', summaryEn: 'Demo business school content', summaryAr: 'محتوى تجريبي لكلية الأعمال', publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    departments: [{ id: 'dept-01', slug: 'computer-science', collegeId: 'college-01', nameEn: 'Computer Science', nameAr: 'علوم الحاسوب', overviewEn: '', overviewAr: '', objectivesEn: [], objectivesAr: [], researchAreasEn: [], researchAreasAr: [], publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }, { id: 'dept-02', slug: 'business-admin', collegeId: 'college-02', nameEn: 'Business Administration', nameAr: 'إدارة الأعمال', publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    programs: [{ id: 'program-01', slug: 'computer-science', departmentId: 'dept-01', degreeLevel: 'BACHELOR', nameEn: 'Bachelor of Computer Science', nameAr: 'بكالوريوس علوم الحاسوب', summaryEn: 'Sample undergraduate programme', summaryAr: 'برنامج جامعي تجريبي', durationYears: 4, totalCredits: 120, outcomesEn: [], outcomesAr: [], requirementsEn: [], requirementsAr: [], careersEn: [], careersAr: [], isFeatured: true, publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }, { id: 'program-02', slug: 'business-administration', departmentId: 'dept-02', degreeLevel: 'BACHELOR', nameEn: 'Bachelor of Business Administration', nameAr: 'بكالوريوس إدارة الأعمال', summaryEn: 'Sample business programme', summaryAr: 'برنامج أعمال تجريبي', durationYears: 4, totalCredits: 120, outcomesEn: [], outcomesAr: [], requirementsEn: [], requirementsAr: [], careersEn: [], careersAr: [], isFeatured: false, publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    courses: [{ id: 'course-01', slug: 'intro-to-computing', code: 'CS101', departmentId: 'dept-01', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة', descriptionEn: 'A sample introduction to computing.', descriptionAr: 'مقدمة تجريبية إلى الحوسبة.', creditHours: 3, courseType: 'CORE', outcomesEn: [], outcomesAr: [], syllabus: [], assessment: [], imagePath: null, isFeatured: true, publishStatus: 'PUBLISHED', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    faculty: [{ id: 'faculty-01', slug: 'demo-faculty', fullNameEn: 'Demo Faculty Member', fullNameAr: 'عضو هيئة تدريس تجريبي', titleEn: 'Lecturer', titleAr: 'محاضر', email: 'faculty.demo@example.test', phone: null, photoPath: null, bioEn: 'Synthetic faculty profile for preview only.', bioAr: 'ملف تعريفي تجريبي للمعاينة فقط.', specializationEn: 'Computing', specializationAr: 'الحوسبة', education: [], researchInterestsEn: [], researchInterestsAr: [], awards: [], consentToPublish: false, publishStatus: 'DRAFT', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    news: [{ id: 'news-01', slug: 'demo-campus-update', category: 'announcement', titleEn: 'Campus update — demo content', titleAr: 'تحديث الحرم الجامعي — محتوى تجريبي', excerptEn: 'Sample news item for local preview.', excerptAr: 'خبر تجريبي للمعاينة المحلية.', bodyEn: 'This is synthetic preview content and is not an official university announcement.', bodyAr: 'هذا محتوى معاينة تجريبي وليس إعلاناً رسمياً للجامعة.', publishedAt: now(), isFeatured: false, isAnnouncement: true, publishStatus: 'DRAFT' }],
+    events: [{ id: 'event-01', slug: 'demo-open-day', category: 'academic', titleEn: 'Open day — demo event', titleAr: 'اليوم المفتوح — فعالية تجريبية', summaryEn: 'Sample event for local preview.', summaryAr: 'فعالية تجريبية للمعاينة المحلية.', overviewEn: '', overviewAr: '', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), endsAt: new Date(Date.now() + 7 * 86400000 + 7200000).toISOString(), venueEn: 'Main campus', venueAr: 'الحرم الرئيسي', isFeatured: false, publishStatus: 'DRAFT' }],
+    publications: [{ id: 'publication-01', slug: 'demo-research', type: 'report', titleEn: 'Sample research record', titleAr: 'سجل بحثي تجريبي', abstractEn: 'Synthetic sample record for preview.', abstractAr: 'سجل تجريبي للمعاينة.', findingsEn: [], findingsAr: [], keywords: ['demo'], authors: [{ name: 'Demo Author', affiliation: 'Demo Department', position: 1 }], isFeatured: false, publishStatus: 'DRAFT', confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }],
+    faqs: [{ id: 'faq-01', scope: 'admissions', questionEn: 'Is this a live admissions system?', questionAr: 'هل هذا نظام قبول مباشر؟', answerEn: 'No. This is a local demonstration only.', answerAr: 'لا. هذه نسخة تجريبية محلية فقط.', sortOrder: 1, publishStatus: 'PUBLISHED' }],
+    'campus-tour': [{ id: 'tour-01', slug: 'demo-library', kind: 'library', titleEn: 'Library — demo stop', titleAr: 'المكتبة — محطة تجريبية', descriptionEn: 'Sample campus tour stop.', descriptionAr: 'محطة جولة جامعية تجريبية.', imagePath: '/images/campus/library.jpg', panoramaUrl: null, isHeritage: false, sortOrder: 1, publishStatus: 'DRAFT' }],
+    heritage: [{ id: 'heritage-01', yearLabel: 'Demo', sortOrder: 1, titleEn: 'Historical entry awaiting verification', titleAr: 'مدخل تاريخي بانتظار التحقق', bodyEn: 'Placeholder only — replace with verified institutional history.', bodyAr: 'عنصر نائب فقط — استبدله بتاريخ مؤسسي موثق.', sourceUrls: [], caveatEn: 'Not an official historical claim.', caveatAr: 'ليس ادعاءً تاريخياً رسمياً.', confirmation: 'CLIENT_CONFIRMATION_REQUIRED', publishStatus: 'DRAFT' }],
+    media: [],
+  };
+  const cmsMatch = clean.match(/^\/admin\/cms\/([^/]+)(?:\/([^/]+))?(?:\/(status))?$/);
+  if (cmsMatch) {
+    const [, resource, recordId, statusAction] = cmsMatch;
+    let rows = getList(store, `cms:${resource}`, cmsSeeds[resource] ?? []);
+    if (!store[`cms:${resource}`]) { store[`cms:${resource}`] = rows; }
+    if (recordId && statusAction && method === 'POST') {
+      const row = rows.find((x) => x.id === recordId);
+      if (row) row.publishStatus = payload.status;
+      store[`cms:${resource}`] = rows; writeStore(store); return wrap(row ?? { success: false }) as R;
+    }
+    if (recordId && method === 'GET') return wrap(rows.find((x) => x.id === recordId) ?? rows[0] ?? {}) as R;
+    if (recordId && method === 'PUT') {
+      const index = rows.findIndex((x) => x.id === recordId);
+      if (index >= 0) rows[index] = { ...rows[index], ...payload };
+      store[`cms:${resource}`] = rows; writeStore(store); return wrap(rows[index] ?? payload) as R;
+    }
+    if (recordId && method === 'DELETE') {
+      rows = rows.filter((x) => x.id !== recordId); store[`cms:${resource}`] = rows; writeStore(store); return wrap({ success: true }) as R;
+    }
+    if (!recordId && method === 'POST') {
+      const row = { id: id(), ...payload, createdAt: now(), updatedAt: now() };
+      rows.push(row); store[`cms:${resource}`] = rows; writeStore(store); return wrap(row) as R;
+    }
+    return wrap(rows, listMeta(rows)) as R;
+  }
+  if (clean === '/admin/academics/eligibility-check' && method === 'POST') {
+    const programs = getList(store, 'cms:programs', cmsSeeds.programs);
+    return wrap(programs.map((program) => ({ program: { id: program.id, nameEn: program.nameEn, degreeLevel: program.degreeLevel, publishStatus: program.publishStatus, college: { nameEn: program.departmentId === 'dept-02' ? 'College of Business' : 'College of Computing' } }, status: Number(payload.overallPercent || 0) >= 60 ? 'ELIGIBLE' : 'NOT_ELIGIBLE', unmet: Number(payload.overallPercent || 0) >= 60 ? [] : [{ requirement: 'Overall percentage', required: 60, actual: Number(payload.overallPercent || 0) }], ruleConfirmation: 'CLIENT_CONFIRMATION_REQUIRED' }))) as R;
+  }
+  if (clean.startsWith('/admin/academics/programs/')) {
+    const parts = clean.split('/');
+    const programId = parts[4];
+    const programs = getList(store, 'cms:programs', cmsSeeds.programs);
+    const program = programs.find((p) => p.id === programId) ?? programs[0];
+    if (parts.length === 5 && method === 'GET') return wrap({ ...program, curriculum: getList(store, `academics:${programId}:curriculum`, [{ year: 1, term: 1, course: { id: 'course-01', code: 'CS101', titleEn: 'Introduction to Computing', creditHours: 3 } }]), eligibilityRules: getList(store, `academics:${programId}:eligibility`, [{ qualification: 'HIGH_SCHOOL', minOverallPercent: '60', subjectMinimums: [], englishRequirementEn: 'Basic proficiency', notesEn: 'Demo rule — confirm with the institution', isActive: true, confirmation: 'CLIENT_CONFIRMATION_REQUIRED' }]) }) as R;
+    if (parts[5] === 'curriculum' && method === 'PUT') { store[`academics:${programId}:curriculum`] = payload.items ?? []; writeStore(store); return wrap({ success: true }) as R; }
+    if (parts[5] === 'eligibility' && method === 'PUT') { store[`academics:${programId}:eligibility`] = payload.rules ?? []; writeStore(store); return wrap({ success: true }) as R; }
+  }
+  if (clean === '/admin/cms/courses') return wrap(cmsSeeds.courses.map(({ id: courseId, code, titleEn }) => ({ id: courseId, code, titleEn }))) as R;
+  if (clean.startsWith('/admin/applications/')) {
+    const appId = clean.split('/')[3];
+    const apps = getList(store, 'admissions.applications', [
+      { id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: now(), decisionNote: null, applicant: { fullName: 'Demo Applicant 01', email: 'applicant01@example.test' }, program: { nameEn: 'Bachelor of Business Administration' }, personal: { fullName: 'Demo Applicant 01', dateOfBirth: '2005-05-12', nationality: 'Demo' }, contact: { email: 'applicant01@example.test', city: 'Demo City', country: 'UAE' }, academic: { qualification: 'High school', overallPercent: 82 }, documents: [{ id: 'doc-001', docType: 'IDENTITY', originalName: 'demo-identity.txt', mimeType: 'text/plain', sizeBytes: 64, status: 'UPLOADED' }], statusHistory: [{ id: 'history-01', fromStatus: 'SUBMITTED', toStatus: 'UNDER_REVIEW', note: null, createdAt: now() }] },
+      { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: now(), decisionNote: null, applicant: { fullName: 'Demo Applicant 02', email: 'applicant02@example.test' }, program: { nameEn: 'Bachelor of Computer Science' }, personal: { fullName: 'Demo Applicant 02' }, contact: { email: 'applicant02@example.test' }, academic: { qualification: 'High school', overallPercent: 74 }, documents: [], statusHistory: [] },
+    ]);
+    const app = apps.find((x) => x.id === appId) ?? apps[0];
+    if (clean.endsWith('/transition') && method === 'POST') {
+      if (app) { app.statusHistory = [...(app.statusHistory ?? []), { id: id(), fromStatus: app.status, toStatus: payload.to, note: payload.note ?? null, createdAt: now() }]; app.status = payload.to; app.decisionNote = payload.note ?? null; }
+      store['admissions.applications'] = apps; writeStore(store); return wrap({ success: true }) as R;
+    }
+    return wrap(app ?? {}) as R;
+  }
   if (clean === '/admin/overview/admissions') return wrap({
     totals: { submitted: 18, inReview: 12, approved: 24, rejected: 4, drafts: 6, docsToVerify: 7 },
     pipeline: [{ stage: 'Submitted', count: 18 }, { stage: 'Under review', count: 12 }, { stage: 'Approved', count: 24 }, { stage: 'Rejected', count: 4 }],
