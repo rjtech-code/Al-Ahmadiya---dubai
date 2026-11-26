@@ -69,6 +69,9 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
       if (cancelled) return;
       const data = response.data;
       setCourse(data);
+      const firstWeekId = data.topics[0]?.id ?? 'week-1';
+      setActiveWeek(firstWeekId);
+      setExpanded({ [firstWeekId]: true });
       const target = data.lessons.find((lesson) => lesson.id === initialLesson);
       if (target) { setCurrent(target); setSection('lecture'); setActiveWeek(target.topicId ?? data.topics[0]?.id ?? 'week-1'); }
     }).catch((e: unknown) => { if (!cancelled) setError(e instanceof ApiError ? e.message : 'Unable to load course'); });
