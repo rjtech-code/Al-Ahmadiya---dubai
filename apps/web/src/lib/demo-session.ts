@@ -49,7 +49,10 @@ export function readDemoSession(): DemoSession | null {
     const raw = localStorage.getItem(DEMO_SESSION_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as DemoSession;
-    return value && typeof value.role === 'string' && Array.isArray(value.roles) ? value : null;
+    if (!value || typeof value.role !== 'string' || !Array.isArray(value.roles)) return null;
+    const normalizedRole = value.role.toUpperCase();
+    value.permissions = normalizedRole === 'STUDENT' ? [] : (ROLE_PERMISSIONS[normalizedRole] ?? [...COMMON]);
+    return value;
   } catch { return null; }
 }
 
