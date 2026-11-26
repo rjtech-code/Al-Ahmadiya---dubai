@@ -398,6 +398,35 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
       payments: isSecond ? [] : [{ id: 'pay-01', purpose: 'course', description: 'Computer Science course fee', amountFils: 250000, currency: 'AED', status: 'SUCCEEDED', receiptNumber: 'DEMO-001', paidAt: now(), createdAt: now() }],
     }) as R;
   }
+  if (clean.startsWith('/admin/records/students/') && clean.endsWith('/transcript')) return wrap({
+    student: { studentId: 'DEMO-2026-001', fullName: 'Demo Student 01', email: 'student01@example.test' },
+    programme: { nameEn: 'Bachelor of Computer Science', degreeLevel: 'BACHELOR' },
+    terms: [{ term: '2026 Fall', gpa: 3.42, courses: [{ term: '2026 Fall', marks: 88, grade: 'A', gradePoints: 4, creditHours: 3, course: { code: 'CS101', titleEn: 'Introduction to Computing' } }, { term: '2026 Fall', marks: 81, grade: 'B+', gradePoints: 3.5, creditHours: 3, course: { code: 'CS105', titleEn: 'Digital Literacy' } }] }],
+    cgpa: 3.42, credits: 24, issuedAt: now(),
+  }) as R;
+  if (clean.startsWith('/teach/courses/') && clean.endsWith('/students')) return wrap([
+    { userId: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', lecturesDone: 5, lecturesTotal: 8, quizzesPassed: 1, quizzesTried: 1, quizzesTotal: 2, classesAttended: 7, classesHeld: 8, attendancePercent: 88, lastActive: now() },
+    { userId: 'student-demo-02', name: 'Demo Student 02', email: 'student02@example.test', lecturesDone: 3, lecturesTotal: 8, quizzesPassed: 0, quizzesTried: 1, quizzesTotal: 2, classesAttended: 6, classesHeld: 8, attendancePercent: 75, lastActive: now() },
+  ], { course: { code: 'CS101', titleEn: 'Introduction to Computing' } }) as R;
+  if (clean.startsWith('/teach/courses/') && clean.includes('/students/')) return wrap({
+    student: { fullName: 'Demo Student 01', email: 'student01@example.test', enrolledAt: now() },
+    lectures: [{ id: 'lesson-01', titleEn: 'Variables and data types', completedAt: now(), watchedSec: 1200 }],
+    quizzes: [{ id: 'quiz-01', titleEn: 'Programming basics quiz', attempts: 1, best: { score: 8, total: 10 }, passed: true }],
+    classes: [{ id: 'live-01', titleEn: 'Introduction to Computing', scheduledAt: now(), attended: true, minutes: 85 }],
+  }) as R;
+  if (clean.startsWith('/admin/live/sessions/')) {
+    const sessionId = clean.split('/')[4];
+    const sessions = getList(store, 'admin.live.sessions', [{ id: 'live-01', titleEn: 'Introduction to Computing — Weekly Class', titleAr: 'مقدمة في الحوسبة — الحصة الأسبوعية', scheduledAt: new Date(Date.now() + 3600000).toISOString(), startedAt: null, durationMin: 90, status: 'SCHEDULED', recordingStatus: 'NONE', recordingKey: null, course: { code: 'CS101', slug: 'intro-to-computing', titleEn: 'Introduction to Computing', titleAr: 'مقدمة في الحوسبة' }, lesson: null, host: { fullName: 'Demo Faculty' } }]);
+    const session = sessions.find((x) => x.id === sessionId) ?? sessions[0];
+    if (clean.endsWith('/attendance')) return wrap([{ userId: 'student-demo-01', name: 'Demo Student 01', email: 'student01@example.test', firstJoinedAt: now(), lastLeftAt: now(), joinCount: 1, minutes: 85, percent: 94, status: 'PRESENT', onlineNow: false }], { classMinutes: 90, presentPercent: 75, lateAfterMin: 10, enrolled: 2, present: 1, late: 0, partial: 1, absent: 0 }) as R;
+    if (clean.endsWith('/recording-url')) return wrap({ url: '' }) as R;
+    if (clean.endsWith('/recording') && method === 'POST') { session.recordingStatus = 'DRAFT'; store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ success: true }) as R; }
+    if (clean.endsWith('/start') && method === 'POST') { session.status = 'LIVE'; session.startedAt = now(); store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ success: true }) as R; }
+    if (clean.endsWith('/end') && method === 'POST') { session.status = 'ENDED'; store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ success: true }) as R; }
+    if (clean.endsWith('/cancel') && method === 'POST') { session.status = 'CANCELLED'; store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ success: true }) as R; }
+    if (clean.endsWith('/publish') && method === 'POST') { session.recordingStatus = 'PUBLISHED'; store['admin.live.sessions'] = sessions; writeStore(store); return wrap({ success: true }) as R; }
+    if (method === 'GET') return wrap(session) as R;
+  }
   if (clean === '/admin/overview/hr') return wrap({
     totals: { staff: 42, active: 39, inactive: 3, newStaff: 2, signedInToday: 18, onLeaveToday: 2, pendingLeave: 3 },
     byRole: [{ role: 'Faculty', count: 24 }, { role: 'Administration', count: 10 }, { role: 'Support', count: 8 }],
