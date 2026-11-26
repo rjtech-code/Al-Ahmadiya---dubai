@@ -86,6 +86,7 @@ export function Header() {
   const navRef = useRef<HTMLElement>(null);
   const { state } = useSession();
   const authed = state.status === 'authed';
+  const isHomePage = pathname === '/';
 
   const groups: Group[] = [
     { key: 'home', label: t('home'), href: '/' },
@@ -161,19 +162,6 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="hidden xl:block">
-          <details className="group relative">
-            <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-gold-300 bg-white/70 px-4 text-sm font-semibold text-brand-900 shadow-sm hover:bg-white">
-              Staff Login <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden />
-            </summary>
-            <div className="absolute end-0 top-12 z-50 max-h-[70vh] w-72 overflow-y-auto rounded-2xl border border-line bg-cream-50 p-2 shadow-xl">
-              {staffRoles.map((role) => (
-                <a key={role.key} href={`/admin/login?role=${role.key}`} className="block rounded-xl px-3 py-2.5 text-sm text-brand-900 hover:bg-cream-200">{role.label}</a>
-              ))}
-            </div>
-          </details>
-        </div>
-
         <div className="flex items-center gap-2 sm:gap-3">
           <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('search')} className="grid size-11 place-items-center rounded-full bg-white/70 text-brand-900 shadow-sm hover:bg-white"><Search className="size-5" /></button>
           <div className="hidden items-center gap-1.5 text-sm sm:flex" role="group" aria-label={tc('languageLabel')}>
@@ -188,6 +176,26 @@ export function Header() {
           <button type="button" className="grid size-11 place-items-center rounded-full text-brand-900 hover:bg-white/70 xl:hidden" aria-expanded={open} aria-controls="mobile-nav" aria-label={t('openMenu')} onClick={() => setOpen((o) => !o)}>
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
+        </div>
+      </div>
+
+      <div
+        aria-label="Quick login access"
+        className={cn(
+          'border-t border-gold-200/70 bg-cream-50/95 transition-all duration-300',
+          !isHomePage && scrolled ? 'pointer-events-none max-h-0 -translate-y-2 overflow-hidden border-transparent opacity-0' : 'max-h-24 translate-y-0 opacity-100'
+        )}
+      >
+        <div className="container-site flex items-center gap-2 overflow-x-auto py-2.5 [scrollbar-width:thin]">
+          <Link href={authed ? '/portal' : '/login?audience=student'} className="inline-flex h-9 shrink-0 items-center rounded-full bg-brand-900 px-4 text-xs font-semibold text-white shadow-sm hover:bg-brand-800">
+            Student Login
+          </Link>
+          <span className="mx-1 h-6 w-px shrink-0 bg-gold-300" aria-hidden />
+          {staffRoles.map((role) => (
+            <a key={role.key} href={`/admin/login?role=${role.key}`} className="inline-flex h-9 shrink-0 items-center rounded-full border border-gold-300 bg-white px-3.5 text-xs font-medium text-brand-900 transition-colors hover:border-brand-900 hover:bg-brand-900 hover:text-white">
+              {role.label}
+            </a>
+          ))}
         </div>
       </div>
 
@@ -210,14 +218,6 @@ export function Header() {
                   )}
                 </div>
               ))}
-              <section className="rounded-2xl border border-line bg-white p-4">
-                <h2 className="mb-3 text-sm font-semibold text-brand-900">Staff Login</h2>
-                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                  {staffRoles.map((role) => (
-                    <a key={role.key} href={`/admin/login?role=${role.key}`} onClick={close} className="rounded-lg px-2 py-2 text-xs text-brand-900 hover:bg-cream-200">{role.label}</a>
-                  ))}
-                </div>
-              </section>
               <div className="flex items-center gap-3">
                 <Link href={authed ? '/portal' : '/login?audience=student'} onClick={close} className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-900 text-sm font-semibold text-white">{authed ? t('account') : 'Student Login'}</Link>
                 <button type="button" onClick={() => { close(); switchTo(locale === 'en' ? 'ar' : 'en'); }} className="h-11 rounded-full border border-line bg-white px-5 text-sm font-semibold text-brand-900" lang={locale === 'en' ? 'ar' : 'en'}>{tc('language')}</button>
