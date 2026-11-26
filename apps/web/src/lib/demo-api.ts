@@ -304,6 +304,16 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
     if (parts[5] === 'eligibility' && method === 'PUT') { store[`academics:${programId}:eligibility`] = payload.rules ?? []; writeStore(store); return wrap({ success: true }) as R; }
   }
   if (clean === '/admin/cms/courses') return wrap(cmsSeeds.courses.map(({ id: courseId, code, titleEn }) => ({ id: courseId, code, titleEn }))) as R;
+  const adminApplications = getList(store, 'admissions.applications', [
+    { id: 'app-001', reference: 'AAU-2026-001', status: 'UNDER_REVIEW', submittedAt: now(), decisionNote: null, applicant: { fullName: 'Demo Applicant 01', email: 'applicant01@example.test' }, program: { nameEn: 'Bachelor of Business Administration' }, personal: { fullName: 'Demo Applicant 01', dateOfBirth: '2005-05-12', nationality: 'Demo' }, contact: { email: 'applicant01@example.test', city: 'Demo City', country: 'UAE' }, academic: { qualification: 'High school', overallPercent: 82 }, documents: [{ id: 'doc-001', docType: 'IDENTITY', originalName: 'demo-identity.txt', mimeType: 'text/plain', sizeBytes: 64, status: 'UPLOADED' }], statusHistory: [{ id: 'history-01', fromStatus: 'SUBMITTED', toStatus: 'UNDER_REVIEW', note: null, createdAt: now() }] },
+    { id: 'app-002', reference: 'AAU-2026-002', status: 'SUBMITTED', submittedAt: now(), decisionNote: null, applicant: { fullName: 'Demo Applicant 02', email: 'applicant02@example.test' }, program: { nameEn: 'Bachelor of Computer Science' }, personal: { fullName: 'Demo Applicant 02' }, contact: { email: 'applicant02@example.test' }, academic: { qualification: 'High school', overallPercent: 74 }, documents: [], statusHistory: [] },
+  ]);
+  if (clean === '/admin/applications' && method === 'GET') {
+    const status = query.get('status'), q = (query.get('q') || '').toLowerCase();
+    const filtered = adminApplications.filter((a) => (!status || a.status === status) && (!q || `${a.reference} ${a.applicant?.fullName} ${a.applicant?.email}`.toLowerCase().includes(q)));
+    const page = Number(query.get('page') || 1), pageSize = Number(query.get('pageSize') || 20), start = (page - 1) * pageSize;
+    return wrap(filtered.slice(start, start + pageSize), { page, pageSize, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)) }) as R;
+  }
   if (clean.startsWith('/admin/applications/')) {
     const appId = clean.split('/')[3];
     const apps = getList(store, 'admissions.applications', [
