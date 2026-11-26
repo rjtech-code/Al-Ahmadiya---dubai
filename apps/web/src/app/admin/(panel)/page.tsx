@@ -9,6 +9,7 @@ import { BookOpen, CalendarClock, CalendarDays, FileText, GraduationCap, LayoutG
 import { BarChart, DashPanel, IconStat, monthLabel, QuickActions, ViewAll, WelcomeBanner } from '@/components/admin/dash';
 import { ErrorNote } from '@/components/admin/ui';
 import { apiFetch, ApiError, formatMoney } from '@/lib/client-api';
+import { USE_BACKEND } from '@/lib/demo-session';
 
 interface Summary {
   admissions: { byStatus: Record<string, number>; submittedLast30Days: number; pendingReview: number };
@@ -22,8 +23,45 @@ interface Summary {
   recentStaffLogins: { id: string; email: string; success: boolean; reason: string | null; ip: string | null; createdAt: string; user: { fullName: string } | null }[];
 }
 
+const DEMO_SUMMARY: Summary = {
+  admissions: { byStatus: { SUBMITTED: 18, UNDER_REVIEW: 12, APPROVED: 24, REJECTED: 4 }, submittedLast30Days: 18, pendingReview: 12 },
+  users: { total: 386, staff: 42 },
+  content: { colleges: 3, programs: 9, news: 8, events: 8, faculty: 24 },
+  engagement: { unhandledMessages: 3, subscribers: 120 },
+  settingsAwaitingConfirmation: 1,
+  learning: { onlineCourses: 46, activeEnrollments: 2160, liveNow: 2 },
+  payments: { count: 148, amountFils: 125000000 },
+  overview: {
+    students: 344, faculty: 24, programs: 9, applications: 345,
+    enrollmentTrend: [
+      { month: '2026-06', count: 28 }, { month: '2026-07', count: 34 },
+      { month: '2026-08', count: 41 }, { month: '2026-09', count: 36 },
+      { month: '2026-10', count: 52 }, { month: '2026-11', count: 47 },
+    ],
+    operations: { pendingRegistrations: 16, classesThisWeek: 28, draftCourses: 5, coursesWithoutTeacher: 2 },
+  },
+  recentStaffLogins: [],
+};
+
+const ROLE_TITLES: Record<string, string> = {
+  SUPER_ADMIN: 'Super Administrator',
+  UNIVERSITY_ADMIN: 'University Administrator',
+  ADMISSIONS_OFFICER: 'Admissions Officer',
+  ADMISSIONS_REVIEWER: 'Admissions Reviewer',
+  REGISTRAR: 'Registrar',
+  LIBRARIAN: 'Librarian',
+  PROCUREMENT_OFFICER: 'Procurement & Operations',
+  ACADEMIC_ADMIN: 'Academic Administrator',
+  FINANCE_MANAGER: 'Finance Manager',
+  FINANCE_OFFICER: 'Finance Officer',
+  HR_MANAGER: 'HR Manager',
+  HEAD_OF_DEPARTMENT: 'Head of Department',
+  CONTENT_EDITOR: 'Content Editor',
+  FACULTY: 'Teacher',
+};
+
 export default function Dashboard() {
-  const { can } = useAdmin();
+  const { can, user } = useAdmin();
   const router = useRouter();
   // Each role starts on its own work page (teacher → My teaching, finance → Finance, …).
   const home = NAV.find((n) => n.href !== '/admin' && n.show(can))?.href;
@@ -38,7 +76,7 @@ export default function Dashboard() {
   }, [can]);
 
   if (!can('dashboard.read')) return <p className="text-sm text-muted">Opening your workspace…</p>;
-  const o = d?.overview;
+  const o = d?.overview;\n  const roleTitle = ROLE_TITLES[user.roles[0]] ?? user.roles[0]?.replace(/_/g, ' ') ?? 'Staff';
   const alerts = d ? [
     d.admissions.pendingReview > 0 && { text: `${d.admissions.pendingReview} application${d.admissions.pendingReview === 1 ? '' : 's'} waiting for review`, href: '/admin/admissions', tone: 'bg-warning' },
     d.learning.liveNow > 0 && { text: `${d.learning.liveNow} live class${d.learning.liveNow === 1 ? '' : 'es'} in progress`, href: '/admin/live', tone: 'bg-danger' },
@@ -48,7 +86,7 @@ export default function Dashboard() {
   ].filter(Boolean) as { text: string; href: string; tone: string }[] : [];
   return (
     <>
-      <WelcomeBanner title="Welcome, University Administrator" subtitle="University operations overview — live figures from the database." />
+      <WelcomeBanner title={`Welcome, ${roleTitle}`} subtitle={USE_BACKEND ? "University operations overview — live figures from the database." : "Demo dashboard overview — sample figures for preview only."} />
       <ErrorNote message={error} />
       {!d || !o ? <p className="text-sm text-muted">Loading…</p> : (
         <div className="space-y-5">
