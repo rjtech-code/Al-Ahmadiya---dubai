@@ -174,7 +174,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
               </div>
               <div className="space-y-2">
                 {weeks.map((week, index) => {
-                  const lectureDone = week.lessons.filter((lesson) => lesson.completed || practice[`lecture:${lesson.id}`]?.done).length;
+                  const lectureDone = week.lessons.filter((lesson) => lesson.completed).length;
                   const lectureTotal = week.lessons.length;
                   const practiceTotal = week.lessons.length + 1;
                   const practiceDone = (practice[`week:${week.id}`]?.done ? 1 : 0) + week.lessons.filter((lesson) => practice[`lecture:${lesson.id}`]?.done).length;
@@ -194,8 +194,8 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
                           <div><div className="mb-1 flex justify-between text-[10px] text-muted"><span>Practice assignments</span><span>{practiceDone}/{practiceTotal}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-cream-200"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${practicePercent}%` }} /></div></div>
                         </div>
                       </button>
-                      {isExpanded && <div className="max-h-44 space-y-1 overflow-y-auto border-t border-line bg-cream-50/70 p-2">
-                        {week.lessons.map((lesson, lessonIndex) => <button key={lesson.id} onClick={() => void play(lesson)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-2 py-2 text-start hover:bg-white"><PlayCircle className="size-4 shrink-0 text-gold-700" /><span className="min-w-0 flex-1 truncate text-xs font-medium text-brand-900">Lecture {String(lessonIndex + 1).padStart(2, '0')} · {L(lesson)}</span>{(lesson.completed || practice[`lecture:${lesson.id}`]?.done) && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}</button>)}
+                      {isExpanded && <div className="max-h-24 space-y-1 overflow-y-auto border-t border-line bg-cream-50/70 p-2">
+                        {week.lessons.map((lesson, lessonIndex) => <button key={lesson.id} onClick={() => void play(lesson)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-2 py-2 text-start hover:bg-white"><PlayCircle className="size-4 shrink-0 text-gold-700" /><span className="min-w-0 flex-1 truncate text-xs font-medium text-brand-900">Lecture {String(lessonIndex + 1).padStart(2, '0')} · {L(lesson)}</span>{lesson.completed && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}</button>)}
                         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-2 pt-2">
                           <button onClick={() => setPracticeItem(`week:${week.id}`, { done: true, submittedAt: new Date().toISOString() })} disabled={!!practice[`week:${week.id}`]?.done} className="rounded-full border border-gold-500 px-3 py-1.5 text-[11px] font-semibold text-brand-900 disabled:opacity-50">{practice[`week:${week.id}`]?.done ? 'Practice completed' : 'Complete weekly practice'}</button>
                           {(week.quizzes ?? []).map((quiz) => <button key={quiz.id} onClick={() => void submitQuiz(quiz)} className="rounded-full bg-brand-900 px-3 py-1.5 text-[11px] font-semibold text-white">{practice[`quiz:${quiz.id}`]?.done ? 'Quiz completed' : 'Open weekly quiz'}</button>)}
