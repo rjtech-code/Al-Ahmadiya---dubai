@@ -7,7 +7,7 @@ const STORAGE = 'al-ahmadiya-local-erp-data';
 const now = () => new Date().toISOString();
 const id = () => `local-${Math.random().toString(36).slice(2, 10)}`;
 
-const ROLE_DEMO_PERMISSIONS: Record<string, string[]> = { UNIVERSITY_ADMIN: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'] };
+const ROLE_DEMO_PERMISSIONS: Record<string, string[]> = { UNIVERSITY_ADMIN: ['dashboard.read', 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'admissions.review', 'admissions.decide', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'] };
 
 const initialItems = [
   { id: 'book-001', type: 'BOOK', title: 'Introduction to Computer Science', author: 'A. Rahman', isbn: '9780000000011', subject: 'Computing', year: 2023, url: null, copies: 12, isPublic: true, available: 9, onLoan: 3 },
@@ -152,8 +152,8 @@ export async function demoApiFetch<R = unknown>(path: string, init: RequestOptio
   const roleRows = getList(store, 'admin.roles', [
     { key: 'SUPER_ADMIN', nameEn: 'Super Admin', userCount: 1, permissions: ['*'] },
     { key: 'UNIVERSITY_ADMIN', nameEn: 'University Admin', userCount: 1, permissions: ROLE_DEMO_PERMISSIONS.UNIVERSITY_ADMIN },
-    { key: 'ADMISSIONS_OFFICER', nameEn: 'Admissions Officer', userCount: 2, permissions: ['dashboard.read', 'admissions.read'] },
-    { key: 'ADMISSIONS_REVIEWER', nameEn: 'Admissions Reviewer', userCount: 2, permissions: ['dashboard.read', 'admissions.read'] },
+    { key: 'ADMISSIONS_OFFICER', nameEn: 'Admissions Officer', userCount: 2, permissions: ['dashboard.read', 'admissions.read', 'admissions.review', 'admissions.decide'] },
+    { key: 'ADMISSIONS_REVIEWER', nameEn: 'Admissions Reviewer', userCount: 2, permissions: ['dashboard.read', 'admissions.read', 'admissions.review'] },
     { key: 'REGISTRAR', nameEn: 'Registrar', userCount: 1, permissions: ['dashboard.read', 'records.manage'] },
     { key: 'LIBRARIAN', nameEn: 'Librarian', userCount: 1, permissions: ['dashboard.read', 'library.manage'] },
     { key: 'PROCUREMENT_OFFICER', nameEn: 'Procurement Officer', userCount: 1, permissions: ['dashboard.read', 'procurement.manage'] },
