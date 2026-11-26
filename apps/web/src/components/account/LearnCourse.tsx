@@ -1,8 +1,8 @@
 'use client';
 
-import { CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Download, FileText, Menu, X, Loader2, PlayCircle, Radio, Trophy } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Download, FileText, Loader2, PlayCircle, Radio } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { apiFetch, ApiError, apiUrl } from '@/lib/client-api';
 import { Markdown } from '@/lib/markdown';
@@ -139,7 +139,6 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   return (
     <div className="min-h-[60vh]">
       <main className="mx-auto min-w-0 max-w-7xl space-y-5">
-          <div className="flex items-center gap-3 lg:hidden"><button type="button" onClick={() => setOutlineOpen(true)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-900 text-white" aria-label="Open course outline"><Menu className="size-5" /></button><span className="text-sm font-semibold text-brand-900">Course outline</span></div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
             {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
@@ -165,12 +164,46 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
           ) : section === 'graded' ? (
             <section className="rounded-[1.5rem] border border-line bg-white p-5"><h2 className="font-display text-3xl font-semibold text-brand-900">Graded assignments</h2><p className="mt-1 text-sm text-muted">Submit assessed work here. Marks and feedback will appear in Results after faculty evaluation.</p><div className="mt-4 rounded-xl bg-cream-50 p-4"><p className="font-semibold text-brand-900">Course assessment — Assignment 01</p><p className="mt-1 text-xs text-muted">Covers lectures and topics from the complete course · 100 marks</p><textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={4} placeholder="Write your submission for this local demo…" className="mt-3 w-full rounded-xl border border-line bg-white p-3 text-sm" /><button onClick={submitGraded} disabled={!answer.trim()} className="mt-3 rounded-full bg-brand-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Submit graded assignment</button>{practice['graded:course-01']?.done && <p className="mt-2 text-sm font-semibold text-success">Submitted locally · {new Date(practice['graded:course-01'].submittedAt ?? '').toLocaleDateString()}</p>}</div></section>
           ) : (
-            <section className="space-y-4">
-              <div className="rounded-[1.5rem] bg-brand-900 p-6 text-white"><p className="text-xs font-bold uppercase tracking-wider text-gold-300">{active?.titleEn ?? 'Course outline'}</p><h2 className="mt-1 font-display text-3xl font-semibold">Week learning plan</h2><p className="mt-2 text-sm text-white/70">{active?.lessons.length ?? 0} lectures · weekly practice assignment · quiz</p></div>
-              <div className="rounded-[1.5rem] border border-line bg-white p-5"><h3 className="font-semibold text-brand-900">Lectures</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{(active?.lessons ?? []).map((lesson, index) => <button key={lesson.id} onClick={() => void play(lesson)} className="flex items-center gap-3 rounded-xl bg-cream-50 p-3 text-start hover:bg-cream-200"><PlayCircle className="size-5 text-gold-600" /><span className="min-w-0 flex-1"><span className="block text-xs text-muted">Lecture {index + 1}</span><span className="block truncate text-sm font-semibold text-brand-900">{L(lesson)}</span></span></button>)}</div></div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-line bg-white p-5"><h3 className="font-semibold text-brand-900">Weekly practice assignment</h3><p className="mt-1 text-xs text-muted">Practice only · not graded</p><PracticeCard id={`week:${active?.id}`} title={`${active?.titleEn} practice assignment`} state={practice[`week:${active?.id}`]} onDone={(value) => setPracticeItem(`week:${active?.id}`, value)} /></div>
-                <div className="rounded-2xl border border-line bg-white p-5"><h3 className="font-semibold text-brand-900">Weekly quizzes</h3>{(active?.quizzes ?? []).map((quiz) => <div key={quiz.id} className="mt-3 rounded-xl bg-cream-50 p-3"><p className="text-sm font-semibold text-brand-900">{L(quiz)}</p><p className="mt-1 text-xs text-muted">{quiz.questions.length || 1} questions · pass mark {quiz.passPercent}%</p><button onClick={() => void submitQuiz(quiz)} className="mt-2 rounded-full bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white">Complete demo quiz</button>{practice[`quiz:${quiz.id}`]?.done && <p className="mt-1 text-xs text-success">Quiz completed</p>}</div>)}</div>
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><h2 className="font-display text-2xl font-semibold text-brand-900">Course weeks</h2><p className="mt-1 text-xs text-muted">Open a week to view its lectures and activities</p></div>
+                <div className="flex gap-2">
+                  <button onClick={() => { setSection('practice'); setCurrent(null); }} className="rounded-full border border-gold-500 px-3 py-2 text-xs font-semibold text-brand-900">Course practice</button>
+                  <button onClick={() => { setSection('graded'); setCurrent(null); }} className="rounded-full bg-brand-900 px-3 py-2 text-xs font-semibold text-white">Graded work</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {weeks.map((week, index) => {
+                  const lectureDone = week.lessons.filter((lesson) => lesson.completed || practice[`lecture:${lesson.id}`]?.done).length;
+                  const lectureTotal = week.lessons.length;
+                  const practiceTotal = week.lessons.length + 1;
+                  const practiceDone = (practice[`week:${week.id}`]?.done ? 1 : 0) + week.lessons.filter((lesson) => practice[`lecture:${lesson.id}`]?.done).length;
+                  const lecturePercent = lectureTotal ? Math.round((lectureDone / lectureTotal) * 100) : 0;
+                  const practicePercent = practiceTotal ? Math.round((practiceDone / practiceTotal) * 100) : 0;
+                  const isExpanded = !!expanded[week.id];
+                  return (
+                    <article key={week.id} className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+                      <button type="button" onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); }} aria-expanded={isExpanded} className="w-full px-4 py-3 text-start hover:bg-cream-50">
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? <ChevronDown className="size-4 shrink-0 text-gold-700" /> : <ChevronRight className="size-4 shrink-0 text-muted" />}
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-brand-900">{week.titleEn || `Week ${index + 1}`}</span>
+                          <span className="text-[11px] text-muted">{lectureDone}/{lectureTotal} lectures</span>
+                        </div>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          <div><div className="mb-1 flex justify-between text-[10px] text-muted"><span>Lecture progress</span><span>{lectureDone}/{lectureTotal}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-cream-200"><div className="h-full rounded-full bg-gold-500 transition-all" style={{ width: `${lecturePercent}%` }} /></div></div>
+                          <div><div className="mb-1 flex justify-between text-[10px] text-muted"><span>Practice assignments</span><span>{practiceDone}/{practiceTotal}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-cream-200"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${practicePercent}%` }} /></div></div>
+                        </div>
+                      </button>
+                      {isExpanded && <div className="max-h-44 space-y-1 overflow-y-auto border-t border-line bg-cream-50/70 p-2">
+                        {week.lessons.map((lesson, lessonIndex) => <button key={lesson.id} onClick={() => void play(lesson)} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-2 py-2 text-start hover:bg-white"><PlayCircle className="size-4 shrink-0 text-gold-700" /><span className="min-w-0 flex-1 truncate text-xs font-medium text-brand-900">Lecture {String(lessonIndex + 1).padStart(2, '0')} · {L(lesson)}</span>{(lesson.completed || practice[`lecture:${lesson.id}`]?.done) && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}</button>)}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-2 pt-2">
+                          <button onClick={() => setPracticeItem(`week:${week.id}`, { done: true, submittedAt: new Date().toISOString() })} disabled={!!practice[`week:${week.id}`]?.done} className="rounded-full border border-gold-500 px-3 py-1.5 text-[11px] font-semibold text-brand-900 disabled:opacity-50">{practice[`week:${week.id}`]?.done ? 'Practice completed' : 'Complete weekly practice'}</button>
+                          {(week.quizzes ?? []).map((quiz) => <button key={quiz.id} onClick={() => void submitQuiz(quiz)} className="rounded-full bg-brand-900 px-3 py-1.5 text-[11px] font-semibold text-white">{practice[`quiz:${quiz.id}`]?.done ? 'Quiz completed' : 'Open weekly quiz'}</button>)}
+                        </div>
+                      </div>}
+                    </article>
+                  );
+                })}
               </div>
             </section>
           )}
