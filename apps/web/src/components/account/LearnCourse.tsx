@@ -59,7 +59,12 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [practice, setPractice] = useState<PracticeState>({});
   const [answer, setAnswer] = useState('');
- 
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('lms-course-view-mode', { detail: { lecture: section === 'lecture' } }));
+    return () => window.dispatchEvent(new CustomEvent('lms-course-view-mode', { detail: { lecture: false } }));
+  }, [section]);
+
   useEffect(() => {
     try { setPractice(JSON.parse(localStorage.getItem(`lms.practice.${slug}`) || '{}') as PracticeState); } catch { setPractice({}); }
   }, [slug]);
@@ -138,7 +143,9 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
   const progress = allLectures.length ? Math.round((allLectures.filter((lesson) => lesson.completed || practice[`lecture:${lesson.id}`]?.done).length / allLectures.length) * 100) : 0;
   return (
     <div className="min-h-[60vh]">
-      <main className="mx-auto min-w-0 max-w-7xl space-y-5">
+      <div className="flex min-w-0 items-start gap-5">
+        {section === 'lecture' && active && <aside className="hidden w-64 shrink-0 self-stretch rounded-2xl border border-line bg-white p-3 shadow-sm xl:block"><p className="px-2 pb-2 text-xs font-bold uppercase tracking-wider text-gold-700">{active.titleEn}</p><div className="max-h-[calc(100vh-11rem)] space-y-1 overflow-y-auto">{active.lessons.map((lesson, index) => <button key={lesson.id} type="button" onClick={() => void play(lesson)} aria-current={current?.id === lesson.id ? 'page' : undefined} className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-start text-xs transition-colors', current?.id === lesson.id ? 'bg-brand-900 font-semibold text-white' : 'text-brand-900 hover:bg-cream-100')}><PlayCircle className="size-4 shrink-0" /><span className="min-w-0 flex-1">Lecture {String(index + 1).padStart(2, '0')} · {L(lesson)}</span>{lesson.completed && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}</button>)}</div></aside>}
+      <main className="mx-auto min-w-0 max-w-7xl flex-1 space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="text-sm font-semibold text-gold-700">{course.code} · {course.deliveryMode}</p><h1 className="font-display text-4xl font-semibold text-brand-900 sm:text-5xl">{L(course)}</h1><p className="mt-2 text-sm text-muted">{weeks.length} weeks · {allLectures.length} lectures · {progress}% completed</p></div>
             {course.liveSessions.some((session) => session.status === 'LIVE') && <Link href={`/portal/live/${course.liveSessions.find((session) => session.status === 'LIVE')!.id}`} className="inline-flex items-center gap-2 rounded-full bg-danger px-5 py-2 text-sm font-semibold text-white"><Radio className="size-4" />{t('liveNow')} — {t('join')}</Link>}
@@ -172,7 +179,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
                   <button onClick={() => { setSection('graded'); setCurrent(null); }} className="rounded-full bg-brand-900 px-3 py-2 text-xs font-semibold text-white">Graded work</button>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
                 {weeks.map((week, index) => {
                   const lectureDone = week.lessons.filter((lesson) => lesson.completed).length;
                   const lectureTotal = week.lessons.length;
@@ -182,8 +189,8 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
                   const practicePercent = practiceTotal ? Math.round((practiceDone / practiceTotal) * 100) : 0;
                   const isExpanded = !!expanded[week.id];
                   return (
-                    <article key={week.id} className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
-                      <button type="button" onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); }} aria-expanded={isExpanded} className="w-full px-4 py-3 text-start hover:bg-cream-50">
+                    <article key={week.id} className="min-w-0 self-start overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+                      <button type="button" onClick={() => { setActiveWeek(week.id); setExpanded((value) => ({ ...value, [week.id]: !value[week.id] })); }} aria-expanded={isExpanded} className="w-full px-3 py-2.5 text-start hover:bg-cream-50">
                         <div className="flex items-center gap-2">
                           {isExpanded ? <ChevronDown className="size-4 shrink-0 text-gold-700" /> : <ChevronRight className="size-4 shrink-0 text-muted" />}
                           <span className="min-w-0 flex-1 truncate text-sm font-bold text-brand-900">{week.titleEn || `Week ${index + 1}`}</span>
@@ -208,6 +215,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
             </section>
           )}
       </main>
+      </div>
 
       {reader && <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-brand-950/60 p-4" onClick={() => setReader(null)}><div onClick={(event) => event.stopPropagation()} className="flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-cream-50"><div className="flex items-center justify-between border-b border-line p-4"><h2 className="font-display text-xl font-semibold text-brand-900">{L(reader)}</h2><button onClick={() => setReader(null)} className="rounded-full px-3 py-1 hover:bg-cream-200">Close</button></div><div className="flex-1 overflow-y-auto p-5">{readerUrl ? <iframe title={L(reader)} src={readerUrl} className="h-full min-h-[65vh] w-full rounded-xl border border-line" /> : reader.bodyEn || reader.bodyAr ? <Markdown source={locale === "ar" ? reader.bodyAr ?? reader.bodyEn ?? "" : reader.bodyEn ?? reader.bodyAr ?? ""} /> : <p className="text-sm text-muted">PDF preview is not available for this demo note.</p>}</div></div></div>}
     </div>
