@@ -154,7 +154,7 @@ export function LearnCourse({ slug, initialLesson, initialTab }: { slug: string;
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="hidden rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-24 lg:block lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
+        <aside className="hidden h-[calc(100dvh-4rem)] self-start rounded-[1.75rem] bg-brand-950 p-4 text-white shadow-[var(--shadow-card)] lg:sticky lg:top-16 lg:block lg:max-h-none lg:overflow-y-auto overscroll-contain">
 
           <p className="px-2 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-gold-300">Course content</p>
           <div className="mb-3 grid grid-cols-2 gap-2">
