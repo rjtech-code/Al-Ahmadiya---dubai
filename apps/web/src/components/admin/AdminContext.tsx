@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { apiFetch, restoreSession, tokenStore } from '@/lib/client-api';
+import { clearDemoSession, readDemoSession, USE_BACKEND } from '@/lib/demo-session';
 
 export interface AdminUser { id: string; email: string; fullName: string; roles: string[]; permissions: string[] }
 interface Ctx { user: AdminUser; can: (p: string) => boolean; signOut: () => Promise<void> }
@@ -24,6 +25,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
+        if (!USE_BACKEND) {
+          const demo = readDemoSession();
+          if (!demo || demo.role === 'STUDENT') throw new Error('No staff demo role selected');
+          if (!cancelled) setUser({ id: demo.id, email: demo.email, fullName: demo.fullName, roles: demo.roles, permissions: demo.permissions });
+          return;
+        }
         if (!(await restoreSession())) throw new Error('anon');
         const { data } = await apiFetch<{ data: AdminUser }>('/auth/me');
         if (!data.permissions.length) throw new Error('not staff');
@@ -37,9 +44,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   if (!user) return <div className="grid min-h-dvh place-items-center text-sm text-muted">Loading…</div>;
   const signOut = async () => {
+    if (!USE_BACKEND) {
+      clearDemoSession();
+      router.replace('/');
+      return;
+    }
     await apiFetch('/auth/logout', { method: 'POST', auth: false }).catch(() => undefined);
     tokenStore.set(null);
     router.replace('/admin/login');
   };
-  return <AdminCtx.Provider value={{ user, can: (p) => user.permissions.includes(p), signOut }}>{children}</AdminCtx.Provider>;
+  return <AdminCtx.Provider value={{ user, can: (p) => user.permissions.includes('*') || user.permissions.includes(p), signOut }}>{children}</AdminCtx.Provider>;
 }
