@@ -11,9 +11,9 @@ export interface DemoSession {
 const COMMON = ['dashboard.read'];
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: ['*'],
-  UNIVERSITY_ADMIN: [...COMMON, 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'],
-  ADMISSIONS_OFFICER: [...COMMON, 'admissions.read'],
-  ADMISSIONS_REVIEWER: [...COMMON, 'admissions.read'],
+  UNIVERSITY_ADMIN: [...COMMON, 'department.lead', 'teach.own', 'lms.manage', 'live.host', 'admissions.read', 'admissions.review', 'admissions.decide', 'academics.manage', 'records.manage', 'payments.read', 'library.manage', 'procurement.manage', 'cms.read', 'settings.write', 'engagement.read', 'hr.manage', 'users.read', 'roles.read', 'security.read'],
+  ADMISSIONS_OFFICER: [...COMMON, 'admissions.read', 'admissions.review', 'admissions.decide'],
+  ADMISSIONS_REVIEWER: [...COMMON, 'admissions.read', 'admissions.review'],
   REGISTRAR: [...COMMON, 'records.manage'],
   LIBRARIAN: [...COMMON, 'library.manage'],
   PROCUREMENT_OFFICER: [...COMMON, 'procurement.manage'],
