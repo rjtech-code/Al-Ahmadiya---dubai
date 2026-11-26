@@ -45,6 +45,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { state, signOut } = useAuthed();
   const [open, setOpen] = useState(false);
+  const isCourseDetail = /^\/portal\/courses\/[^/]+/.test(pathname);
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState('');
   const [unread, setUnread] = useState(0);
@@ -91,8 +92,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh bg-cream-100">
-      <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>
-      {open && (
+      {!isCourseDetail && <aside className="pattern-girih sticky top-0 hidden h-dvh w-68 shrink-0 bg-brand-900 lg:block">{sidebar()}</aside>}
+      {open && !isCourseDetail && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button aria-label={t('close')} className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <aside className="pattern-girih absolute inset-y-0 start-0 w-72 bg-brand-900">{sidebar(() => setOpen(false))}</aside>
@@ -100,7 +101,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-line/70 bg-cream-50/90 px-4 backdrop-blur sm:px-8">
-          <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>
+          {!isCourseDetail && <button className="grid size-10 place-items-center rounded-full hover:bg-cream-200 lg:hidden" aria-label={t('menu')} onClick={() => setOpen(true)}><Menu className="size-5" /></button>}{isCourseDetail && <span className="grid size-10 place-items-center text-brand-900 lg:hidden"><BookOpen className="size-5" /></span>}
           <Link href="/portal" className="flex items-center gap-2 lg:hidden"><LogoMark className="size-8 text-brand-900" /><span className="font-display text-base font-semibold leading-none text-brand-900">{tp('university')}</span></Link>
           <form onSubmit={search} role="search" className="relative hidden max-w-md flex-1 md:block">
             <Search className="absolute start-4 top-3 size-4 text-muted" aria-hidden />
@@ -130,14 +131,14 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile app-style bottom navigation */}
-      <nav aria-label={tp('appName')} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-cream-50/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur lg:hidden">
+      {!isCourseDetail && <nav aria-label={tp('appName')} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-cream-50/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur lg:hidden">
         {BOTTOM.map((n) => (
           <Link key={n.href} href={n.href} aria-current={active(n.href) ? 'page' : undefined} className={cn('flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold', active(n.href) ? 'text-brand-900' : 'text-muted')}>
             <n.icon className={cn('size-5', active(n.href) && 'text-gold-600')} />{t(n.key)}
           </Link>
         ))}
-      </nav>
-      {open && <button className="fixed end-4 top-4 z-[60] grid size-10 place-items-center rounded-full bg-white lg:hidden" aria-label={t('close')} onClick={() => setOpen(false)}><X className="size-5" /></button>}
+      </nav>}
+      {open && !isCourseDetail && <button className="fixed end-4 top-4 z-[60] grid size-10 place-items-center rounded-full bg-white lg:hidden" aria-label={t('close')} onClick={() => setOpen(false)}><X className="size-5" /></button>}
     </div>
   );
 }
