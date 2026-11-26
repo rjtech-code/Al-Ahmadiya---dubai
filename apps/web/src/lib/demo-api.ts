@@ -26,6 +26,22 @@ function writeStore(store: Record<string, any>) { localStorage.setItem(STORAGE, 
 function getList(store: Record<string, any>, key: string, fallback: any[]) { return Array.isArray(store[key]) ? store[key] : fallback; }
 const wrap = (data: unknown, meta?: unknown) => ({ data, ...(meta ? { meta } : {}) });
 
+export async function demoUploadWithProgress<R = unknown>(path: string, form: FormData, onProgress: (pct: number) => void): Promise<R> {
+  const store = readStore();
+  const records = Array.isArray(store['uploads']) ? store['uploads'] : [];
+  const fields: Record<string, string | number> = {};
+  form.forEach((value, key) => {
+    if (typeof value === 'string') fields[key] = value;
+    else fields[key] = JSON.stringify({ name: value.name, size: value.size, type: value.type });
+  });
+  const record = { id: id(), path, fields, createdAt: now(), note: 'Local demo stores upload metadata only; no file is sent to a server.' };
+  records.push(record);
+  store['uploads'] = records;
+  writeStore(store);
+  onProgress(100);
+  return wrap({ id: record.id, storedLocally: true }) as R;
+}
+
 export async function demoApiFetch<R = unknown>(path: string, init: RequestOptions = {}): Promise<R> {
   const method = (init.method || 'GET').toUpperCase();
   const clean = path.split('?')[0];
